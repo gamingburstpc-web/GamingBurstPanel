@@ -45,40 +45,7 @@ function startServer(serverId) {
     fs.writeFileSync(eulaPath, 'eula=true\n', 'utf8');
   }
 
-  // Build JVM args
-  const jvmArgs = [
-    `-Xms${server.memory_min}M`,
-    `-Xmx${server.memory_max}M`,
-    '-XX:+UseG1GC',
-    '-XX:+ParallelRefProcEnabled',
-    '-XX:MaxGCPauseMillis=200',
-    '-XX:+UnlockExperimentalVMOptions',
-    '-XX:+DisableExplicitGC',
-    '-XX:+AlwaysPreTouch',
-    '-XX:G1NewSizePercent=30',
-    '-XX:G1MaxNewSizePercent=40',
-    '-XX:G1HeapRegionSize=8M',
-    '-XX:G1ReservePercent=20',
-    '-XX:G1HeapWastePercent=5',
-    '-XX:G1MixedGCCountTarget=4',
-    '-XX:InitiatingHeapOccupancyPercent=15',
-    '-XX:G1MixedGCLiveThresholdPercent=90',
-    '-XX:G1RSetUpdatingPauseTimePercent=5',
-    '-XX:SurvivorRatio=32',
-    '-XX:+PerfDisableSharedMem',
-    '-XX:MaxTenuringThreshold=1',
-    '-Dusing.aikars.flags=https://mcflags.emc.gs',
-    '-Daikars.new.flags=true',
-  ];
-
-  // Append user custom JVM flags
-  if (server.jvm_flags && server.jvm_flags.trim()) {
-    jvmArgs.push(...server.jvm_flags.trim().split(/\s+/));
-  }
-
-  jvmArgs.push('-jar', server.jar_path, '--nogui', `--port`, String(server.port));
-
-  // Build environment (inherit host env, inject TZ + custom vars)
+  let proc;
   let customEnv = {};
   try { customEnv = JSON.parse(server.env_custom || '{}'); } catch {}
 
@@ -88,11 +55,53 @@ function startServer(serverId) {
     ...customEnv,
   };
 
-  const proc = spawn('java', jvmArgs, {
-    cwd:   server.server_dir,
-    env:   childEnv,
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
+  if (server.jar_path.endsWith('.jar')) {
+    // Java Server
+    const jvmArgs = [
+      `-Xms${server.memory_min}M`,
+      `-Xmx${server.memory_max}M`,
+      '-XX:+UseG1GC',
+      '-XX:+ParallelRefProcEnabled',
+      '-XX:MaxGCPauseMillis=200',
+      '-XX:+UnlockExperimentalVMOptions',
+      '-XX:+DisableExplicitGC',
+      '-XX:+AlwaysPreTouch',
+      '-XX:G1NewSizePercent=30',
+      '-XX:G1MaxNewSizePercent=40',
+      '-XX:G1HeapRegionSize=8M',
+      '-XX:G1ReservePercent=20',
+      '-XX:G1HeapWastePercent=5',
+      '-XX:G1MixedGCCountTarget=4',
+      '-XX:InitiatingHeapOccupancyPercent=15',
+      '-XX:G1MixedGCLiveThresholdPercent=90',
+      '-XX:G1RSetUpdatingPauseTimePercent=5',
+      '-XX:SurvivorRatio=32',
+      '-XX:+PerfDisableSharedMem',
+      '-XX:MaxTenuringThreshold=1',
+      '-Dusing.aikars.flags=https://mcflags.emc.gs',
+      '-Daikars.new.flags=true',
+    ];
+
+    if (server.jvm_flags && server.jvm_flags.trim()) {
+      jvmArgs.push(...server.jvm_flags.trim().split(/\s+/));
+    }
+
+    jvmArgs.push('-jar', server.jar_path, '--nogui', `--port`, String(server.port));
+    
+    proc = spawn('java', jvmArgs, {
+      cwd:   server.server_dir,
+      env:   childEnv,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } else {
+    // Bedrock / Binary Server
+    childEnv.LD_LIBRARY_PATH = '.';
+    proc = spawn(server.jar_path, [], {
+      cwd:   server.server_dir,
+      env:   childEnv,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  }
 
   // Update DB status
   db.prepare('UPDATE servers SET status = ?, pid = ?, last_started = datetime(\'now\') WHERE id = ?')

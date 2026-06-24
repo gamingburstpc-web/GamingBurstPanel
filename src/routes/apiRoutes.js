@@ -4,7 +4,7 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const https    = require('https');
-const { requireAuth, requireAdmin, cookieMiddleware } = require('../auth');
+const { requireAuth, requireAdmin, cookieMiddleware, hashPassword } = require('../auth');
 const { getDb } = require('../db');
 const pm = require('../processManager');
 
@@ -17,14 +17,57 @@ const SERVERS_DIR = path.resolve(process.env.SERVERS_DIR || './servers');
 // ── GET /api/me — returns current user info (role etc.) ──────────────────────
 router.get('/me', (req, res) => {
   res.json({
-    id:       req.session.userId,
-    username: req.session.username,
-    isAdmin:  req.session.isAdmin,
+    id:          req.session.userId,
+    username:    req.session.username,
+    isAdmin:     req.session.isAdmin,
+    permissions: req.session.permissions,
   });
 });
 
+// ── GET /api/users — ADMIN ONLY ──────────────────────────────────────────────
+router.get('/users', requireAdmin, (req, res) => {
+  const users = getDb().prepare('SELECT id, username, is_admin, permissions, created_at FROM users').all();
+  res.json(users.map(u => ({
+    ...u,
+    permissions: JSON.parse(u.permissions || '[]')
+  })));
+});
+
+// ── POST /api/users — ADMIN ONLY ─────────────────────────────────────────────
+router.post('/users', requireAdmin, (req, res) => {
+  const { username, password, is_admin, permissions } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password required.' });
+
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM users WHERE username = ?').get(username.trim());
+  if (existing) return res.status(400).json({ error: 'Username already exists.' });
+
+  const hash = hashPassword(password);
+  const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+  const adminFlag = is_admin ? 1 : 0;
+
+  try {
+    const info = db.prepare(`
+      INSERT INTO users (username, password, is_admin, permissions) VALUES (?, ?, ?, ?)
+    `).run(username.trim(), hash, adminFlag, permsJson);
+    res.json({ id: info.lastInsertRowid, username, is_admin: adminFlag, permissions: permsJson });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── DELETE /api/users/:id — ADMIN ONLY ───────────────────────────────────────
+router.delete('/users/:id', requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  if (id === req.session.userId) return res.status(400).json({ error: 'Cannot delete yourself.' });
+  
+  const db = getDb();
+  db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  res.json({ ok: true });
+});
+
 // ── PaperMC helpers ───────────────────────────────────────────────────────────
-function fetchPaperLatest() {
+function fetchPaper(reqVersion = 'latest') {
   return new Promise((resolve, reject) => {
     const get = (url, cb) => {
       https.get(url, { headers: { 'User-Agent': 'GamingBurst-Panel/1.0' } }, (res) => {
@@ -34,15 +77,44 @@ function fetchPaperLatest() {
       }).on('error', reject);
     };
     get('https://api.papermc.io/v2/projects/paper', (j) => {
-      const latest = j.versions[j.versions.length - 1];
-      get(`https://api.papermc.io/v2/projects/paper/versions/${latest}/builds`, (j2) => {
+      let targetVersion = reqVersion;
+      if (targetVersion === 'latest') {
+        targetVersion = j.versions[j.versions.length - 1];
+      } else if (!j.versions.includes(targetVersion)) {
+        return reject(new Error(`Paper version ${targetVersion} not found.`));
+      }
+      get(`https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds`, (j2) => {
         const build   = j2.builds[j2.builds.length - 1];
         const jarName = build.downloads.application.name;
         resolve({
-          version: latest,
+          version: targetVersion,
           build:   build.build,
           jarName,
-          url: `https://api.papermc.io/v2/projects/paper/versions/${latest}/builds/${build.build}/downloads/${jarName}`,
+          url: `https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds/${build.build}/downloads/${jarName}`,
+        });
+      });
+    });
+  });
+}
+
+function fetchVanilla(reqVersion = 'latest') {
+  return new Promise((resolve, reject) => {
+    const get = (url, cb) => {
+      https.get(url, { headers: { 'User-Agent': 'GamingBurst-Panel/1.0' } }, (res) => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => { try { cb(JSON.parse(d)); } catch (e) { reject(e); } });
+      }).on('error', reject);
+    };
+    get('https://launchermeta.mojang.com/mc/game/version_manifest.json', (manifest) => {
+      const targetVersion = reqVersion === 'latest' ? manifest.latest.release : reqVersion;
+      const versionObj = manifest.versions.find(v => v.id === targetVersion);
+      if (!versionObj) return reject(new Error(`Vanilla version ${targetVersion} not found.`));
+      get(versionObj.url, (vManifest) => {
+        if (!vManifest.downloads?.server) return reject(new Error(`No server download for Vanilla ${targetVersion}.`));
+        resolve({
+          version: targetVersion,
+          url: vManifest.downloads.server.url,
+          jarName: `vanilla-${targetVersion}.jar`
         });
       });
     });
@@ -81,6 +153,7 @@ router.post('/servers', requireAdmin, async (req, res) => {
   try {
     const {
       name, mode = 'basic',
+      platform = 'java', software = 'paper', version = 'latest',
       port, memory_min, memory_max,
       jar_path, jvm_flags, env_tz, env_custom,
     } = req.body;
@@ -93,7 +166,7 @@ router.post('/servers', requireAdmin, async (req, res) => {
     fs.mkdirSync(serverDir, { recursive: true });
 
     let finalPort      = port        ? parseInt(port, 10)        : pm.getNextAvailablePort();
-    let finalMemMin    = memory_min  ? parseInt(memory_min, 10)  : 512;
+    let finalMemMin    = memory_min  ? parseInt(memory_min, 10)  : 1024;
     let finalMemMax    = memory_max  ? parseInt(memory_max, 10)  : 2048;
     let finalJar       = jar_path?.trim() || null;
     let finalJvmFlags  = jvm_flags?.trim() || '';
@@ -104,19 +177,37 @@ router.post('/servers', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: 'env_custom must be valid JSON.' });
     }
 
-    if (mode === 'basic' || !finalJar) {
-      // SSE stream for download progress
+    if (!finalJar) {
+      // Auto-download mode
       res.writeHead(200, {
         'Content-Type':  'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection':    'keep-alive',
       });
       const send = (msg) => res.write(`data: ${JSON.stringify({ msg })}\n\n`);
-      send('Fetching latest PaperMC version...');
-      const paper = await fetchPaperLatest();
-      finalJar    = path.join(serverDir, paper.jarName);
-      send(`Downloading PaperMC ${paper.version} build #${paper.build}...`);
-      await downloadFile(paper.url, finalJar);
+
+      if (platform === 'bedrock') {
+        send('Bedrock selected. Automated Bedrock download coming soon!');
+        send('Please upload bedrock_server manually using the Files tab.');
+        finalJar = path.join(serverDir, 'bedrock_server');
+        // Touch the file so the DB record has a path
+        fs.writeFileSync(finalJar, '#!/bin/bash\necho "Please replace me with actual bedrock_server"\n');
+        fs.chmodSync(finalJar, 0o755);
+      } else if (software === 'vanilla') {
+        send(`Fetching Vanilla Minecraft version: ${version}...`);
+        const vanilla = await fetchVanilla(version);
+        finalJar = path.join(serverDir, vanilla.jarName);
+        send(`Downloading Vanilla ${vanilla.version}...`);
+        await downloadFile(vanilla.url, finalJar);
+      } else {
+        // Default PaperMC
+        send(`Fetching PaperMC version: ${version}...`);
+        const paper = await fetchPaper(version);
+        finalJar    = path.join(serverDir, paper.jarName);
+        send(`Downloading PaperMC ${paper.version} build #${paper.build}...`);
+        await downloadFile(paper.url, finalJar);
+      }
+
       send('Download complete. Creating server...');
       const info = db.prepare(`
         INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
@@ -127,9 +218,9 @@ router.post('/servers', requireAdmin, async (req, res) => {
       return res.end();
     }
 
-    // Advanced mode
+    // Advanced mode (manual JAR provided)
     if (!fs.existsSync(finalJar)) {
-      return res.status(400).json({ error: `JAR not found at: ${finalJar}` });
+      return res.status(400).json({ error: `Executable not found at: ${finalJar}` });
     }
     const info = db.prepare(`
       INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
@@ -139,7 +230,7 @@ router.post('/servers', requireAdmin, async (req, res) => {
 
   } catch (err) {
     console.error('[API] Create error:', err);
-    res.status(500).json({ error: err.message });
+    if (!res.headersSent) res.status(500).json({ error: err.message });
   }
 });
 
@@ -154,28 +245,27 @@ router.delete('/servers/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
-// ── POST /api/servers/:id/start — any authenticated user ─────────────────────
-router.post('/servers/:id/start', (req, res) => {
+// ── POST /api/servers/:id/start ──────────────────────────────────────────────
+router.post('/servers/:id/start', requirePermission('start'), (req, res) => {
   try {
     const result = pm.startServer(parseInt(req.params.id, 10));
     res.json({ ok: true, pid: result.pid });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-// ── POST /api/servers/:id/stop — any authenticated user ──────────────────────
-router.post('/servers/:id/stop', (req, res) => {
+// ── POST /api/servers/:id/stop ───────────────────────────────────────────────
+router.post('/servers/:id/stop', requirePermission('stop'), (req, res) => {
   try {
     pm.stopServer(parseInt(req.params.id, 10));
     res.json({ ok: true });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-// ── POST /api/servers/:id/restart — any authenticated user ───────────────────
-router.post('/servers/:id/restart', (req, res) => {
+// ── POST /api/servers/:id/restart ────────────────────────────────────────────
+router.post('/servers/:id/restart', requirePermission('restart'), (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
     if (pm.isRunning(id)) pm.stopServer(id);
-    // Re-start after a brief delay (let the process die first)
     setTimeout(() => {
       try { pm.startServer(id); } catch {}
     }, 2500);
@@ -183,8 +273,8 @@ router.post('/servers/:id/restart', (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-// ── POST /api/servers/:id/command — ADMIN ONLY ───────────────────────────────
-router.post('/servers/:id/command', requireAdmin, (req, res) => {
+// ── POST /api/servers/:id/command ────────────────────────────────────────────
+router.post('/servers/:id/command', requirePermission('console'), (req, res) => {
   const { command } = req.body;
   if (!command) return res.status(400).json({ error: 'Command required.' });
   try {
@@ -193,8 +283,8 @@ router.post('/servers/:id/command', requireAdmin, (req, res) => {
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
-// ── GET /api/servers/:id/logs — ADMIN ONLY ───────────────────────────────────
-router.get('/servers/:id/logs', requireAdmin, (req, res) => {
+// ── GET /api/servers/:id/logs ────────────────────────────────────────────────
+router.get('/servers/:id/logs', requirePermission('console'), (req, res) => {
   const limit = Math.min(parseInt(req.query.limit || '100', 10), 500);
   const logs  = getDb().prepare(`
     SELECT line, ts FROM server_logs
@@ -211,6 +301,68 @@ router.get('/status', (req, res) => {
     panel:   'online',
     servers: servers.map(s => ({ ...s, is_live: pm.isRunning(s.id) })),
   });
+});
+
+// ── File Manager Helpers ──────────────────────────────────────────────────────
+function safePath(serverId, userPath) {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(serverId);
+  if (!server) throw new Error('Server not found');
+  const baseDir = path.resolve(server.server_dir);
+  const target  = path.resolve(baseDir, userPath || '');
+  if (!target.startsWith(baseDir)) throw new Error('Invalid path: Directory traversal not allowed.');
+  return { baseDir, target };
+}
+
+// ── GET /api/servers/:id/files ────────────────────────────────────────────────
+router.get('/servers/:id/files', requirePermission('files'), (req, res) => {
+  try {
+    const { target } = safePath(req.params.id, req.query.path);
+    if (!fs.existsSync(target)) return res.json([]);
+    const stat = fs.statSync(target);
+    if (!stat.isDirectory()) return res.status(400).json({ error: 'Not a directory' });
+
+    const files = fs.readdirSync(target, { withFileTypes: true }).map(f => {
+      const p = path.join(target, f.name);
+      const s = fs.statSync(p);
+      return {
+        name: f.name,
+        isDir: f.isDirectory(),
+        size: s.size,
+        modified: s.mtime
+      };
+    }).sort((a, b) => b.isDir - a.isDir || a.name.localeCompare(b.name));
+    res.json(files);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── GET /api/servers/:id/files/content ────────────────────────────────────────
+router.get('/servers/:id/files/content', requirePermission('files'), (req, res) => {
+  try {
+    const { target } = safePath(req.params.id, req.query.path);
+    if (!fs.existsSync(target)) return res.status(404).json({ error: 'File not found' });
+    if (fs.statSync(target).isDirectory()) return res.status(400).json({ error: 'Cannot read directory content' });
+    res.send(fs.readFileSync(target, 'utf8'));
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── PUT /api/servers/:id/files/content ────────────────────────────────────────
+router.put('/servers/:id/files/content', requirePermission('files'), express.text({ limit: '5mb' }), (req, res) => {
+  try {
+    const { target } = safePath(req.params.id, req.query.path);
+    fs.writeFileSync(target, req.body || '');
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── DELETE /api/servers/:id/files ─────────────────────────────────────────────
+router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
+  try {
+    const { baseDir, target } = safePath(req.params.id, req.query.path);
+    if (target === baseDir) return res.status(400).json({ error: 'Cannot delete root server directory' });
+    if (!fs.existsSync(target)) return res.status(404).json({ error: 'Not found' });
+    fs.rmSync(target, { recursive: true, force: true });
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 module.exports = router;

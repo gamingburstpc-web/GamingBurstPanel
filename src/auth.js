@@ -55,10 +55,14 @@ function verifyPassword(plain, hash) { return bcrypt.compareSync(plain, hash); }
 // ── Session management ────────────────────────────────────────────────────────
 function createSession(user) {
   const sessionId = crypto.randomUUID();
+  let perms = [];
+  try { perms = JSON.parse(user.permissions || '[]'); } catch {}
+
   sessions.set(sessionId, {
     userId:     user.id,
     username:   user.username,
     isAdmin:    user.is_admin === 1,
+    permissions: perms,
     mustChange: user.must_change === 1,
     expiresAt:  Date.now() + SESSION_TTL_MS,
   });
@@ -123,6 +127,19 @@ function requireAdmin(req, res, next) {
   next();
 }
 
+// ── Middleware: require specific permission ───────────────────────────────────
+function requirePermission(perm) {
+  return (req, res, next) => {
+    if (req.session?.isAdmin) return next();
+    if (req.session?.permissions?.includes(perm)) return next();
+    
+    if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+      return res.status(403).json({ error: `Permission denied. Requires: ${perm}` });
+    }
+    return res.redirect('/dashboard?error=forbidden');
+  };
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -132,6 +149,7 @@ module.exports = {
   parseSessionFromCookieHeader,
   requireAuth,
   requireAdmin,
+  requirePermission,
   cookieMiddleware,
   checkRateLimit,
   recordFailedAttempt,

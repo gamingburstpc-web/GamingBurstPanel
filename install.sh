@@ -71,11 +71,11 @@ else
     print_success "Node.js already installed: $(node -v)"
 fi
 
-# ── Install Java 21 ───────────────────────────────────────────────────────────
+# ── Install Java 25 ───────────────────────────────────────────────────────────
 if ! command -v java &> /dev/null; then
-    print_status "Installing OpenJDK 21 JRE..."
-    apt-get install -y openjdk-21-jre-headless
-    print_success "Java 21 installed: $(java -version 2>&1 | head -n 1)"
+    print_status "Installing OpenJDK 25 JRE (Required for Minecraft 1.26+)..."
+    apt-get install -y openjdk-25-jre-headless
+    print_success "Java 25 installed: $(java -version 2>&1 | head -n 1)"
 else
     print_success "Java already installed: $(java -version 2>&1 | head -n 1)"
 fi

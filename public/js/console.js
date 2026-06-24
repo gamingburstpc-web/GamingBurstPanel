@@ -66,6 +66,7 @@ async function loadMe() {
       : '<span class="role-badge-user">User</span>';
     if (!currentUser.isAdmin) {
       document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
+      document.getElementById('navUsers')?.style && (document.getElementById('navUsers').style.display = 'none');
     }
   } catch {}
 }
@@ -86,12 +87,15 @@ async function loadServer() {
   updateStatusUI(serverData.status);
 
   // Role-based UI adjustments
-  const isAdmin = currentUser?.isAdmin;
-  if (!isAdmin) {
+  const hasConsole = currentUser?.isAdmin || currentUser?.permissions?.includes('console');
+  if (!hasConsole) {
     // Hide console, show restricted message
     document.getElementById('consoleWrapper')?.classList.add('hidden');
     document.getElementById('consoleRestricted')?.classList.remove('hidden');
-    // Hide delete
+  }
+
+  // Hide delete if not admin
+  if (!currentUser?.isAdmin) {
     document.getElementById('btnDelete')?.classList.add('hidden');
   } else {
     document.getElementById('btnDelete')?.classList.remove('hidden');
@@ -149,7 +153,7 @@ async function deleteServer() {
 
 // ── Console WS ────────────────────────────────────────────────────────────────
 function connectConsole() {
-  if (!currentUser?.isAdmin) return; // non-admins skip
+  if (!currentUser?.isAdmin && !currentUser?.permissions?.includes('console')) return; // skip if no access
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   consoleWs   = new WebSocket(`${proto}://${location.host}/ws/console/${serverId}`);
 

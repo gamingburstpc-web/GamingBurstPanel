@@ -31,11 +31,12 @@ function setupWs(httpServer) {
   wss.on('connection', (ws, request, sess) => {
     const url = request.url || '';
 
-    // ── /ws/console/:serverId — ADMIN ONLY ────────────────────────────────
+    // ── /ws/console/:serverId ─────────────────────────────────────────────
     const consoleMatch = url.match(/^\/ws\/console\/(\d+)$/);
     if (consoleMatch) {
-      if (!sess.isAdmin) {
-        ws.close(4003, 'Admin access required');
+      const hasConsolePerm = sess.isAdmin || sess.permissions?.includes('console');
+      if (!hasConsolePerm) {
+        ws.close(4003, 'Console access required');
         return;
       }
       handleConsole(ws, parseInt(consoleMatch[1], 10), sess);

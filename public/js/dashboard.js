@@ -55,6 +55,8 @@ async function loadMe() {
     if (!currentUser.isAdmin) {
       const navNew = document.getElementById('navNewServer');
       if (navNew) navNew.style.display = 'none';
+      const navUsers = document.getElementById('navUsers');
+      if (navUsers) navUsers.style.display = 'none';
       const btnNew = document.getElementById('btnNewServer');
       if (btnNew) btnNew.style.display = 'none';
     }

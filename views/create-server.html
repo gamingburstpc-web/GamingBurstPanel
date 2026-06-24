@@ -19,6 +19,7 @@
       <div class="nav-label">Navigation</div>
       <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
       <a href="/servers/new" class="nav-item active"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item" id="navUsers"><span class="nav-icon">👥</span> Users</a>
       <div class="nav-label" style="margin-top:16px">Account</div>
       <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
       <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
@@ -50,12 +51,36 @@
       <div id="tabBasic" class="tab-panel active">
         <div class="card">
           <div class="card-header"><div class="card-title">⚡ Quick Setup</div></div>
-          <p class="text-sm text-muted mb-4">Downloads latest PaperMC, auto-assigns port, 2 GB RAM, accepts EULA, sets TZ=Asia/Kolkata.</p>
+          <p class="text-sm text-muted mb-4">Downloads the selected server software, auto-assigns port, 2 GB RAM, and accepts EULA.</p>
           <div class="form-group">
             <label class="form-label" for="basicName">Server Name <span>*</span></label>
             <input id="basicName" type="text" class="form-input" placeholder="my-survival-server" required>
             <div class="form-hint">Letters, numbers, dashes and underscores only.</div>
           </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="basicPlatform">Platform</label>
+              <select id="basicPlatform" class="form-input" onchange="updateSoftwareOptions('basic')">
+                <option value="java">Java Edition (PC)</option>
+                <option value="bedrock">Bedrock Edition (Mobile/Console)</option>
+              </select>
+            </div>
+            <div class="form-group" id="basicSoftwareGroup">
+              <label class="form-label" for="basicSoftware">Software</label>
+              <select id="basicSoftware" class="form-input">
+                <option value="paper">Paper (Recommended / High Performance)</option>
+                <option value="vanilla">Vanilla (Official Mojang)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" id="basicVersionGroup">
+            <label class="form-label" for="basicVersion">Version <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+            <input type="text" id="basicVersion" class="form-input" placeholder="latest" autocomplete="off">
+            <div class="form-hint">Leave blank for the newest version, or type a specific version (e.g. 1.20.4).</div>
+          </div>
+
           <div id="downloadProgress" class="hidden" style="margin-top:16px">
             <div class="metric-label">Download Progress</div>
             <div class="terminal" style="height:140px;margin-top:8px" id="progressLog"></div>
@@ -71,39 +96,65 @@
             <label class="form-label" for="advName">Server Name <span>*</span></label>
             <input id="advName" type="text" class="form-input" placeholder="my-survival-server">
           </div>
+          
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="advPort">Port</label>
+              <label class="form-label" for="advPlatform">Platform</label>
+              <select id="advPlatform" class="form-input" onchange="updateSoftwareOptions('adv')">
+                <option value="java">Java Edition</option>
+                <option value="bedrock">Bedrock Edition</option>
+              </select>
+            </div>
+            <div class="form-group" id="advSoftwareGroup">
+              <label class="form-label" for="advSoftware">Software</label>
+              <select id="advSoftware" class="form-input">
+                <option value="paper">Paper</option>
+                <option value="vanilla">Vanilla</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group" id="advVersionGroup">
+            <label class="form-label" for="advVersion">Version <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+            <input type="text" id="advVersion" class="form-input" placeholder="latest" autocomplete="off">
+            <div class="form-hint">Leave blank for the newest version, or type a specific version (e.g. 1.20.4).</div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="advPort">Port <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
               <input id="advPort" type="number" class="form-input" placeholder="25565" min="1024" max="65535">
-              <div class="form-hint">Leave blank to auto-assign.</div>
+              <div class="form-hint">Leave blank to auto-assign a free port.</div>
             </div>
             <div class="form-group">
-              <label class="form-label" for="advTz">Timezone (TZ)</label>
+              <label class="form-label" for="advTz">Timezone <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
               <input id="advTz" type="text" class="form-input" value="Asia/Kolkata">
+              <div class="form-hint">Keep as-is unless you need a specific timezone.</div>
             </div>
           </div>
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="advMemMin">Min RAM (Xms) MB</label>
-              <input id="advMemMin" type="number" class="form-input" value="512" min="256">
+              <label class="form-label" for="advMemMin">Min RAM (Xms) MB <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
+              <input id="advMemMin" type="number" class="form-input" value="1024" min="256">
             </div>
             <div class="form-group">
-              <label class="form-label" for="advMemMax">Max RAM (Xmx) MB</label>
+              <label class="form-label" for="advMemMax">Max RAM (Xmx) MB <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
               <input id="advMemMax" type="number" class="form-input" value="2048" min="512">
             </div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="advJar">Path to .jar file <span>*</span></label>
-            <input id="advJar" type="text" class="form-input" placeholder="/opt/servers/paper.jar">
-            <div class="form-hint">Absolute path on the VPS to the server JAR.</div>
+            <label class="form-label" for="advJar">Custom Executable Path <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+            <input id="advJar" type="text" class="form-input" placeholder="/opt/servers/custom.jar">
+            <div class="form-hint">Leave blank to auto-download selected software. If providing custom path, point to .jar (Java) or binary (Bedrock).</div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="advJvmFlags">Extra JVM Flags</label>
+            <label class="form-label" for="advJvmFlags">Extra Launch Flags <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
             <input id="advJvmFlags" type="text" class="form-input" placeholder="-Dfile.encoding=UTF-8">
+            <div class="form-hint">Additional JVM arguments (Java only).</div>
           </div>
           <div class="form-group">
-            <label class="form-label" for="advEnvCustom">Custom Env Vars (JSON)</label>
-            <textarea id="advEnvCustom" class="form-textarea">{}</textarea>
+            <label class="form-label" for="advEnvCustom">Custom Env Vars (JSON) <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+            <textarea id="advEnvCustom" class="form-textarea" rows="2">{}</textarea>
           </div>
         </div>
       </div>

@@ -17,6 +17,11 @@ router.get('/servers/new', requireAuth, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/create-server.html'));
 });
 
+// ── GET /users — admin only ───────────────────────────────────────────────────
+router.get('/users', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../views/users.html'));
+});
+
 // ── GET /servers/:id ──────────────────────────────────────────────────────────
 router.get('/servers/:id', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/server-detail.html'));

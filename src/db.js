@@ -51,6 +51,7 @@ const SCHEMA = `
     username    TEXT    NOT NULL UNIQUE,
     password    TEXT    NOT NULL,
     is_admin    INTEGER DEFAULT 0,
+    permissions TEXT    DEFAULT '[]',
     must_change INTEGER DEFAULT 0,
     created_at  TEXT    DEFAULT (datetime('now'))
   );
@@ -89,7 +90,7 @@ const SCHEMA = `
 function runMigrations(db) {
   // Add is_admin column if upgrading from earlier schema
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0'); } catch {}
-  // Remove must_change default constraint change — handled by seed logic
+  try { db.exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '[]'"); } catch {}
 }
 
 // ── Seed admin/admin for dev/testing ─────────────────────────────────────────

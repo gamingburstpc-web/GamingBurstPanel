@@ -15,6 +15,16 @@ function switchTab(mode) {
   document.getElementById('tabAdvBtn').classList.toggle('active',   mode === 'advanced');
 }
 
+function updateSoftwareOptions(prefix) {
+  const plat = document.getElementById(prefix + 'Platform').value;
+  const swGroup = document.getElementById(prefix + 'SoftwareGroup');
+  if (plat === 'bedrock') {
+    swGroup.style.display = 'none';
+  } else {
+    swGroup.style.display = 'block';
+  }
+}
+
 function showError(msg) {
   const el = document.getElementById('alert');
   document.getElementById('alertMsg').textContent = msg;
@@ -71,7 +81,13 @@ async function createBasic() {
     const res = await fetch('/api/servers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, mode: 'basic' }),
+      body: JSON.stringify({
+        name,
+        mode: 'basic',
+        platform: document.getElementById('basicPlatform').value,
+        software: document.getElementById('basicSoftware').value,
+        version:  document.getElementById('basicVersion').value.trim() || 'latest'
+      }),
     });
 
     if (!res.ok) {
@@ -119,7 +135,6 @@ async function createAdvanced() {
   const name = document.getElementById('advName').value.trim();
   const jar  = document.getElementById('advJar').value.trim();
   if (!name) { showError('Server name is required.'); return; }
-  if (!jar)  { showError('JAR path is required in Advanced mode.'); return; }
 
   let envCustom = document.getElementById('advEnvCustom').value.trim();
   try { JSON.parse(envCustom); } catch { showError('Custom env vars must be valid JSON.'); return; }
@@ -131,10 +146,13 @@ async function createAdvanced() {
       body: JSON.stringify({
         name,
         mode:       'advanced',
-        port:        document.getElementById('advPort').value     || undefined,
-        memory_min:  document.getElementById('advMemMin').value  || 512,
+        platform:   document.getElementById('advPlatform').value,
+        software:   document.getElementById('advSoftware').value,
+        version:    document.getElementById('advVersion').value.trim() || 'latest',
+        port:       document.getElementById('advPort').value     || undefined,
+        memory_min:  document.getElementById('advMemMin').value  || 1024,
         memory_max:  document.getElementById('advMemMax').value  || 2048,
-        jar_path:    jar,
+        jar_path:    jar || undefined,
         jvm_flags:   document.getElementById('advJvmFlags').value.trim(),
         env_tz:      document.getElementById('advTz').value.trim() || 'Asia/Kolkata',
         env_custom:  envCustom,

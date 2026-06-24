@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management — GamingBurst Panel</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+  <style>
+    .perm-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 8px;
+    }
+    .perm-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎮</div>
+      <div><div class="logo-text">GamingBurst</div><div class="logo-sub">Server Panel</div></div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item active" id="navUsers"><span class="nav-icon">👥</span> Users</a>
+      <div class="nav-label" style="margin-top:16px">Account</div>
+      <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
+      <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <div>
+          <div class="page-title">User Management</div>
+          <div class="page-subtitle">Add, remove, and manage access permissions</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="alert" class="alert alert-error hidden"><span>⚠</span><span id="alertMsg"></span></div>
+    <div id="alertSuccess" class="alert alert-success hidden"><span>✓</span><span id="alertSuccessMsg"></span></div>
+
+    <div class="grid" style="grid-template-columns: 1fr 300px; gap: 24px;">
+      
+      <!-- Users List -->
+      <div class="card">
+        <div class="card-header"><div class="card-title">👥 Registered Users</div></div>
+        <div class="table-responsive">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Role</th>
+                <th>Created</th>
+                <th style="text-align:right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="usersList">
+              <tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">Loading users...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add User Form -->
+      <div class="card" style="height: fit-content;">
+        <div class="card-header"><div class="card-title">➕ Add New User</div></div>
+        <form id="addUserForm">
+          <div class="form-group">
+            <label class="form-label">Username</label>
+            <input type="text" id="addUsername" class="form-input" required autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Password</label>
+            <input type="password" id="addPassword" class="form-input" required autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" id="addIsAdmin" onchange="togglePerms()"> 
+              <span style="color:var(--accent);font-weight:600;">Full Administrator</span>
+            </label>
+            <div class="form-hint">Admins have unrestricted access to all servers and settings.</div>
+          </div>
+
+          <div class="form-group" id="permsGroup">
+            <label class="form-label">Granular Permissions</label>
+            <div class="form-hint" style="margin-bottom:8px;">Select what this sub-user can do:</div>
+            <div class="perm-grid">
+              <label class="perm-item"><input type="checkbox" class="perm-cb" value="start"> Start Server</label>
+              <label class="perm-item"><input type="checkbox" class="perm-cb" value="stop"> Stop Server</label>
+              <label class="perm-item"><input type="checkbox" class="perm-cb" value="restart"> Restart Server</label>
+              <label class="perm-item"><input type="checkbox" class="perm-cb" value="console"> Use Console</label>
+            </div>
+          </div>
+
+          <div style="margin-top:24px;">
+            <button type="submit" id="addBtn" class="btn btn-primary" style="width:100%">Create User</button>
+          </div>
+        </form>
+      </div>
+
+    </div>
+  </main>
+</div>
+<script src="/public/js/sidebar.js"></script>
+<script src="/public/js/users.js"></script>
+</body>
+</html>
