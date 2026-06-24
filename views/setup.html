@@ -74,15 +74,15 @@
     </p>
 
     <div class="cmd-block">
-      <span class="cmd-text" id="cmd1">node bin/gbpanel.js user add</span>
+      <span class="cmd-text" id="cmd1">sudo -u gbpanel gbpanel user add</span>
       <button class="copy-btn" onclick="copyCmd('cmd1', this)">📋 Copy</button>
     </div>
 
     <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">
-      If you've linked <code style="color:var(--cyan)">gbpanel</code> globally (npm link):
+      If running it directly from the installation folder:
     </p>
     <div class="cmd-block">
-      <span class="cmd-text" id="cmd2">sudo gbpanel user add</span>
+      <span class="cmd-text" id="cmd2">sudo -u gbpanel node bin/gbpanel.js user add</span>
       <button class="copy-btn" onclick="copyCmd('cmd2', this)">📋 Copy</button>
     </div>
 
