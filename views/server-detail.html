@@ -72,29 +72,80 @@
       </div>
     </div>
 
-    <!-- Console — admin only -->
-    <div class="card" id="consoleCard">
-      <div class="card-header">
-        <div class="card-title">📟 Live Console</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span id="wsStatus" class="badge badge-stopped"><span class="badge-dot"></span> disconnected</span>
-          <button class="btn btn-ghost btn-sm admin-only" onclick="clearConsole()">Clear</button>
+    <!-- Tabs -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+      <button id="tabBtnConsole" class="btn btn-secondary active" onclick="switchServerTab('console')">📟 Console</button>
+      <button id="tabBtnFiles" class="btn btn-secondary" onclick="switchServerTab('files')">📁 Files</button>
+    </div>
+
+    <!-- Console Tab -->
+    <div id="tabConsole" class="server-tab active">
+      <div class="card" id="consoleCard">
+        <div class="card-header">
+          <div class="card-title">Live Console</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <span id="wsStatus" class="badge badge-stopped"><span class="badge-dot"></span> disconnected</span>
+            <button class="btn btn-ghost btn-sm admin-only" onclick="clearConsole()">Clear</button>
+          </div>
+        </div>
+        <div id="consoleWrapper">
+          <div class="terminal" id="terminal"></div>
+          <div class="terminal-input-bar">
+            <span class="terminal-prompt">❯</span>
+            <input id="cmdInput" class="terminal-input" type="text" placeholder="Type a server command..." autocomplete="off">
+            <button class="btn btn-primary btn-sm" onclick="sendCmd()">Send ↵</button>
+          </div>
+        </div>
+        <div id="consoleRestricted" class="hidden" style="padding:32px;text-align:center;color:var(--text-muted)">
+          <div style="font-size:32px;margin-bottom:12px">🔒</div>
+          <div style="font-weight:600;color:var(--text-secondary);margin-bottom:6px">Console access restricted</div>
+          <div style="font-size:13px">Only users with console permissions can view this.</div>
         </div>
       </div>
-      <div id="consoleWrapper">
-        <div class="terminal" id="terminal"></div>
-        <div class="terminal-input-bar">
-          <span class="terminal-prompt">❯</span>
-          <input id="cmdInput" class="terminal-input" type="text"
-            placeholder="Type a server command..." autocomplete="off">
-          <button class="btn btn-primary btn-sm" onclick="sendCmd()">Send ↵</button>
+    </div>
+
+    <!-- Files Tab -->
+    <div id="tabFiles" class="server-tab hidden">
+      <div class="card" id="filesCard">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="btn btn-ghost btn-sm" onclick="navDir('..')">⬆ Up</button>
+            <span id="currentPath" style="font-family:monospace;color:var(--text-primary);font-size:14px;background:var(--bg-lighter);padding:4px 8px;border-radius:4px;">/</span>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="newFile()">➕ New File</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="table" style="margin:0;">
+            <thead>
+              <tr>
+                <th style="width:50%">Name</th>
+                <th>Size</th>
+                <th>Modified</th>
+                <th style="text-align:right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="filesList">
+              <tr><td colspan="4" style="text-align:center;padding:24px;">Loading...</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
-      <!-- Non-admin message -->
-      <div id="consoleRestricted" class="hidden" style="padding:32px;text-align:center;color:var(--text-muted)">
-        <div style="font-size:32px;margin-bottom:12px">🔒</div>
-        <div style="font-weight:600;color:var(--text-secondary);margin-bottom:6px">Console access restricted</div>
-        <div style="font-size:13px">Only admin users can view the live console. Contact your panel administrator.</div>
+    </div>
+
+    <!-- File Editor Modal -->
+    <div id="editorModal" class="sidebar-overlay" style="display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);">
+      <div class="card" style="width:90%;max-width:800px;height:80vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.1);">
+        <div class="card-header" style="display:flex;justify-content:space-between;">
+          <div class="card-title" id="editorTitle">Editing File</div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost btn-sm" onclick="closeEditor()">Cancel</button>
+            <button class="btn btn-success btn-sm" onclick="saveFile()">💾 Save</button>
+          </div>
+        </div>
+        <textarea id="editorContent" style="flex:1;background:#0d1117;color:#c9d1d9;font-family:monospace;padding:16px;border:none;resize:none;" spellcheck="false"></textarea>
       </div>
     </div>
 
@@ -106,5 +157,6 @@
   </main>
 </div>
 <script src="/public/js/console.js"></script>
+<script src="/public/js/files.js"></script>
 </body>
 </html>
