@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — GamingBurst Panel</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎮</div>
+      <div>
+        <div class="logo-text">GamingBurst</div>
+        <div class="logo-sub">Server Panel</div>
+      </div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a href="/dashboard" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
+      <div class="nav-label" style="margin-top:16px">Account</div>
+      <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
+      <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)" id="sidebarUsername">admin</div>
+          <div id="sidebarRole" style="font-size:11px">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle" id="dateDisplay"></div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <div id="errorBanner" class="alert alert-warn hidden" style="margin:0;padding:6px 12px;font-size:12px">
+          <span>⚠</span><span id="errorBannerMsg"></span>
+        </div>
+        <a href="/servers/new" class="btn btn-primary" id="btnNewServer">➕ New Server</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Servers</div><div class="stat-value" id="statTotal">—</div><div class="stat-sub">registered</div></div>
+      <div class="stat-card"><div class="stat-label">Running</div><div class="stat-value" style="color:var(--green)" id="statRunning">—</div><div class="stat-sub">online now</div></div>
+      <div class="stat-card"><div class="stat-label">Stopped</div><div class="stat-value" id="statStopped">—</div><div class="stat-sub">offline</div></div>
+      <div class="stat-card"><div class="stat-label">Crashed</div><div class="stat-value" style="color:var(--red)" id="statCrashed">—</div><div class="stat-sub">need attention</div></div>
+    </div>
+
+    <!-- Servers -->
+    <div class="card-header" style="margin-bottom:16px">
+      <div class="card-title">Servers</div>
+      <button class="btn btn-ghost btn-sm" onclick="loadServers()">↻ Refresh</button>
+    </div>
+    <div id="serverGrid" class="servers-grid">
+      <div class="empty-state"><div class="empty-icon">⚙️</div><h3>Loading...</h3></div>
+    </div>
+  </main>
+</div>
+<script src="/public/js/dashboard.js"></script>
+</body>
+</html>

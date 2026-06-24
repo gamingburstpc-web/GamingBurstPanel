@@ -1,0 +1,25 @@
+'use strict';
+
+const express  = require('express');
+const path     = require('path');
+const { requireAuth, requireAdmin, cookieMiddleware } = require('../auth');
+
+const router = express.Router();
+router.use(cookieMiddleware);
+
+// ── GET /dashboard ────────────────────────────────────────────────────────────
+router.get('/dashboard', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../views/dashboard.html'));
+});
+
+// ── GET /servers/new — admin only ─────────────────────────────────────────────
+router.get('/servers/new', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../views/create-server.html'));
+});
+
+// ── GET /servers/:id ──────────────────────────────────────────────────────────
+router.get('/servers/:id', requireAuth, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../views/server-detail.html'));
+});
+
+module.exports = router;

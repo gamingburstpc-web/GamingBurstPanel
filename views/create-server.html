@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Server — GamingBurst Panel</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎮</div>
+      <div><div class="logo-text">GamingBurst</div><div class="logo-sub">Server Panel</div></div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/servers/new" class="nav-item active"><span class="nav-icon">➕</span> New Server</a>
+      <div class="nav-label" style="margin-top:16px">Account</div>
+      <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
+      <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+  </aside>
+
+  <main class="main-content">
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <div>
+          <div class="page-title">Create New Server</div>
+          <div class="page-subtitle">Configure and launch a Minecraft server</div>
+        </div>
+      </div>
+      <a href="/dashboard" class="btn btn-ghost btn-sm">← Back</a>
+    </div>
+
+    <div class="tabs mb-4">
+      <button class="tab-btn active" id="tabBasicBtn" onclick="switchTab('basic')">⚡ Basic</button>
+      <button class="tab-btn" id="tabAdvBtn" onclick="switchTab('advanced')">⚙️ Advanced</button>
+    </div>
+
+    <div id="alert" class="alert alert-error hidden"><span>⚠</span><span id="alertMsg"></span></div>
+    <div id="alertSuccess" class="alert alert-success hidden"><span>✓</span><span id="alertSuccessMsg"></span></div>
+
+    <form id="createForm">
+      <!-- Basic Tab -->
+      <div id="tabBasic" class="tab-panel active">
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚡ Quick Setup</div></div>
+          <p class="text-sm text-muted mb-4">Downloads latest PaperMC, auto-assigns port, 2 GB RAM, accepts EULA, sets TZ=Asia/Kolkata.</p>
+          <div class="form-group">
+            <label class="form-label" for="basicName">Server Name <span>*</span></label>
+            <input id="basicName" type="text" class="form-input" placeholder="my-survival-server" required>
+            <div class="form-hint">Letters, numbers, dashes and underscores only.</div>
+          </div>
+          <div id="downloadProgress" class="hidden" style="margin-top:16px">
+            <div class="metric-label">Download Progress</div>
+            <div class="terminal" style="height:140px;margin-top:8px" id="progressLog"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced Tab -->
+      <div id="tabAdv" class="tab-panel">
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚙️ Advanced Configuration</div></div>
+          <div class="form-group">
+            <label class="form-label" for="advName">Server Name <span>*</span></label>
+            <input id="advName" type="text" class="form-input" placeholder="my-survival-server">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="advPort">Port</label>
+              <input id="advPort" type="number" class="form-input" placeholder="25565" min="1024" max="65535">
+              <div class="form-hint">Leave blank to auto-assign.</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="advTz">Timezone (TZ)</label>
+              <input id="advTz" type="text" class="form-input" value="Asia/Kolkata">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="advMemMin">Min RAM (Xms) MB</label>
+              <input id="advMemMin" type="number" class="form-input" value="512" min="256">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="advMemMax">Max RAM (Xmx) MB</label>
+              <input id="advMemMax" type="number" class="form-input" value="2048" min="512">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="advJar">Path to .jar file <span>*</span></label>
+            <input id="advJar" type="text" class="form-input" placeholder="/opt/servers/paper.jar">
+            <div class="form-hint">Absolute path on the VPS to the server JAR.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="advJvmFlags">Extra JVM Flags</label>
+            <input id="advJvmFlags" type="text" class="form-input" placeholder="-Dfile.encoding=UTF-8">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="advEnvCustom">Custom Env Vars (JSON)</label>
+            <textarea id="advEnvCustom" class="form-textarea">{}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;display:flex;gap:12px;flex-wrap:wrap" class="form-actions">
+        <button type="submit" id="createBtn" class="btn btn-primary" style="padding:12px 32px;font-size:15px">
+          🚀 Create Server
+        </button>
+        <a href="/dashboard" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </main>
+</div>
+<script src="/public/js/create-server.js"></script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="pageTitle">Server — GamingBurst Panel</title>
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<div class="layout">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎮</div>
+      <div><div class="logo-text">GamingBurst</div><div class="logo-sub">Server Panel</div></div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-label">Navigation</div>
+      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
+      <div class="nav-label" style="margin-top:16px">Account</div>
+      <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
+      <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)" id="sidebarUsername">admin</div>
+          <div id="sidebarRole" style="font-size:11px">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <!-- Header -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <button class="hamburger" id="hamburger" onclick="toggleSidebar()"><span></span><span></span><span></span></button>
+        <div>
+          <div class="page-title" id="serverName">Loading...</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+            <span id="statusBadge" class="badge badge-stopped"><span class="badge-dot"></span> stopped</span>
+            <span id="serverPort" class="mono text-muted text-sm">:—</span>
+            <span id="serverTz" class="text-muted text-sm"></span>
+          </div>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="btnStart"   class="btn btn-success hidden" onclick="serverAction('start')">▶ Start</button>
+        <button id="btnStop"    class="btn btn-danger  hidden" onclick="serverAction('stop')">⏹ Stop</button>
+        <button id="btnRestart" class="btn btn-warning hidden" onclick="serverAction('restart')">↺ Restart</button>
+        <button id="btnDelete"  class="btn btn-ghost btn-sm admin-only hidden" onclick="deleteServer()">🗑 Delete</button>
+        <a href="/dashboard" class="btn btn-ghost btn-sm">← Back</a>
+      </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-bar mb-4">
+      <div class="metric-card">
+        <div class="metric-label">RAM Usage</div>
+        <div><span class="metric-value" id="metRam">0</span><span class="metric-unit">MB</span><span class="text-muted text-sm" id="metRamMax"></span></div>
+        <div class="progress-track"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">CPU Usage</div>
+        <div><span class="metric-value" id="metCpu">0</span><span class="metric-unit">%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- Console — admin only -->
+    <div class="card" id="consoleCard">
+      <div class="card-header">
+        <div class="card-title">📟 Live Console</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span id="wsStatus" class="badge badge-stopped"><span class="badge-dot"></span> disconnected</span>
+          <button class="btn btn-ghost btn-sm admin-only" onclick="clearConsole()">Clear</button>
+        </div>
+      </div>
+      <div id="consoleWrapper">
+        <div class="terminal" id="terminal"></div>
+        <div class="terminal-input-bar">
+          <span class="terminal-prompt">❯</span>
+          <input id="cmdInput" class="terminal-input" type="text"
+            placeholder="Type a server command..." autocomplete="off">
+          <button class="btn btn-primary btn-sm" onclick="sendCmd()">Send ↵</button>
+        </div>
+      </div>
+      <!-- Non-admin message -->
+      <div id="consoleRestricted" class="hidden" style="padding:32px;text-align:center;color:var(--text-muted)">
+        <div style="font-size:32px;margin-bottom:12px">🔒</div>
+        <div style="font-weight:600;color:var(--text-secondary);margin-bottom:6px">Console access restricted</div>
+        <div style="font-size:13px">Only admin users can view the live console. Contact your panel administrator.</div>
+      </div>
+    </div>
+
+    <!-- Server info -->
+    <div class="card mt-4">
+      <div class="card-header"><div class="card-title">Server Info</div></div>
+      <div id="serverInfo" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px"></div>
+    </div>
+  </main>
+</div>
+<script src="/public/js/console.js"></script>
+</body>
+</html>

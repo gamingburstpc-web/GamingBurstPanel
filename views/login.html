@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GamingBurst Panel — Login</title>
+  <meta name="description" content="Sign in to manage your Minecraft servers.">
+  <link rel="stylesheet" href="/public/css/style.css">
+</head>
+<body>
+<div class="login-bg">
+  <div class="login-card fade-in">
+    <div class="login-logo">
+      <div class="icon-wrap">🎮</div>
+      <h1>GamingBurst Panel</h1>
+      <p>Minecraft Server Management</p>
+    </div>
+
+    <div id="alert" class="alert alert-error hidden">
+      <span>⚠</span><span id="alertMsg"></span>
+    </div>
+
+    <form id="loginForm" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label" for="username">Username</label>
+        <div class="pw-wrap">
+          <span class="input-icon">👤</span>
+          <input id="username" name="username" type="text"
+            class="form-input has-icon" placeholder="admin"
+            autocomplete="username" required>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">Password</label>
+        <div class="pw-wrap">
+          <span class="input-icon">🔒</span>
+          <input id="password" name="password" type="password"
+            class="form-input has-icon" placeholder="••••••••"
+            autocomplete="current-password" required>
+          <button type="button" class="eye-btn" onclick="togglePw('password',this)" title="Show/hide password">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <button id="loginBtn" type="submit" class="btn btn-primary login-btn">Sign In</button>
+    </form>
+
+    <p style="text-align:center;margin-top:20px;font-size:12px;color:var(--text-muted);">
+      GamingBurst Panel v1.0 &mdash; <span id="yr"></span>
+    </p>
+  </div>
+</div>
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+
+  function togglePw(id, btn) {
+    const inp = document.getElementById(id);
+    const isText = inp.type === 'text';
+    inp.type = isText ? 'password' : 'text';
+    btn.innerHTML = isText
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  }
+
+  const form = document.getElementById('loginForm');
+  const btn  = document.getElementById('loginBtn');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    document.getElementById('alert').classList.add('hidden');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Signing in...';
+    try {
+      const res  = await fetch('/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: document.getElementById('username').value.trim(),
+          password: document.getElementById('password').value,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        document.getElementById('alertMsg').textContent = data.error;
+        document.getElementById('alert').classList.remove('hidden');
+        return;
+      }
+      window.location.href = data.redirect;
+    } catch {
+      document.getElementById('alertMsg').textContent = 'Network error.';
+      document.getElementById('alert').classList.remove('hidden');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = 'Sign In';
+    }
+  });
+</script>
+</body>
+</html>

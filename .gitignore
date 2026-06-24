@@ -1,0 +1,17 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database & Environment secrets
+.env
+data/
+servers/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log

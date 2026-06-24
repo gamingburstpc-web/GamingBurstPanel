@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup — GamingBurst Panel</title>
+  <meta name="description" content="Initial setup for GamingBurst Panel.">
+  <link rel="stylesheet" href="/public/css/style.css">
+  <style>
+    .setup-card { width: 100%; max-width: 520px; }
+    .cmd-block {
+      background: #080a0f;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      color: #7ee787;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 12px 0;
+    }
+    .cmd-text { flex: 1; word-break: break-all; }
+    .copy-btn {
+      flex-shrink: 0;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .copy-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .copy-btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+    .steps { counter-reset: step; list-style: none; margin: 20px 0; }
+    .steps li {
+      counter-increment: step;
+      display: flex; gap: 12px; align-items: flex-start;
+      margin-bottom: 20px; font-size: 14px; color: var(--text-secondary);
+    }
+    .steps li::before {
+      content: counter(step);
+      flex-shrink: 0;
+      width: 24px; height: 24px;
+      background: var(--accent-glow);
+      border: 1px solid rgba(91,110,255,.3);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--accent);
+    }
+    .refresh-notice {
+      text-align: center; margin-top: 24px;
+      padding: 12px; background: var(--bg-elevated);
+      border-radius: var(--radius); font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+<div class="login-bg">
+  <div class="login-card setup-card fade-in">
+    <div class="login-logo">
+      <div class="icon-wrap">⚙️</div>
+      <h1>Panel Setup Required</h1>
+      <p>No user accounts exist. Create your first admin to get started.</p>
+    </div>
+
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:4px">
+      Run this command on your VPS to create your first user:
+    </p>
+
+    <div class="cmd-block">
+      <span class="cmd-text" id="cmd1">node bin/gbpanel.js user add</span>
+      <button class="copy-btn" onclick="copyCmd('cmd1', this)">📋 Copy</button>
+    </div>
+
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px">
+      If you've linked <code style="color:var(--cyan)">gbpanel</code> globally (npm link):
+    </p>
+    <div class="cmd-block">
+      <span class="cmd-text" id="cmd2">sudo gbpanel user add</span>
+      <button class="copy-btn" onclick="copyCmd('cmd2', this)">📋 Copy</button>
+    </div>
+
+    <ol class="steps">
+      <li>
+        <div>
+          <strong style="color:var(--text-primary)">SSH into your VPS</strong><br>
+          Navigate to the GamingBurst Panel directory.
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong style="color:var(--text-primary)">Run the command above</strong><br>
+          Enter a username, password, and choose admin role (y).
+        </div>
+      </li>
+      <li>
+        <div>
+          <strong style="color:var(--text-primary)">Return here and log in</strong><br>
+          This page will automatically redirect when a user is created.
+        </div>
+      </li>
+    </ol>
+
+    <div class="refresh-notice" id="refreshNotice">
+      🔄 Checking for new users automatically...
+    </div>
+
+    <div style="text-align:center;margin-top:16px">
+      <a href="/login" class="btn btn-ghost btn-sm">↺ Check now</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  function copyCmd(id, btn) {
+    const text = document.getElementById(id).textContent;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = '📋 Copy';
+        btn.classList.remove('copied');
+      }, 2000);
+    });
+  }
+
+  // Poll every 5 seconds — redirect to /login when a user is created
+  let pollCount = 0;
+  const poller  = setInterval(async () => {
+    try {
+      const res  = await fetch('/api/setup-status');
+      const data = await res.json();
+      if (data.hasUsers) {
+        clearInterval(poller);
+        document.getElementById('refreshNotice').innerHTML =
+          '✅ User detected! Redirecting to login...';
+        setTimeout(() => { window.location.href = '/login'; }, 1200);
+      }
+    } catch {}
+    pollCount++;
+    if (pollCount > 120) clearInterval(poller); // stop after 10 minutes
+  }, 5000);
+</script>
+</body>
+</html>
