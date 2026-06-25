@@ -10,6 +10,26 @@ const pm = require('../processManager');
 
 const router = express.Router();
 router.use(cookieMiddleware);
+
+// ── GET /api/ping ─────────────────────────────────────────────────────────────
+router.get('/ping', (req, res) => res.send('pong'));
+
+// ── CLI Database Proxy ────────────────────────────────────────────────────────
+// Allows the gbpanel CLI tool to execute queries while the web panel holds the SQLite lock.
+router.post('/cli', express.json(), (req, res) => {
+  if (req.ip !== '127.0.0.1' && req.ip !== '::1' && req.ip !== '::ffff:127.0.0.1') {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  try {
+    const { method, sql, args } = req.body;
+    const db = require('../db').getDb();
+    const result = db.prepare(sql)[method](...args);
+    res.json({ result });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 router.use(requireAuth);
 
 const SERVERS_DIR = path.resolve(process.env.SERVERS_DIR || './servers');

@@ -22,8 +22,69 @@ if (fs.existsSync(envPath)) require('dotenv').config({ path: envPath });
 const readline = require('readline');
 const bcrypt   = require('bcryptjs');
 const { getDb, initDb } = require('../src/db');
+const http = require('http');
 
 const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '10', 10);
+const PANEL_PORT = process.env.PANEL_PORT || '7676';
+
+function doFetch(url, options = {}) {
+  return new Promise((resolve, reject) => {
+    const req = http.request(url, options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => resolve({
+        ok: res.statusCode >= 200 && res.statusCode < 300,
+        json: () => JSON.parse(data)
+      }));
+    });
+    req.on('error', reject);
+    if (options.body) req.write(options.body);
+    req.end();
+  });
+}
+
+let _proxy = null;
+async function getDbProxy() {
+  if (_proxy) return _proxy;
+  try {
+    const res = await doFetch(`http://127.0.0.1:${PANEL_PORT}/api/ping`);
+    if (res.ok) {
+      const send = async (method, sql, args) => {
+        const r = await doFetch(`http://127.0.0.1:${PANEL_PORT}/api/cli`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ method, sql, args })
+        });
+        const d = await r.json();
+        if (d.error) throw new Error(d.error);
+        return d.result;
+      };
+      _proxy = {
+        prepare: (sql) => ({
+          run: async (...args) => send('run', sql, args),
+          get: async (...args) => send('get', sql, args),
+          all: async (...args) => send('all', sql, args)
+        })
+      };
+      return _proxy;
+    }
+  } catch (e) {}
+
+  // Server is offline, use direct DB access wrapped in promises
+  initDb();
+  const directDb = getDb();
+  _proxy = {
+    prepare: (sql) => {
+      const stmt = directDb.prepare(sql);
+      return {
+        run: async (...args) => stmt.run(...args),
+        get: async (...args) => stmt.get(...args),
+        all: async (...args) => stmt.all(...args)
+      };
+    }
+  };
+  return _proxy;
+}
 
 // ── ANSI colours ──────────────────────────────────────────────────────────────
 const C = {
@@ -113,9 +174,7 @@ async function cmdUserAdd() {
   banner();
   print(`${C.bold}Creating a new user account${C.reset}\n`);
 
-  // Init DB (creates file + schema if missing)
-  initDb();
-  const db = getDb();
+  const db = await getDbProxy();
 
   // Username
   let username = '';
@@ -126,7 +185,7 @@ async function cmdUserAdd() {
       error('Username must be 3–32 chars, letters/numbers/dash/underscore only.');
       username = ''; continue;
     }
-    const exists = db.prepare('SELECT id FROM users WHERE username = ?').get(username);
+    const exists = await db.prepare('SELECT id FROM users WHERE username = ?').get(username);
     if (exists) { error(`User "${username}" already exists.`); username = ''; }
   }
 
@@ -156,7 +215,7 @@ async function cmdUserAdd() {
 
   // Create user
   const hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  db.prepare('INSERT INTO users (username, password, is_admin, must_change) VALUES (?, ?, ?, 0)')
+  await db.prepare('INSERT INTO users (username, password, is_admin, must_change) VALUES (?, ?, ?, 0)')
     .run(username, hash, isAdmin ? 1 : 0);
 
   print('');
@@ -167,9 +226,8 @@ async function cmdUserAdd() {
 
 async function cmdUserList() {
   banner();
-  initDb();
-  const db = getDb();
-  const users = db.prepare('SELECT id, username, is_admin, must_change, created_at FROM users ORDER BY id ASC').all();
+  const db = await getDbProxy();
+  const users = await db.prepare('SELECT id, username, is_admin, must_change, created_at FROM users ORDER BY id ASC').all();
 
   if (!users.length) {
     info('No users found. Run: node bin/gbpanel.js user add');
@@ -190,15 +248,14 @@ async function cmdUserList() {
 async function cmdUserRemove(username) {
   if (!username) { error('Usage: gbpanel user remove <username>'); process.exit(1); }
   banner();
-  initDb();
-  const db = getDb();
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  const db = await getDbProxy();
+  const user = await db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) { error(`User "${username}" not found.`); process.exit(1); }
 
   const confirm = await ask(`  Are you sure you want to remove user "${C.bold}${username}${C.reset}"? [y/N]: `);
   if (confirm.toLowerCase() !== 'y') { info('Aborted.'); return; }
 
-  db.prepare('DELETE FROM users WHERE username = ?').run(username);
+  await db.prepare('DELETE FROM users WHERE username = ?').run(username);
   success(`User "${username}" removed.`);
   print('');
 }
@@ -206,9 +263,8 @@ async function cmdUserRemove(username) {
 async function cmdUserResetPw(username) {
   if (!username) { error('Usage: gbpanel user reset-password <username>'); process.exit(1); }
   banner();
-  initDb();
-  const db = getDb();
-  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+  const db = await getDbProxy();
+  const user = await db.prepare('SELECT * FROM users WHERE username = ?').get(username);
   if (!user) { error(`User "${username}" not found.`); process.exit(1); }
 
   let password = '';
@@ -220,16 +276,15 @@ async function cmdUserResetPw(username) {
   }
 
   const hash = bcrypt.hashSync(password, BCRYPT_ROUNDS);
-  db.prepare('UPDATE users SET password = ?, must_change = 0 WHERE username = ?').run(hash, username);
+  await db.prepare('UPDATE users SET password = ?, must_change = 0 WHERE username = ?').run(hash, username);
   success(`Password for "${username}" has been reset.`);
   print('');
 }
 
 async function cmdServerList() {
   banner();
-  initDb();
-  const db = getDb();
-  const servers = db.prepare('SELECT id, name, port, status, server_dir FROM servers ORDER BY id ASC').all();
+  const db = await getDbProxy();
+  const servers = await db.prepare('SELECT id, name, port, status, server_dir FROM servers ORDER BY id ASC').all();
 
   if (!servers.length) {
     info('No servers found. Create one in the web panel dashboard.');
@@ -256,11 +311,10 @@ async function cmdServerList() {
 
 async function cmdServerPath(name) {
   if (!name) { error('Usage: gbpanel server path <server_name>'); process.exit(1); }
-  initDb();
-  const db = getDb();
-  const server = db.prepare('SELECT server_dir FROM servers WHERE name = ?').get(name);
+  const db = await getDbProxy();
+  const server = await db.prepare('SELECT server_dir FROM servers WHERE name = ?').get(name);
   if (!server) {
-    const serverById = db.prepare('SELECT server_dir FROM servers WHERE id = ?').get(parseInt(name, 10) || 0);
+    const serverById = await db.prepare('SELECT server_dir FROM servers WHERE id = ?').get(parseInt(name, 10) || 0);
     if (!serverById) {
       error(`Server "${name}" not found.`);
       process.exit(1);
