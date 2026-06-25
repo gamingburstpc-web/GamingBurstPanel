@@ -97,34 +97,53 @@ router.put('/users/:id', requireAdmin, (req, res) => {
 });
 
 // ── PaperMC helpers ───────────────────────────────────────────────────────────
-function fetchPaper(reqVersion = 'latest') {
+function getJSON(url) {
   return new Promise((resolve, reject) => {
-    const get = (url, cb) => {
-      https.get(url, { headers: { 'User-Agent': 'GamingBurst-Panel/1.0' } }, (res) => {
-        let d = '';
-        res.on('data', c => d += c);
-        res.on('end', () => { try { cb(JSON.parse(d)); } catch (e) { reject(e); } });
-      }).on('error', reject);
-    };
-    get('https://api.papermc.io/v2/projects/paper', (j) => {
-      let targetVersion = reqVersion;
-      if (targetVersion === 'latest') {
-        targetVersion = j.versions[j.versions.length - 1];
-      } else if (!j.versions.includes(targetVersion)) {
-        return reject(new Error(`Paper version ${targetVersion} not found.`));
+    https.get(url, { headers: { 'User-Agent': 'GamingBurst-Panel/1.0' } }, (res) => {
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        return reject(new Error(`HTTP ${res.statusCode} from ${url}`));
       }
-      get(`https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds`, (j2) => {
-        const build   = j2.builds[j2.builds.length - 1];
-        const jarName = build.downloads.application.name;
-        resolve({
-          version: targetVersion,
-          build:   build.build,
-          jarName,
-          url: `https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds/${build.build}/downloads/${jarName}`,
-        });
-      });
-    });
+      let d = '';
+      res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { reject(e); } });
+    }).on('error', reject);
   });
+}
+
+async function fetchPaper(reqVersion = 'latest') {
+  // Provider 1: Official Paper API
+  const officialApi = async () => {
+    const j = await getJSON('https://api.papermc.io/v2/projects/paper');
+    let targetVersion = reqVersion;
+    if (targetVersion === 'latest') {
+      targetVersion = j.versions[j.versions.length - 1];
+    } else if (!j.versions.includes(targetVersion)) {
+      throw new Error(`Version not listed on Official API`);
+    }
+    const j2 = await getJSON(`https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds`);
+    const build   = j2.builds[j2.builds.length - 1];
+    const jarName = build.downloads.application.name;
+    return {
+      version: targetVersion,
+      build:   build.build,
+      jarName,
+      url: `https://api.papermc.io/v2/projects/paper/versions/${targetVersion}/builds/${build.build}/downloads/${jarName}`
+    };
+  };
+
+  // Add more fallback providers here in the future
+  const providers = [officialApi];
+
+  for (const provider of providers) {
+    try {
+      return await provider();
+    } catch (e) {
+      console.warn(`Paper provider failed for ${reqVersion}:`, e.message);
+      // continue to next provider
+    }
+  }
+
+  throw new Error('VERSION_NOT_FOUND');
 }
 
 function fetchVanilla(reqVersion = 'latest') {
@@ -186,6 +205,7 @@ router.post('/servers', requireAdmin, async (req, res) => {
       platform = 'java', software = 'paper', version = 'latest',
       port, memory_min, memory_max,
       jar_path, jvm_flags, env_tz, env_custom,
+      download_url // Custom fallback URL
     } = req.body;
 
     if (!name?.trim()) return res.status(400).json({ error: 'Server name is required.' });
@@ -214,36 +234,48 @@ router.post('/servers', requireAdmin, async (req, res) => {
         'Cache-Control': 'no-cache',
         'Connection':    'keep-alive',
       });
-      const send = (msg) => res.write(`data: ${JSON.stringify({ msg })}\n\n`);
+      const send = (msg) => res.write(`data: ${JSON.stringify(msg)}\n\n`);
 
-      if (platform === 'bedrock') {
-        send('Bedrock selected. Automated Bedrock download coming soon!');
-        send('Please upload bedrock_server manually using the Files tab.');
-        finalJar = path.join(serverDir, 'bedrock_server');
-        // Touch the file so the DB record has a path
-        fs.writeFileSync(finalJar, '#!/bin/bash\necho "Please replace me with actual bedrock_server"\n');
-        fs.chmodSync(finalJar, 0o755);
-      } else if (software === 'vanilla') {
-        send(`Fetching Vanilla Minecraft version: ${version}...`);
-        const vanilla = await fetchVanilla(version);
-        finalJar = path.join(serverDir, vanilla.jarName);
-        send(`Downloading Vanilla ${vanilla.version}...`);
-        await downloadFile(vanilla.url, finalJar);
-      } else {
-        // Default PaperMC
-        send(`Fetching PaperMC version: ${version}...`);
-        const paper = await fetchPaper(version);
-        finalJar    = path.join(serverDir, paper.jarName);
-        send(`Downloading PaperMC ${paper.version} build #${paper.build}...`);
-        await downloadFile(paper.url, finalJar);
+      try {
+        if (download_url) {
+          send({ msg: `Fetching from Direct URL...` });
+          finalJar = path.join(serverDir, `custom-${Date.now()}.jar`);
+          await downloadFile(download_url, finalJar);
+        } else if (platform === 'bedrock') {
+          send({ msg: 'Bedrock selected. Automated Bedrock download coming soon!' });
+          send({ msg: 'Please upload bedrock_server manually using the Files tab.' });
+          finalJar = path.join(serverDir, 'bedrock_server');
+          fs.writeFileSync(finalJar, '#!/bin/bash\necho "Please replace me with actual bedrock_server"\n');
+          fs.chmodSync(finalJar, 0o755);
+        } else if (software === 'vanilla') {
+          send({ msg: `Fetching Vanilla Minecraft version: ${version}...` });
+          const vanilla = await fetchVanilla(version);
+          finalJar = path.join(serverDir, vanilla.jarName);
+          send({ msg: `Downloading Vanilla ${vanilla.version}...` });
+          await downloadFile(vanilla.url, finalJar);
+        } else {
+          // Default PaperMC
+          send({ msg: `Fetching PaperMC version: ${version}...` });
+          const paper = await fetchPaper(version);
+          finalJar    = path.join(serverDir, paper.jarName);
+          send({ msg: `Downloading PaperMC ${paper.version} build #${paper.build}...` });
+          await downloadFile(paper.url, finalJar);
+        }
+      } catch (err) {
+        if (err.message === 'VERSION_NOT_FOUND') {
+          res.write(`data: ${JSON.stringify({ action: 'PROMPT_FALLBACK', version })}\n\n`);
+          return res.end();
+        }
+        res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+        return res.end();
       }
 
-      send('Download complete. Creating server...');
+      send({ msg: 'Download complete. Creating server...' });
       const info = db.prepare(`
         INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
         VALUES (?,?,?,?,?,?,?,?,?)
       `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
-      send(`Server "${safeName}" ready on port ${finalPort}!`);
+      send({ msg: `Server "${safeName}" ready on port ${finalPort}!` });
       res.write(`data: ${JSON.stringify({ done: true, id: info.lastInsertRowid })}\n\n`);
       return res.end();
     }

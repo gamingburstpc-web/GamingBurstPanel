@@ -61,7 +61,10 @@
     <!-- Metrics -->
     <div class="metrics-bar mb-4">
       <div class="metric-card">
-        <div class="metric-label">RAM Usage</div>
+        <div class="metric-label" style="display:flex;justify-content:space-between;">
+          <span>RAM Usage</span>
+          <span class="text-muted text-sm" style="font-weight:normal" title="Physical RAM used by the JVM, which includes Metaspace and Java overhead beyond the -Xmx limit.">(includes JVM overhead)</span>
+        </div>
         <div><span class="metric-value" id="metRam">0</span><span class="metric-unit">MB</span><span class="text-muted text-sm" id="metRamMax"></span></div>
         <div class="progress-track"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
       </div>

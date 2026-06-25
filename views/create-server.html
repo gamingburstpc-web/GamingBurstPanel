@@ -161,6 +161,37 @@
         <a href="/dashboard" class="btn btn-ghost">Cancel</a>
       </div>
     </form>
+
+    <!-- Version Fallback Modal -->
+    <div id="fallbackModal" class="sidebar-overlay" style="display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);">
+      <div class="card" style="width:90%;max-width:500px;border:1px solid rgba(255,255,255,0.1);position:relative;">
+        <button class="sidebar-close" style="position:absolute;top:16px;right:16px" onclick="closeFallbackModal()">✕</button>
+        <div class="card-header" style="border-bottom:none;padding-bottom:0;"><div class="card-title">Version Not Found</div></div>
+        
+        <div id="fallbackMessage" style="margin-top:16px;color:var(--text-primary);font-size:14px;line-height:1.5;"></div>
+        
+        <div style="margin-top:24px;display:flex;flex-direction:column;gap:12px;">
+          <button class="btn btn-primary" onclick="useLatestVersionFallback()" style="width:100%;justify-content:center;">Use Latest Version</button>
+          <button class="btn btn-secondary" onclick="showDirectUrlInput()" style="width:100%;justify-content:center;">Paste Direct URL</button>
+        </div>
+
+        <div id="directUrlSection" class="hidden" style="margin-top:24px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;">
+          <div class="form-group">
+            <label class="form-label">Direct Download URL</label>
+            <input type="url" id="directUrlInput" class="form-input" placeholder="https://api.papermc.io/.../paper-1.20.4.jar">
+          </div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:8px;line-height:1.6;background:rgba(255,255,255,0.05);padding:12px;border-radius:6px;">
+            <strong>How to get a direct URL:</strong><br>
+            1. Open the Paper downloads page.<br>
+            2. Find the Download button for your exact build.<br>
+            3. Right-click (PC) or long-press (mobile).<br>
+            4. <i>Copy Link Address</i>.<br>
+            5. Paste it here.
+          </div>
+          <button class="btn btn-success" style="width:100%;margin-top:16px;justify-content:center;" onclick="submitDirectUrlFallback()">Download & Create</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 <script src="/public/js/create-server.js"></script>
