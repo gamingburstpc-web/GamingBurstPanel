@@ -15,6 +15,16 @@ curl -sSL https://raw.githubusercontent.com/gamingburstpc-web/GamingBurstPanel/m
 
 ---
 
+## 🔄 Updating the Panel
+
+When a new update is pushed to the GitHub repository, run this one-liner command on your VPS to automatically pull the latest changes, update configurations, and restart the panel safely:
+
+```bash
+sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git reset --hard && git pull origin main" && sudo bash /opt/gbpanel/panel/install.sh
+```
+
+---
+
 ## 🔑 Initial Setup
 
 After installation, the panel will start on port **`7676`**. Open your browser and navigate to:
