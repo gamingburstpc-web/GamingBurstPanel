@@ -455,6 +455,46 @@ router.post('/servers/:id/files/upload', requirePermission('files'), express.raw
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── POST /api/servers/:id/plugins/download-url ──────────────────────────────
+router.post('/servers/:id/plugins/download-url', requirePermission('files'), express.json(), async (req, res) => {
+  try {
+    const { url, filename } = req.body;
+    if (!url || !filename) return res.status(400).json({ error: 'Missing url or filename' });
+    
+    // safePath for plugins/filename
+    const { target } = safePath(req.params.id, 'plugins/' + filename);
+    if (!fs.existsSync(path.dirname(target))) {
+      fs.mkdirSync(path.dirname(target), { recursive: true });
+    }
+    
+    // Create write stream
+    const dest = fs.createWriteStream(target);
+    const downloadClient = url.startsWith('https') ? https : require('http');
+    
+    await new Promise((resolve, reject) => {
+      downloadClient.get(url, (response) => {
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
+          // Handle one redirect
+          const redirectClient = response.headers.location.startsWith('https') ? https : require('http');
+          redirectClient.get(response.headers.location, (redirRes) => {
+             redirRes.pipe(dest);
+             redirRes.on('end', resolve);
+             redirRes.on('error', reject);
+          }).on('error', reject);
+        } else {
+          response.pipe(dest);
+          response.on('end', resolve);
+          response.on('error', reject);
+        }
+      }).on('error', reject);
+    });
+    
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── DELETE /api/servers/:id/files ─────────────────────────────────────────────
 router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
   try {

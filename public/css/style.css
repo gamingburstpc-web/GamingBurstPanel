@@ -264,9 +264,9 @@ button,input,select,textarea{font-family:inherit;}
   .hamburger{display:flex;}
 
   /* Topbar adjustments */
-  .topbar{margin-bottom:20px;}
+  .topbar{margin-bottom:20px; flex-wrap: wrap;}
   .page-title{font-size:18px;}
-  .topbar-actions .btn:not(.btn-primary){display:none;}
+  .topbar-actions {flex-wrap: wrap;}
 
   /* Server grid: 1 column */
   .servers-grid{grid-template-columns:1fr;}

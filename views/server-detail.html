@@ -79,9 +79,10 @@
     </div>
 
     <!-- Tabs -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;">
+    <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;overflow-x:auto;">
       <button id="tabBtnConsole" class="btn btn-secondary active" onclick="switchServerTab('console')">📟 Console</button>
       <button id="tabBtnFiles" class="btn btn-secondary" onclick="switchServerTab('files')">📁 Files</button>
+      <button id="tabBtnPlugins" class="btn btn-secondary" onclick="switchServerTab('plugins')">🔌 Plugins</button>
     </div>
 
     <!-- Console Tab -->
@@ -157,6 +158,51 @@
       </div>
     </div>
 
+    <!-- Plugins Tab -->
+    <div id="tabPlugins" class="server-tab hidden">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Plugin Manager</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-primary btn-sm admin-only" onclick="document.getElementById('pluginUploadInput').click()">📤 Upload File</button>
+            <input type="file" id="pluginUploadInput" style="display:none" accept=".jar" onchange="uploadPluginFile(event)">
+            <button class="btn btn-secondary btn-sm admin-only" onclick="showDirectLinkUpload()">🔗 Direct URL</button>
+          </div>
+        </div>
+        
+        <div id="pluginProgressContainer" class="hidden" style="margin-bottom:16px">
+          <div class="metric-label" id="pluginProgressText">Uploading...</div>
+          <div class="progress-track"><div class="progress-fill" id="pluginProgressBar" style="width:0%"></div></div>
+        </div>
+        
+        <div class="form-group admin-only" style="display:flex;gap:8px;flex-wrap:wrap">
+          <input type="text" id="pluginSearchInput" class="form-input" placeholder="Search plugins on Modrinth..." style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter') searchPlugins()">
+          <select id="pluginSortType" class="form-select" style="width:140px">
+            <option value="">Any Type</option>
+            <option value="paper">Paper</option>
+            <option value="spigot">Spigot</option>
+            <option value="bukkit">Bukkit</option>
+          </select>
+          <select id="pluginSortVersion" class="form-select" style="width:140px">
+            <option value="">Any Version</option>
+            <option value="1.20.4">1.20.4</option>
+            <option value="1.20.1">1.20.1</option>
+            <option value="1.19.4">1.19.4</option>
+            <option value="1.19.2">1.19.2</option>
+            <option value="1.18.2">1.18.2</option>
+            <option value="1.17.1">1.17.1</option>
+            <option value="1.16.5">1.16.5</option>
+          </select>
+          <button class="btn btn-primary" onclick="searchPlugins()">Search</button>
+        </div>
+        
+        <div id="pluginSearchResults" style="display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:24px"></div>
+        
+        <div class="card-title" style="margin-top:32px;margin-bottom:16px">Installed Plugins</div>
+        <div id="installedPluginsList" style="display:grid;grid-template-columns:1fr;gap:12px;"></div>
+      </div>
+    </div>
+
     <!-- Server info -->
     <div class="card mt-4">
       <div class="card-header"><div class="card-title">Server Info</div></div>
@@ -166,5 +212,6 @@
 </div>
 <script src="/public/js/console.js"></script>
 <script src="/public/js/files.js"></script>
+<script src="/public/js/plugins.js"></script>
 </body>
 </html>
