@@ -385,34 +385,34 @@ async function cmdUpdatePanel() {
 async function cmdMenu() {
   banner();
   print(`${C.bold}Please select an option:${C.reset}\n`);
-  print(`  ${C.cyan}1.${C.reset} Show Panel Status`);
-  print(`  ${C.cyan}2.${C.reset} Update Panel`);
-  print(`  ${C.cyan}3.${C.reset} Create new User`);
-  print(`  ${C.cyan}4.${C.reset} List all Users`);
-  print(`  ${C.cyan}5.${C.reset} Remove a User`);
-  print(`  ${C.cyan}6.${C.reset} Reset User Password`);
-  print(`  ${C.cyan}7.${C.reset} List Servers`);
+  print(`  ${C.cyan}1.${C.reset} Create new User`);
+  print(`  ${C.cyan}2.${C.reset} List all Users`);
+  print(`  ${C.cyan}3.${C.reset} Remove a User`);
+  print(`  ${C.cyan}4.${C.reset} Reset User Password`);
+  print(`  ${C.cyan}5.${C.reset} List Servers`);
+  print(`  ${C.cyan}6.${C.reset} Show Panel Status`);
+  print(`  ${C.cyan}7.${C.reset} Update Panel`);
   print(`  ${C.cyan}0.${C.reset} Exit\n`);
   
   const choice = await ask('Enter a number: ');
   print('');
   
   switch(choice) {
-    case '1': await cmdPanelStatus(); break;
-    case '2': await cmdUpdatePanel(); break;
-    case '3': await cmdUserAdd(); break;
-    case '4': await cmdUserList(); break;
-    case '5': {
+    case '1': await cmdUserAdd(); break;
+    case '2': await cmdUserList(); break;
+    case '3': {
       const u = await ask('Enter username to remove: ');
       if (u) await cmdUserRemove(u);
       break;
     }
-    case '6': {
+    case '4': {
       const u = await ask('Enter username to reset password for: ');
       if (u) await cmdUserResetPw(u);
       break;
     }
-    case '7': await cmdServerList(); break;
+    case '5': await cmdServerList(); break;
+    case '6': await cmdPanelStatus(); break;
+    case '7': await cmdUpdatePanel(); break;
     case '0': print('Goodbye!'); process.exit(0);
     default: error('Invalid option'); break;
   }
