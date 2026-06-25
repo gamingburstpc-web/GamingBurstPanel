@@ -30,9 +30,10 @@ while true; do
     echo -e "\033[1;32m9)\033[0m View Panel Live Logs"
     echo -e "\033[1;32m10)\033[0m Check Panel Status"
     echo -e "\033[1;32m11)\033[0m Update Panel"
+    echo -e "\033[1;31m12)\033[0m Uninstall Panel & Delete All Data"
     echo -e "\033[1;31m0)\033[0m Exit"
     echo -e "\033[1;34m==========================================\033[0m"
-    read -p "Select an option [0-11]: " option
+    read -p "Select an option [0-12]: " option
 
     echo ""
     case $option in
@@ -102,6 +103,24 @@ while true; do
                 echo -e "\033[1;36mUpdate found! Downloading and installing...\033[0m"
                 sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git fetch origin main && git reset --hard origin/main && git pull origin main" && sudo bash /opt/gbpanel/panel/install.sh
                 echo -e "\033[1;32mPanel updated successfully!\033[0m"
+            fi
+            ;;
+        12)
+            echo -e "\033[1;31mWARNING: This will completely delete GamingBurst Panel, including all your Minecraft servers, user data, and files.\033[0m"
+            read -p "Are you absolutely sure you want to completely uninstall the panel? (Type 'YES' to confirm): " confirm_uninstall
+            if [ "$confirm_uninstall" = "YES" ]; then
+                echo "Uninstalling GamingBurst Panel..."
+                systemctl stop gbpanel
+                systemctl disable gbpanel
+                rm -f /etc/systemd/system/gbpanel.service
+                systemctl daemon-reload
+                rm -f /usr/local/bin/gbpanel /usr/bin/gbpanel /usr/local/bin/gb /usr/bin/gb
+                userdel -r gbpanel 2>/dev/null
+                rm -rf /opt/gbpanel
+                echo -e "\033[1;32mUninstall complete. All files and servers have been deleted.\033[0m"
+                exit 0
+            else
+                echo "Uninstall cancelled."
             fi
             ;;
         0)

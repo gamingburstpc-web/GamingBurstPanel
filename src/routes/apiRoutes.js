@@ -557,4 +557,53 @@ router.post('/servers/:id/files/archive', requirePermission('files'), (req, res)
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── Playit API Endpoints ───────────────────────────────────────────────────────
+const playitManager = require('../playitManager');
+
+router.get('/servers/:id/playit/status', requirePermission('files'), (req, res) => {
+  try {
+    const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    const status = playitManager.getStatus(server.id, server.server_dir);
+    res.json(status);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/servers/:id/playit/download', requirePermission('files'), async (req, res) => {
+  try {
+    const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    await playitManager.downloadPlayit(server.server_dir);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/servers/:id/playit/claim', requirePermission('files'), (req, res) => {
+  try {
+    const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    playitManager.setupClaim(server.id, server.server_dir);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/servers/:id/playit/secret', requirePermission('files'), (req, res) => {
+  try {
+    const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (!req.body.secret) return res.status(400).json({ error: 'Secret required' });
+    playitManager.setupSecret(server.id, server.server_dir, req.body.secret);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+router.post('/servers/:id/playit/reset', requirePermission('files'), (req, res) => {
+  try {
+    const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    playitManager.resetPlayit(server.id, server.server_dir);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 module.exports = router;

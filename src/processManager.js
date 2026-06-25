@@ -3,8 +3,12 @@
 const { spawn }     = require('child_process');
 const path          = require('path');
 const fs            = require('fs');
+const pty           = require('node-pty');
+const playitManager = require('./playitManager');
 const EventEmitter  = require('events');
 const { getDb, trimLogs } = require('./db');
+
+const SERVERS_DIR = path.resolve(__dirname, '..', 'servers');
 
 // ── Process registry ──────────────────────────────────────────────────────────
 // Key: serverId (integer)  Value: { proc, emitter, serverId }
@@ -163,6 +167,9 @@ function startServer(serverId) {
     emitter.emit('close', 1);
   });
 
+  // Start Playit tunnel if it exists
+  playitManager.startPlayit(serverId, server.server_dir);
+
   return { pid: proc.pid };
 }
 
@@ -184,6 +191,8 @@ function stopServer(serverId) {
     try { entry.proc.kill('SIGKILL'); } catch {}
   }, 10000);
   killTimer.unref();
+
+  playitManager.stopPlayit(serverId);
 }
 
 // ── Kill all running servers (graceful shutdown) ──────────────────────────────
