@@ -32,7 +32,11 @@ sudo -u gbpanel gbpanel user add
 
 ## 📟 Command Reference (`gbpanel` CLI)
 
-You can run these commands from any directory on your VPS. Always prepend with `sudo -u gbpanel` to ensure files are saved with correct permissions.
+You can run these commands from any directory on your VPS. 
+
+> [!IMPORTANT]
+> **Why is `sudo -u gbpanel` required?**
+> The database and server files are owned strictly by the `gbpanel` system user. If you run commands as `root` without `sudo -u gbpanel`, it can change the database file ownership to root, locking out the web panel. Always use `sudo -u gbpanel`!
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
@@ -40,6 +44,14 @@ You can run these commands from any directory on your VPS. Always prepend with `
 | `sudo -u gbpanel gbpanel user list` | **List Users** | Show all registered panel users, their roles, and creation dates. |
 | `sudo -u gbpanel gbpanel user remove <username>` | **Delete User** | Delete a user account (asks for confirmation). |
 | `sudo -u gbpanel gbpanel user reset-password <username>` | **Reset Password** | Reset the password of an existing user account. |
+| `sudo -u gbpanel gbpanel server list` | **List Servers** | Show all servers, ports, online status, and paths. |
+| `sudo -u gbpanel gbpanel server path <server_name>` | **Get Path** | Print the absolute directory path of a server. |
+
+### 📂 Quick CD to Server Folder
+To quickly jump into a server's folder in your SSH console, run:
+```bash
+cd $(sudo -u gbpanel gbpanel server path <server_name>)
+```
 
 ---
 
