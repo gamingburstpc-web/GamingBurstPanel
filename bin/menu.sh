@@ -94,9 +94,9 @@ while true; do
         11)
             echo "Checking for Updates..."
             cd /opt/gbpanel/panel
-            git fetch origin main > /dev/null 2>&1
-            LOCAL=$(git rev-parse HEAD)
-            REMOTE=$(git rev-parse origin/main)
+            sudo -u gbpanel git fetch origin main > /dev/null 2>&1
+            LOCAL=$(sudo -u gbpanel git rev-parse HEAD)
+            REMOTE=$(sudo -u gbpanel git rev-parse origin/main)
             if [ "$LOCAL" = "$REMOTE" ]; then
                 echo -e "\033[1;32mGamingBurst Panel is already completely up to date!\033[0m"
             else
