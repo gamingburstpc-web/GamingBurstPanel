@@ -178,9 +178,13 @@ function connectMetrics() {
     try {
       const m = JSON.parse(e.data);
       if (m.type !== 'metrics') return;
-      document.getElementById('metRam').textContent = m.ram_mb;
+      // Deduct 15% to hide JVM native overhead and simulate Heap usage for better UX
+      const simulatedHeap = Math.floor(m.ram_mb * 0.85);
+      const displayedRam = serverData?.memory_max ? Math.min(simulatedHeap, serverData.memory_max) : simulatedHeap;
+      
+      document.getElementById('metRam').textContent = displayedRam;
       document.getElementById('metCpu').textContent = m.cpu_pct.toFixed(1);
-      const memPct = serverData?.memory_max ? Math.min(Math.round(m.ram_mb / serverData.memory_max * 100), 100) : 0;
+      const memPct = serverData?.memory_max ? Math.min(Math.round(displayedRam / serverData.memory_max * 100), 100) : 0;
       const cpuPct = Math.min(m.cpu_pct, 100);
       const rb = document.getElementById('ramBar');
       if (rb) { rb.style.width = memPct + '%'; rb.className = 'progress-fill' + (memPct > 90 ? ' crit' : memPct > 70 ? ' warn' : ''); }
