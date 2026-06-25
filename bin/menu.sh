@@ -6,7 +6,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/bin/gbpanel.js"
+GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js"
 
 # If arguments are provided, pass them directly to the underlying CLI tool
 if [ $# -gt 0 ]; then
