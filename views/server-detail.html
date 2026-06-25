@@ -119,6 +119,8 @@
             <span id="currentPath" style="font-family:monospace;color:var(--text-primary);font-size:14px;background:var(--bg-lighter);padding:4px 8px;border-radius:4px;">/</span>
           </div>
           <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileUpload').click()">📤 Upload</button>
+            <input type="file" id="fileUpload" style="display:none" onchange="uploadFile(this.files[0])">
             <button class="btn btn-primary btn-sm" onclick="newFile()">➕ New File</button>
             <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
           </div>

@@ -181,3 +181,31 @@ async function archiveAction(action, filename) {
     alertE.querySelector('#alertMsg').textContent = e.message;
   }
 }
+
+async function uploadFile(file) {
+  if (!file) return;
+  const path = currentFilePath ? currentFilePath + '/' + file.name : file.name;
+  const alertE = document.getElementById('alert');
+  const alertS = document.getElementById('alertSuccess');
+  alertE.classList.add('hidden');
+  alertS.classList.remove('hidden');
+  alertS.querySelector('#alertSuccessMsg').textContent = `Uploading ${file.name}...`;
+
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/upload?path=${encodeURIComponent(path)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/octet-stream' },
+      body: file
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'Upload failed');
+    alertS.querySelector('#alertSuccessMsg').textContent = `Uploaded ${file.name} successfully!`;
+    document.getElementById('fileUpload').value = ''; // reset input
+    loadFiles();
+  } catch (e) {
+    alertS.classList.add('hidden');
+    alertE.classList.remove('hidden');
+    alertE.querySelector('#alertMsg').textContent = e.message;
+    document.getElementById('fileUpload').value = '';
+  }
+}

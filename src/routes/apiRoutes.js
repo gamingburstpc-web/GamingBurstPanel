@@ -426,6 +426,15 @@ router.put('/servers/:id/files/content', requirePermission('files'), express.tex
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── POST /api/servers/:id/files/upload ────────────────────────────────────────
+router.post('/servers/:id/files/upload', requirePermission('files'), express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
+  try {
+    const { target } = safePath(req.params.id, req.query.path);
+    fs.writeFileSync(target, req.body);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 // ── DELETE /api/servers/:id/files ─────────────────────────────────────────────
 router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
   try {
