@@ -35,8 +35,6 @@ async function loadInstalledPlugins() {
         <button class="btn btn-danger btn-sm admin-only" onclick="deletePlugin('${p.name}')">🗑 Delete</button>
       </div>
     `).join('');
-    
-    checkAdminElements();
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red)">Failed to load plugins.</div>`;
   }
@@ -104,8 +102,6 @@ async function searchPlugins() {
         </div>
       </div>
     `).join('');
-    
-    checkAdminElements();
   } catch(e) {
     container.innerHTML = `<div style="color:var(--red)">Search failed: ${e.message}</div>`;
   }

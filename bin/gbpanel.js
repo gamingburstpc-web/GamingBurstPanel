@@ -11,6 +11,7 @@
 
 const path = require('path');
 const fs   = require('fs');
+const { execSync } = require('child_process');
 
 // Always resolve paths relative to project root (one level up from bin/)
 process.chdir(path.join(__dirname, '..'));
@@ -325,9 +326,105 @@ async function cmdServerPath(name) {
   print(path.resolve(server.server_dir));
 }
 
+// ── Menu Commands ─────────────────────────────────────────────────────────────
+
+async function cmdPanelStatus() {
+  banner();
+  print(`${C.bold}Checking Panel Status...${C.reset}\n`);
+  try {
+    const statusOut = execSync('systemctl is-active gbpanel', { encoding: 'utf8' }).trim();
+    if (statusOut === 'active') {
+      success('GamingBurst Panel is ONLINE and running normally.');
+    } else {
+      error(`Panel is currently OFFLINE (Status: ${statusOut})`);
+      const ans = await ask('Do you want to start the panel now? (y/n): ');
+      if (ans.toLowerCase() === 'y') {
+        print(`${C.cyan}Starting panel...${C.reset}`);
+        execSync('sudo systemctl start gbpanel', { stdio: 'inherit' });
+        success('Panel started successfully.');
+      }
+    }
+  } catch (e) {
+    // systemctl throws if not active
+    error(`Panel is currently OFFLINE or not installed properly.`);
+    const ans = await ask('Do you want to try starting the panel now? (y/n): ');
+    if (ans.toLowerCase() === 'y') {
+      try {
+        print(`${C.cyan}Starting panel...${C.reset}`);
+        execSync('sudo systemctl start gbpanel', { stdio: 'inherit' });
+        success('Panel started successfully.');
+      } catch (err) {
+        error('Failed to start panel: ' + err.message);
+      }
+    }
+  }
+}
+
+async function cmdUpdatePanel() {
+  banner();
+  print(`${C.bold}Checking for Panel Updates...${C.reset}\n`);
+  try {
+    execSync('git fetch origin main', { cwd: '/opt/gbpanel/panel', stdio: 'ignore' });
+    const local = execSync('git rev-parse HEAD', { cwd: '/opt/gbpanel/panel', encoding: 'utf8' }).trim();
+    const remote = execSync('git rev-parse origin/main', { cwd: '/opt/gbpanel/panel', encoding: 'utf8' }).trim();
+    
+    if (local === remote) {
+      success('GamingBurst Panel is already completely up to date!');
+      return;
+    }
+    
+    print(`${C.cyan}Update found! Downloading and installing...${C.reset}\n`);
+    const cmd = `sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git reset --hard && git pull origin main" && sudo bash /opt/gbpanel/panel/install.sh`;
+    execSync(cmd, { stdio: 'inherit' });
+    success('\nPanel updated successfully!');
+  } catch (e) {
+    error('Update failed: ' + e.message);
+  }
+}
+
+async function cmdMenu() {
+  banner();
+  print(`${C.bold}Please select an option:${C.reset}\n`);
+  print(`  ${C.cyan}1.${C.reset} Show Panel Status`);
+  print(`  ${C.cyan}2.${C.reset} Update Panel`);
+  print(`  ${C.cyan}3.${C.reset} Create new User`);
+  print(`  ${C.cyan}4.${C.reset} List all Users`);
+  print(`  ${C.cyan}5.${C.reset} Remove a User`);
+  print(`  ${C.cyan}6.${C.reset} Reset User Password`);
+  print(`  ${C.cyan}7.${C.reset} List Servers`);
+  print(`  ${C.cyan}0.${C.reset} Exit\n`);
+  
+  const choice = await ask('Enter a number: ');
+  print('');
+  
+  switch(choice) {
+    case '1': await cmdPanelStatus(); break;
+    case '2': await cmdUpdatePanel(); break;
+    case '3': await cmdUserAdd(); break;
+    case '4': await cmdUserList(); break;
+    case '5': {
+      const u = await ask('Enter username to remove: ');
+      if (u) await cmdUserRemove(u);
+      break;
+    }
+    case '6': {
+      const u = await ask('Enter username to reset password for: ');
+      if (u) await cmdUserResetPw(u);
+      break;
+    }
+    case '7': await cmdServerList(); break;
+    case '0': print('Goodbye!'); process.exit(0);
+    default: error('Invalid option'); break;
+  }
+}
+
 // ── Main router ───────────────────────────────────────────────────────────────
 async function main() {
   const [,, cmd, sub, ...rest] = process.argv;
+
+  if (!cmd) {
+    return await cmdMenu();
+  }
 
   if (cmd === 'user') {
     if (sub === 'add')   return await cmdUserAdd();
