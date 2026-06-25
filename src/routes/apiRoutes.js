@@ -4,7 +4,7 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const https    = require('https');
-const { requireAuth, requireAdmin, cookieMiddleware, hashPassword } = require('../auth');
+const { requireAuth, requireAdmin, requirePermission, cookieMiddleware, hashPassword } = require('../auth');
 const { getDb } = require('../db');
 const pm = require('../processManager');
 
