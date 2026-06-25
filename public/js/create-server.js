@@ -150,7 +150,7 @@ async function createAdvanced() {
         software:   document.getElementById('advSoftware').value,
         version:    document.getElementById('advVersion').value.trim() || 'latest',
         port:       document.getElementById('advPort').value     || undefined,
-        memory_min:  document.getElementById('advMemMin').value  || 1024,
+        memory_min:  document.getElementById('advMemMax').value  || 2048,
         memory_max:  document.getElementById('advMemMax').value  || 2048,
         jar_path:    jar || undefined,
         jvm_flags:   document.getElementById('advJvmFlags').value.trim(),

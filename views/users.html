@@ -79,14 +79,14 @@
 
       <!-- Add User Form -->
       <div class="card" style="height: fit-content;">
-        <div class="card-header"><div class="card-title">➕ Add New User</div></div>
+        <div class="card-header"><div class="card-title" id="formCardTitle">➕ Add New User</div></div>
         <form id="addUserForm">
           <div class="form-group">
             <label class="form-label">Username</label>
             <input type="text" id="addUsername" class="form-input" required autocomplete="off">
           </div>
           <div class="form-group">
-            <label class="form-label">Password</label>
+            <label class="form-label" id="passwordLabel">Password</label>
             <input type="password" id="addPassword" class="form-input" required autocomplete="new-password">
           </div>
           <div class="form-group">
@@ -108,8 +108,9 @@
             </div>
           </div>
 
-          <div style="margin-top:24px;">
-            <button type="submit" id="addBtn" class="btn btn-primary" style="width:100%">Create User</button>
+          <div style="margin-top:24px; display:flex; gap:12px; align-items:center;">
+            <button type="submit" id="addBtn" class="btn btn-primary" style="flex:1">Create User</button>
+            <button type="button" id="cancelEditBtn" class="btn btn-ghost hidden" style="border:1px solid rgba(255,255,255,0.15);" onclick="cancelEditMode()">Cancel</button>
           </div>
         </form>
       </div>

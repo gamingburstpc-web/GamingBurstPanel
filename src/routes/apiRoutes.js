@@ -66,6 +66,36 @@ router.delete('/users/:id', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── PUT /api/users/:id — ADMIN ONLY ──────────────────────────────────────────
+router.put('/users/:id', requireAdmin, (req, res) => {
+  const id = parseInt(req.params.id, 10);
+  const { username, password, is_admin, permissions } = req.body;
+  if (!username?.trim()) return res.status(400).json({ error: 'Username is required.' });
+
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username.trim(), id);
+  if (existing) return res.status(400).json({ error: 'Username already exists.' });
+
+  const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+  const adminFlag = is_admin ? 1 : 0;
+
+  try {
+    if (password && password.trim().length > 0) {
+      const hash = hashPassword(password);
+      db.prepare(`
+        UPDATE users SET username = ?, password = ?, is_admin = ?, permissions = ? WHERE id = ?
+      `).run(username.trim(), hash, adminFlag, permsJson, id);
+    } else {
+      db.prepare(`
+        UPDATE users SET username = ?, is_admin = ?, permissions = ? WHERE id = ?
+      `).run(username.trim(), adminFlag, permsJson, id);
+    }
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ── PaperMC helpers ───────────────────────────────────────────────────────────
 function fetchPaper(reqVersion = 'latest') {
   return new Promise((resolve, reject) => {

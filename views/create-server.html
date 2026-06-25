@@ -54,7 +54,7 @@
           <p class="text-sm text-muted mb-4">Downloads the selected server software, auto-assigns port, 2 GB RAM, and accepts EULA.</p>
           <div class="form-group">
             <label class="form-label" for="basicName">Server Name <span>*</span></label>
-            <input id="basicName" type="text" class="form-input" placeholder="my-survival-server" required>
+            <input id="basicName" type="text" class="form-input" placeholder="my-survival-server">
             <div class="form-hint">Letters, numbers, dashes and underscores only.</div>
           </div>
           
@@ -132,15 +132,10 @@
               <div class="form-hint">Keep as-is unless you need a specific timezone.</div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="advMemMin">Min RAM (Xms) MB <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
-              <input id="advMemMin" type="number" class="form-input" value="1024" min="256">
-            </div>
-            <div class="form-group">
-              <label class="form-label" for="advMemMax">Max RAM (Xmx) MB <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
-              <input id="advMemMax" type="number" class="form-input" value="2048" min="512">
-            </div>
+          <div class="form-group">
+            <label class="form-label" for="advMemMax">Server RAM (MB) <span class="text-muted" style="font-weight:normal">(Recommended)</span></label>
+            <input id="advMemMax" type="number" class="form-input" value="2048" min="512">
+            <div class="form-hint">Amount of RAM allocated to the server (e.g. 2048 for 2 GB).</div>
           </div>
           <div class="form-group">
             <label class="form-label" for="advJar">Custom Executable Path <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
