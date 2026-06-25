@@ -30,13 +30,24 @@ sudo -u gbpanel gbpanel user add
 
 ---
 
-## 📟 Command Reference (`gbpanel` CLI)
+## 🕹️ Interactive Menu (`gb`)
 
-You can run these commands from any directory on your VPS. 
+For the easiest experience, simply type `gb` in your terminal as `root` to launch the interactive UI menu.
+
+```bash
+gb
+```
+This graphical menu allows you to press numbers (0-9) to quickly add users, view servers, check panel logs, and restart the daemon without memorizing any long commands!
+
+---
+
+## 📟 Command Reference (Direct CLI)
+
+If you prefer to run single commands directly (e.g. for scripts), you can use the raw commands. 
 
 > [!IMPORTANT]
-> **Why is `sudo -u gbpanel` required?**
-> The database and server files are owned strictly by the `gbpanel` system user. If you run commands as `root` without `sudo -u gbpanel`, it can change the database file ownership to root, locking out the web panel. Always use `sudo -u gbpanel`!
+> **Why is `sudo -u gbpanel` required here?**
+> The database and server files are owned strictly by the `gbpanel` system user. If you run raw commands as `root` without `sudo -u gbpanel`, it can change the database file ownership to root, locking out the web panel. (Note: The `gb` menu handles this for you automatically!)
 
 | Command | Action | Description |
 | :--- | :--- | :--- |

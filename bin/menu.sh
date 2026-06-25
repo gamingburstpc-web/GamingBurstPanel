@@ -1,0 +1,83 @@
+#!/bin/bash
+
+# Ensure script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run this menu as root (e.g., sudo gb)"
+  exit 1
+fi
+
+GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js"
+
+while true; do
+    clear
+    echo -e "\033[1;34m==========================================\033[0m"
+    echo -e "\033[1;37m      🎮 GamingBurst Panel Menu 🎮        \033[0m"
+    echo -e "\033[1;34m==========================================\033[0m"
+    echo -e "\033[1;32m1)\033[0m Add User"
+    echo -e "\033[1;32m2)\033[0m List Users"
+    echo -e "\033[1;32m3)\033[0m Remove User"
+    echo -e "\033[1;32m4)\033[0m Reset User Password"
+    echo -e "\033[1;32m5)\033[0m List Servers & Ports"
+    echo -e "\033[1;32m6)\033[0m Get Server Folder Path"
+    echo -e "\033[1;32m7)\033[0m Restart Panel Service"
+    echo -e "\033[1;32m8)\033[0m Stop Panel Service"
+    echo -e "\033[1;32m9)\033[0m View Panel Live Logs"
+    echo -e "\033[1;31m0)\033[0m Exit"
+    echo -e "\033[1;34m==========================================\033[0m"
+    read -p "Select an option [0-9]: " option
+
+    echo ""
+    case $option in
+        1)
+            $GB_CMD user add
+            ;;
+        2)
+            $GB_CMD user list
+            ;;
+        3)
+            read -p "Enter username to remove: " del_user
+            if [ -n "$del_user" ]; then
+                $GB_CMD user remove "$del_user"
+            fi
+            ;;
+        4)
+            read -p "Enter username to reset password: " reset_user
+            if [ -n "$reset_user" ]; then
+                $GB_CMD user reset-password "$reset_user"
+            fi
+            ;;
+        5)
+            $GB_CMD server list
+            ;;
+        6)
+            read -p "Enter server name: " srv_name
+            if [ -n "$srv_name" ]; then
+                $GB_CMD server path "$srv_name"
+            fi
+            ;;
+        7)
+            echo "Restarting GamingBurst Panel..."
+            systemctl restart gbpanel
+            echo "Done."
+            ;;
+        8)
+            echo "Stopping GamingBurst Panel..."
+            systemctl stop gbpanel
+            echo "Done."
+            ;;
+        9)
+            echo "Press Ctrl+C to exit logs."
+            journalctl -u gbpanel -f
+            ;;
+        0)
+            echo "Exiting Menu."
+            exit 0
+            ;;
+        *)
+            echo "Invalid option."
+            ;;
+    esac
+    
+    echo ""
+    read -p "Press [Enter] to return to the menu..."
+done
