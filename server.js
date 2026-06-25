@@ -4,6 +4,15 @@ require('dotenv').config();
 const http       = require('http');
 const express    = require('express');
 const path       = require('path');
+const fs         = require('fs');
+
+// ── Clear stale database locks ONLY when starting main panel daemon ───────
+const DB_PATH = path.resolve(process.env.DB_PATH || './data/panel.db');
+const lockPath = DB_PATH + '.lock';
+if (fs.existsSync(lockPath)) {
+  try { fs.rmSync(lockPath, { recursive: true, force: true }); } catch (e) {}
+}
+
 const { initDb } = require('./src/db');
 const { setupWs } = require('./ws/wsHandler');
 

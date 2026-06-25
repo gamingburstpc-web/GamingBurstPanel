@@ -94,29 +94,20 @@ fi
 INSTALL_DIR="/opt/gbpanel/panel"
 print_status "Setting up project directory at $INSTALL_DIR..."
 
-# In case the directory exists, back it up or clear it
-if [ -d "$INSTALL_DIR" ]; then
-    print_status "Existing directory found. Backing up to ${INSTALL_DIR}_backup..."
-    mv "$INSTALL_DIR" "${INSTALL_DIR}_backup_$(date +%s)"
-fi
-
-mkdir -p "$INSTALL_DIR"
-
-# Clone from the github repo (we'll use a placeholder for now, user will edit)
-# Alternatively, clone the current folder's contents if running locally.
-# We will use git clone.
 REPO_URL="https://github.com/gamingburstpc-web/GamingBurstPanel.git"
 
-if [ "$REPO_URL" == "https://github.com/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME.git" ]; then
-    echo -e "${C_BOLD}${C_YELLOW}⚠️  Please enter your GitHub Repository URL to download the panel code.${C_RESET}"
-    read -p "GitHub Repository URL: " USER_REPO
-    if [ -n "$USER_REPO" ]; then
-        REPO_URL=$USER_REPO
+if [ -d "$INSTALL_DIR/.git" ]; then
+    print_status "Existing Git repository found. Pulling latest changes..."
+    sudo -u gbpanel bash -c "cd $INSTALL_DIR && git reset --hard && git pull origin main"
+else
+    if [ -d "$INSTALL_DIR" ]; then
+        print_status "Existing non-git directory found. Backing up to ${INSTALL_DIR}_backup..."
+        mv "$INSTALL_DIR" "${INSTALL_DIR}_backup_$(date +%s)"
     fi
+    mkdir -p "$INSTALL_DIR"
+    print_status "Cloning repository $REPO_URL..."
+    git clone "$REPO_URL" "$INSTALL_DIR"
 fi
-
-print_status "Cloning repository $REPO_URL..."
-git clone "$REPO_URL" "$INSTALL_DIR"
 
 # ── Install Project Dependencies ──────────────────────────────────────────────
 print_status "Installing npm packages..."
