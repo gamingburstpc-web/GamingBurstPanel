@@ -3,7 +3,6 @@
 const { spawn }     = require('child_process');
 const path          = require('path');
 const fs            = require('fs');
-const pty           = require('node-pty');
 const playitManager = require('./playitManager');
 const EventEmitter  = require('events');
 const { getDb, trimLogs } = require('./db');
