@@ -145,7 +145,7 @@ async function serverAction(action) {
 }
 
 async function deleteServer() {
-  if (!confirm(`Delete "${serverData?.name}"? This removes the record but NOT the files.`)) return;
+  if (!confirm(`Are you sure you want to delete this server? This will permanently erase all server data, including worlds, plugins, configurations, and files. This action cannot be undone.`)) return;
   const res = await fetch(`/api/servers/${serverId}`, { method: 'DELETE' });
   if (res.ok) location.href = '/dashboard';
   else { const d = await res.json(); alert(d.error); }

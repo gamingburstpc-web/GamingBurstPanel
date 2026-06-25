@@ -151,9 +151,9 @@ chmod -R 755 /opt/gbpanel
 # ── Global CLI Command Setup ──────────────────────────────────────────────────
 print_status "Configuring global CLI shortcut..."
 # Create a symlink in /usr/bin & /usr/local/bin pointing to the cli
-chmod +x "$INSTALL_DIR/bin/gbpanel.js"
-ln -sf "$INSTALL_DIR/bin/gbpanel.js" /usr/local/bin/gbpanel
-ln -sf "$INSTALL_DIR/bin/gbpanel.js" /usr/bin/gbpanel
+chmod +x "$INSTALL_DIR/gbpanel.js"
+ln -sf "$INSTALL_DIR/gbpanel.js" /usr/local/bin/gbpanel
+ln -sf "$INSTALL_DIR/gbpanel.js" /usr/bin/gbpanel
 print_success "CLI shortcut registered universally as 'gbpanel'."
 
 # ── Systemd Service Setup ─────────────────────────────────────────────────────

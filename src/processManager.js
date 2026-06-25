@@ -188,12 +188,33 @@ function stopServer(serverId) {
 }
 
 // ── Kill all running servers (graceful shutdown) ──────────────────────────────
-function killAll() {
+async function killAll() {
+  const promises = [];
   for (const [id, entry] of registry) {
-    try { entry.proc.stdin.write('stop\n'); } catch {}
-    try { entry.proc.kill('SIGTERM'); } catch {}
-    console.log(`[PM] Stopped server ${id}`);
+    promises.push(new Promise((resolve) => {
+      console.log(`[PM] Initiating graceful shutdown for server #${id}...`);
+      // Try save-all first to avoid world corruption
+      try { entry.proc.stdin.write('save-all\n'); } catch {}
+      
+      // Stop after a brief 1.5s delay to allow save-all to run
+      setTimeout(() => {
+        try { entry.proc.stdin.write('stop\n'); } catch {}
+      }, 1500);
+
+      // Force SIGKILL if it doesn't shut down in 8 seconds
+      const forceKill = setTimeout(() => {
+        console.warn(`[PM] Server #${id} did not stop gracefully. Force killing...`);
+        try { entry.proc.kill('SIGKILL'); } catch {}
+        resolve();
+      }, 8000);
+
+      entry.proc.on('close', () => {
+        clearTimeout(forceKill);
+        resolve();
+      });
+    }));
   }
+  await Promise.all(promises);
 }
 
 // ── Get emitter for a server (WS console streaming) ──────────────────────────

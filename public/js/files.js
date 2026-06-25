@@ -49,6 +49,20 @@ async function loadFiles() {
       const icon = f.isDir ? '📁' : '📄';
       const sizeStr = f.isDir ? '--' : (f.size / 1024).toFixed(1) + ' KB';
       
+      let actionButtons = '';
+      if (!f.isDir) {
+        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="downloadFile('${f.name}')" title="Download">📥</button> `;
+        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="editFile('${f.name}')" title="Edit">✏️</button> `;
+      }
+      
+      if (f.name.endsWith('.tar.gz') || f.name.endsWith('.zip') || f.name.endsWith('.tgz')) {
+        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="archiveAction('decompress', '${f.name}')" title="Unarchive">🔓</button> `;
+      } else {
+        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="archiveAction('compress', '${f.name}')" title="Archive">🔒</button> `;
+      }
+
+      actionButtons += `<button class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="deleteFile('${f.name}')" title="Delete">🗑</button>`;
+
       html += `<tr>
         <td>
           <span style="margin-right:8px">${icon}</span>
@@ -60,8 +74,7 @@ async function loadFiles() {
         <td class="text-muted text-sm">${sizeStr}</td>
         <td class="text-muted text-sm">${new Date(f.modified).toLocaleString()}</td>
         <td style="text-align:right">
-          ${!f.isDir ? `<button class="btn btn-sm btn-ghost" onclick="editFile('${f.name}')">✏️ Edit</button>` : ''}
-          <button class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="deleteFile('${f.name}')">🗑</button>
+          ${actionButtons}
         </td>
       </tr>`;
     }
@@ -137,4 +150,34 @@ async function deleteFile(filename) {
     if (!res.ok) throw new Error(d.error || 'Failed to delete');
     loadFiles();
   } catch (e) { alert(e.message); }
+}
+
+function downloadFile(filename) {
+  const path = currentFilePath ? currentFilePath + '/' + filename : filename;
+  window.open(`/api/servers/${serverId}/files/download?path=${encodeURIComponent(path)}`, '_blank');
+}
+
+async function archiveAction(action, filename) {
+  const path = currentFilePath ? currentFilePath + '/' + filename : filename;
+  const alertE = document.getElementById('alert');
+  const alertS = document.getElementById('alertSuccess');
+  alertE.classList.add('hidden');
+  alertS.classList.remove('hidden');
+  alertS.querySelector('#alertSuccessMsg').textContent = action === 'compress' ? 'Archiving...' : 'Unarchiving...';
+
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/archive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, path })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'Archive operation failed');
+    alertS.classList.add('hidden');
+    loadFiles();
+  } catch (e) {
+    alertS.classList.add('hidden');
+    alertE.classList.remove('hidden');
+    alertE.querySelector('#alertMsg').textContent = e.message;
+  }
 }

@@ -57,15 +57,25 @@ async function main() {
 
   // 6. Graceful shutdown — kill all child Java processes before exit
   const pm = require('./src/processManager');
-  const shutdown = (signal) => {
-    console.log(`\n[Panel] Received ${signal}. Stopping all servers...`);
-    pm.killAll();
+  const shutdown = async (signal) => {
+    console.log(`\n[Panel] Received ${signal}. Stopping all servers gracefully...`);
+    const safetyTimeout = setTimeout(() => {
+      console.error('[Panel] Shutdown timed out. Forcing exit.');
+      process.exit(1);
+    }, 10000);
+    safetyTimeout.unref();
+
+    try {
+      await pm.killAll();
+    } catch (e) {
+      console.error('[Panel] Error during shutdown:', e);
+    }
+
     server.close(() => {
+      clearTimeout(safetyTimeout);
       console.log('[Panel] HTTP server closed. Goodbye.');
       process.exit(0);
     });
-    // Force exit after 8 seconds if servers don't stop
-    setTimeout(() => process.exit(1), 8000).unref();
   };
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT',  () => shutdown('SIGINT'));

@@ -225,6 +225,52 @@ async function cmdUserResetPw(username) {
   print('');
 }
 
+async function cmdServerList() {
+  banner();
+  initDb();
+  const db = getDb();
+  const servers = db.prepare('SELECT id, name, port, status, server_dir FROM servers ORDER BY id ASC').all();
+
+  if (!servers.length) {
+    info('No servers found. Create one in the web panel dashboard.');
+    return;
+  }
+
+  print(`${C.bold}  Servers (${servers.length} total)${C.reset}\n`);
+  print(`  ${'ID'.padEnd(4)} ${'Server Name'.padEnd(20)} ${'Port'.padEnd(8)} ${'Status'.padEnd(12)} ${'Directory Path'}`);
+  print(`  ${'─'.repeat(80)}`);
+  for (const s of servers) {
+    let statCol = C.dim;
+    if (s.status === 'running') statCol = C.green;
+    else if (s.status === 'starting') statCol = C.yellow;
+    else if (s.status === 'crashed') statCol = C.red;
+
+    const absPath = path.resolve(s.server_dir);
+    print(`  ${String(s.id).padEnd(4)} ${s.name.padEnd(20)} ${String(s.port).padEnd(8)} ${statCol}${s.status.padEnd(12)}${C.reset} ${absPath}`);
+  }
+  print('');
+  info(`To cd directly into a server's folder, run:`);
+  print(`  ${C.bold}cd $(gbpanel server path <server_name>)${C.reset}`);
+  print('');
+}
+
+async function cmdServerPath(name) {
+  if (!name) { error('Usage: gbpanel server path <server_name>'); process.exit(1); }
+  initDb();
+  const db = getDb();
+  const server = db.prepare('SELECT server_dir FROM servers WHERE name = ?').get(name);
+  if (!server) {
+    const serverById = db.prepare('SELECT server_dir FROM servers WHERE id = ?').get(parseInt(name, 10) || 0);
+    if (!serverById) {
+      error(`Server "${name}" not found.`);
+      process.exit(1);
+    }
+    print(path.resolve(serverById.server_dir));
+    return;
+  }
+  print(path.resolve(server.server_dir));
+}
+
 // ── Main router ───────────────────────────────────────────────────────────────
 async function main() {
   const [,, cmd, sub, ...rest] = process.argv;
@@ -234,22 +280,27 @@ async function main() {
     if (sub === 'list')  return await cmdUserList();
     if (sub === 'remove') return await cmdUserRemove(rest[0]);
     if (sub === 'reset-password') return await cmdUserResetPw(rest[0]);
+  } else if (cmd === 'server') {
+    if (sub === 'list')  return await cmdServerList();
+    if (sub === 'path')  return await cmdServerPath(rest[0]);
   }
 
   // Help
   banner();
   print(`${C.bold}Usage:${C.reset}`);
-  print(`  ${C.cyan}node bin/gbpanel.js${C.reset} <command> [options]\n`);
+  print(`  ${C.cyan}gbpanel${C.reset} <command> [options]\n`);
   print(`${C.bold}Commands:${C.reset}`);
   print(`  ${C.green}user add${C.reset}                      Create a new user (interactive)`);
   print(`  ${C.green}user list${C.reset}                     List all users`);
   print(`  ${C.green}user remove ${C.dim}<username>${C.reset}       Remove a user`);
   print(`  ${C.green}user reset-password ${C.dim}<username>${C.reset} Reset a user's password`);
+  print(`  ${C.green}server list${C.reset}                   List all servers, ports & paths`);
+  print(`  ${C.green}server path ${C.dim}<server_name>${C.reset}    Print absolute path of a server`);
   print('');
   print(`${C.bold}Examples:${C.reset}`);
-  print(`  ${C.dim}sudo node bin/gbpanel.js user add${C.reset}`);
-  print(`  ${C.dim}sudo node bin/gbpanel.js user list${C.reset}`);
-  print(`  ${C.dim}sudo node bin/gbpanel.js user remove john${C.reset}`);
+  print(`  ${C.dim}sudo gbpanel user add${C.reset}`);
+  print(`  ${C.dim}sudo gbpanel server list${C.reset}`);
+  print(`  ${C.dim}cd $(gbpanel server path my-server)${C.reset}`);
   print('');
 }
 

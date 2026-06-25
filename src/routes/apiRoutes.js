@@ -296,13 +296,23 @@ router.post('/servers', requireAdmin, async (req, res) => {
   }
 });
 
-// ── DELETE /api/servers/:id — ADMIN ONLY ─────────────────────────────────────
-router.delete('/servers/:id', requireAdmin, (req, res) => {
+// ── DELETE /api/servers/:id ──────────────────────────────────────────────────
+router.delete('/servers/:id', requirePermission('delete'), (req, res) => {
   const db     = getDb();
   const id     = parseInt(req.params.id, 10);
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(id);
   if (!server) return res.status(404).json({ error: 'Server not found.' });
   if (pm.isRunning(id)) return res.status(400).json({ error: 'Stop the server before deleting.' });
+
+  // Completely wipe server directory on disk to free storage
+  if (server.server_dir && fs.existsSync(server.server_dir)) {
+    try {
+      fs.rmSync(server.server_dir, { recursive: true, force: true });
+    } catch (e) {
+      console.error(`[API] Failed to delete server directory ${server.server_dir}:`, e.message);
+    }
+  }
+
   db.prepare('DELETE FROM servers WHERE id = ?').run(id);
   res.json({ ok: true });
 });
@@ -424,6 +434,57 @@ router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
     if (!fs.existsSync(target)) return res.status(404).json({ error: 'Not found' });
     fs.rmSync(target, { recursive: true, force: true });
     res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── GET /api/servers/:id/files/download ───────────────────────────────────────
+router.get('/servers/:id/files/download', requirePermission('files'), (req, res) => {
+  try {
+    const { target } = safePath(req.params.id, req.query.path);
+    if (!fs.existsSync(target)) return res.status(404).json({ error: 'File not found' });
+    if (fs.statSync(target).isDirectory()) return res.status(400).json({ error: 'Cannot download directory' });
+    res.download(target);
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── POST /api/servers/:id/files/archive ───────────────────────────────────────
+router.post('/servers/:id/files/archive', requirePermission('files'), (req, res) => {
+  const { execFile } = require('child_process');
+  try {
+    const { action, path: userPath } = req.body;
+    if (!action || !userPath) return res.status(400).json({ error: 'Action and path required.' });
+
+    const { baseDir, target } = safePath(req.params.id, userPath);
+    const parentDir = path.dirname(target);
+    const baseName  = path.basename(target);
+
+    if (action === 'compress') {
+      const archiveName = `${baseName}.tar.gz`;
+      const archivePath = path.join(parentDir, archiveName);
+      execFile('tar', ['-czf', archivePath, '-C', parentDir, baseName], (err) => {
+        if (err) return res.status(500).json({ error: `Compression failed: ${err.message}` });
+        res.json({ ok: true, archive: archiveName });
+      });
+    } else if (action === 'decompress') {
+      const isTar = target.endsWith('.tar.gz') || target.endsWith('.tgz');
+      const isZip = target.endsWith('.zip');
+
+      if (isTar) {
+        execFile('tar', ['-xzf', target, '-C', parentDir], (err) => {
+          if (err) return res.status(500).json({ error: `Decompression failed: ${err.message}` });
+          res.json({ ok: true });
+        });
+      } else if (isZip) {
+        execFile('tar', ['-xf', target, '-C', parentDir], (err) => {
+          if (err) return res.status(500).json({ error: `Extraction failed: ${err.message}` });
+          res.json({ ok: true });
+        });
+      } else {
+        res.status(400).json({ error: 'Unsupported archive type. Use .zip, .tar.gz, or .tgz.' });
+      }
+    } else {
+      res.status(400).json({ error: 'Invalid action' });
+    }
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
