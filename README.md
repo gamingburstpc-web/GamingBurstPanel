@@ -30,12 +30,12 @@ sudo -u gbpanel gbpanel user add
 
 ---
 
-## 🕹️ Interactive Menu (`gb`)
+## 🕹️ Interactive Menu (`gbpanel`)
 
-For the easiest experience, simply type `gb` in your terminal as `root` to launch the interactive UI menu.
+For the easiest experience, simply type `gbpanel` in your terminal as `root` to launch the interactive UI menu.
 
 ```bash
-gb
+gbpanel
 ```
 This graphical menu allows you to press numbers (0-9) to quickly add users, view servers, check panel logs, and restart the daemon without memorizing any long commands!
 
@@ -43,25 +43,25 @@ This graphical menu allows you to press numbers (0-9) to quickly add users, view
 
 ## 📟 Command Reference (Direct CLI)
 
-If you prefer to run single commands directly (e.g. for scripts), you can use the raw commands. 
+If you prefer to run single commands directly (e.g. for scripts), you can pass arguments to `gbpanel`. 
 
-> [!IMPORTANT]
-> **Why is `sudo -u gbpanel` required here?**
-> The database and server files are owned strictly by the `gbpanel` system user. If you run raw commands as `root` without `sudo -u gbpanel`, it can change the database file ownership to root, locking out the web panel. (Note: The `gb` menu handles this for you automatically!)
+> [!TIP]
+> **Smart Wrapper**
+> Because `gbpanel` is now a smart system wrapper, you do **not** need to type `sudo -u gbpanel` anymore. The shortcut automatically assumes the correct permissions securely for you in the background!
 
 | Command | Action | Description |
 | :--- | :--- | :--- |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js user add` | **Add User** | Create a new user with interactive masked password and role prompt. |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js user list` | **List Users** | Show all registered panel users, their roles, and creation dates. |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js user remove <username>` | **Delete User** | Delete a user account (asks for confirmation). |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js user reset-password <username>` | **Reset Password** | Reset the password of an existing user account. |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js server list` | **List Servers** | Show all servers, ports, online status, and paths. |
-| `sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js server path <server_name>` | **Get Path** | Print the absolute directory path of a server. |
+| `gbpanel user add` | **Add User** | Create a new user with interactive masked password and role prompt. |
+| `gbpanel user list` | **List Users** | Show all registered panel users, their roles, and creation dates. |
+| `gbpanel user remove <username>` | **Delete User** | Delete a user account (asks for confirmation). |
+| `gbpanel user reset-password <username>` | **Reset Password** | Reset the password of an existing user account. |
+| `gbpanel server list` | **List Servers** | Show all servers, ports, online status, and paths. |
+| `gbpanel server path <server_name>` | **Get Path** | Print the absolute directory path of a server. |
 
 ### 📂 Quick CD to Server Folder
 To quickly jump into a server's folder in your SSH console, run:
 ```bash
-cd $(sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js server path <server_name>)
+cd $(gbpanel server path <server_name>)
 ```
 
 ---

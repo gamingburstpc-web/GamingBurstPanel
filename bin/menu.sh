@@ -2,11 +2,17 @@
 
 # Ensure script is run as root
 if [ "$EUID" -ne 0 ]; then
-  echo "Please run this menu as root (e.g., sudo gb)"
+  echo "Please run this command as root (e.g., sudo gbpanel)"
   exit 1
 fi
 
 GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js"
+
+# If arguments are provided, pass them directly to the underlying CLI tool
+if [ $# -gt 0 ]; then
+    $GB_CMD "$@"
+    exit $?
+fi
 
 while true; do
     clear
