@@ -264,9 +264,10 @@ button,input,select,textarea{font-family:inherit;}
   .hamburger{display:flex;}
 
   /* Topbar adjustments */
-  .topbar{margin-bottom:20px; flex-wrap: wrap;}
+  .topbar{margin-bottom:20px; flex-direction: column; align-items: flex-start; gap: 16px;}
   .page-title{font-size:18px;}
-  .topbar-actions {flex-wrap: wrap;}
+  .topbar-actions {width: 100%; display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-start;}
+  .topbar-actions .btn {flex: 1; min-width: 80px; text-align: center; justify-content: center;}
 
   /* Server grid: 1 column */
   .servers-grid{grid-template-columns:1fr;}

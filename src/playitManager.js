@@ -46,9 +46,20 @@ function startPlayit(serverId, serverDir) {
 
   if (!fs.existsSync(playitBin)) return; // not downloaded
 
+  let env = { ...process.env };
+  if (fs.existsSync(tomlPath)) {
+    try {
+      const content = fs.readFileSync(tomlPath, 'utf8');
+      // Extract secret if it's in TOML format, or just use raw text
+      const match = content.match(/secret_key\s*=\s*"([^"]+)"/);
+      if (match) env.SECRET_KEY = match[1];
+      else env.SECRET_KEY = content.trim();
+    } catch (e) {}
+  }
+
   const proc = spawn(playitBin, ['--secret_path', tomlPath], {
     cwd: serverDir,
-    env: process.env,
+    env: env,
     stdio: ['pipe', 'pipe', 'pipe']
   });
 

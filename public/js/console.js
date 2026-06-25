@@ -140,6 +140,7 @@ async function serverAction(action) {
     const res  = await fetch(`/api/servers/${serverId}/${action}`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) alert(data.error);
+    else loadServer();
   } catch (e) { alert(e.message); }
   finally { if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; } }
 }
