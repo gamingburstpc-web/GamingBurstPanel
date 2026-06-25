@@ -6,7 +6,7 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/gbpanel.js"
+GB_CMD="sudo -u gbpanel /opt/gbpanel/panel/bin/gbpanel.js"
 
 # If arguments are provided, pass them directly to the underlying CLI tool
 if [ $# -gt 0 ]; then
@@ -28,9 +28,11 @@ while true; do
     echo -e "\033[1;32m7)\033[0m Restart Panel Service"
     echo -e "\033[1;32m8)\033[0m Stop Panel Service"
     echo -e "\033[1;32m9)\033[0m View Panel Live Logs"
+    echo -e "\033[1;32m10)\033[0m Check Panel Status"
+    echo -e "\033[1;32m11)\033[0m Update Panel"
     echo -e "\033[1;31m0)\033[0m Exit"
     echo -e "\033[1;34m==========================================\033[0m"
-    read -p "Select an option [0-9]: " option
+    read -p "Select an option [0-11]: " option
 
     echo ""
     case $option in
@@ -74,6 +76,33 @@ while true; do
         9)
             echo "Press Ctrl+C to exit logs."
             journalctl -u gbpanel -f
+            ;;
+        10)
+            echo "Checking Panel Status..."
+            if systemctl is-active --quiet gbpanel; then
+                echo -e "\033[1;32mPanel is ONLINE and running normally.\033[0m"
+            else
+                echo -e "\033[1;31mPanel is OFFLINE.\033[0m"
+                read -p "Do you want to start the panel now? (y/n): " ans
+                if [ "$ans" = "y" ] || [ "$ans" = "Y" ]; then
+                    systemctl start gbpanel
+                    echo "Panel started."
+                fi
+            fi
+            ;;
+        11)
+            echo "Checking for Updates..."
+            cd /opt/gbpanel/panel
+            git fetch origin main > /dev/null 2>&1
+            LOCAL=$(git rev-parse HEAD)
+            REMOTE=$(git rev-parse origin/main)
+            if [ "$LOCAL" = "$REMOTE" ]; then
+                echo -e "\033[1;32mGamingBurst Panel is already completely up to date!\033[0m"
+            else
+                echo -e "\033[1;36mUpdate found! Downloading and installing...\033[0m"
+                sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git fetch origin main && git reset --hard origin/main && git pull origin main" && sudo bash /opt/gbpanel/panel/install.sh
+                echo -e "\033[1;32mPanel updated successfully!\033[0m"
+            fi
             ;;
         0)
             echo "Exiting Menu."
