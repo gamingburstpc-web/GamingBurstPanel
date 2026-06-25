@@ -10,6 +10,14 @@ const BCRYPT_ROUNDS = parseInt(process.env.BCRYPT_ROUNDS || '10', 10);
 
 fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 
+// ── Clear stale locks ─────────────────────────────────────────────────────────
+// If the panel crashed previously, node-sqlite3-wasm might leave behind a .lock dir.
+// Since this is a single-process application, any lock file present at startup is stale.
+const lockPath = DB_PATH + '.lock';
+if (fs.existsSync(lockPath)) {
+  try { fs.rmSync(lockPath, { recursive: true, force: true }); } catch (e) {}
+}
+
 // ── Compat shim ───────────────────────────────────────────────────────────────
 // node-sqlite3-wasm Statement.run/get/all take an array.
 // This shim makes it accept spread args like better-sqlite3.
