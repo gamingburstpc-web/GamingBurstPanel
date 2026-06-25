@@ -112,3 +112,24 @@ The panel runs in the background as a systemd service (`gbpanel.service`) and wi
 The installer opens the following ports on UFW automatically:
 * **`7676` (TCP)** — Web Panel access.
 * **`25565 - 25575` (TCP)** — Minecraft game ports.
+
+---
+
+## 🆘 Data Recovery (Emergency Restore)
+
+If you accidentally ran an old installer or wiped your panel directory, your data is likely completely safe in a backup folder created by the script!
+
+To restore your servers and users (database) from the automatic backup:
+
+```bash
+# 1. Find your backup folder name (it will look like panel_backup_TIMESTAMP)
+ls -ld /opt/gbpanel/panel_backup_*
+
+# 2. Copy the database and server files back to the active panel (replace TIMESTAMP with your actual numbers)
+sudo cp /opt/gbpanel/panel_backup_TIMESTAMP/data/panel.db /opt/gbpanel/panel/data/
+sudo cp -r /opt/gbpanel/panel_backup_TIMESTAMP/servers/* /opt/gbpanel/panel/servers/
+
+# 3. Fix permissions and restart the panel
+sudo chown -R gbpanel:gbpanel /opt/gbpanel/panel/
+sudo systemctl restart gbpanel
+```
