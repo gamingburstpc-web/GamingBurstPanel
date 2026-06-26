@@ -18,10 +18,15 @@ async function loadPlayitStatus() {
       document.getElementById('playitStateDownload').classList.remove('hidden');
     } else if (data.status === 'installed') {
       document.getElementById('playitStateSetup').classList.remove('hidden');
-    } else if (data.status === 'claiming') {
+    } else if (['claiming', 'starting', 'crashed'].includes(data.status)) {
       document.getElementById('playitStateSetup').classList.remove('hidden');
       document.getElementById('playitSetupClaim').classList.remove('hidden');
-      if (data.claimLink) {
+      if (data.status === 'crashed') {
+        const a = document.getElementById('playitClaimLink');
+        a.removeAttribute('href');
+        a.innerText = 'Process Crashed (See logs below)';
+        a.style.color = 'var(--danger)';
+      } else if (data.claimLink) {
         const a = document.getElementById('playitClaimLink');
         a.href = data.claimLink;
         a.innerText = data.claimLink;

@@ -84,6 +84,12 @@ async function loadServer() {
   document.getElementById('serverTz').textContent   = `🌏 ${serverData.env_tz}`;
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
 
+  const formatBytesStr = (bytes) => {
+    if (bytes > 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / 1024).toFixed(1) + ' KB';
+  };
+  
   const formatBytes = (bytes) => {
     if (bytes > 1024 * 1024 * 1024) return [(bytes / (1024 * 1024 * 1024)).toFixed(2), 'GB'];
     if (bytes > 1024 * 1024) return [(bytes / (1024 * 1024)).toFixed(1), 'MB'];
@@ -125,18 +131,13 @@ async function loadServer() {
 
   // Server info grid
   const infoGrid = document.getElementById('serverInfo');
-  const formatBytes = (bytes) => {
-    if (bytes > 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
-    if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-    return (bytes / 1024).toFixed(1) + ' KB';
-  };
 
   const fields = [
     ['Directory',   serverData.server_dir],
     ['JAR',         serverData.jar_path.split('/').pop()],
     ['Min RAM',     serverData.memory_min + ' MB'],
     ['Max RAM',     serverData.memory_max + ' MB'],
-    ['Disk Usage',  serverData.disk_usage != null ? formatBytes(serverData.disk_usage) : 'Unknown'],
+    ['Disk Usage',  serverData.disk_usage != null ? formatBytesStr(serverData.disk_usage) : 'Unknown'],
     ['Port',        serverData.port],
     ['Timezone',    serverData.env_tz],
     ['Created',     new Date(serverData.created_at).toLocaleString('en-IN')],

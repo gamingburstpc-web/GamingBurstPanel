@@ -7,6 +7,10 @@ const { spawn } = require('child_process');
 const registry = new Map(); // serverId -> { proc, claimLink, status }
 
 function getPlayitPath(serverDir) {
+  try {
+    const stdout = require('child_process').execSync('which playit', { stdio: 'pipe' }).toString().trim();
+    if (stdout && fs.existsSync(stdout)) return stdout;
+  } catch(e) {}
   return path.join(serverDir, 'playit');
 }
 
@@ -50,8 +54,7 @@ function startPlayit(serverId, serverDir) {
   if (fs.existsSync(tomlPath)) {
     try {
       const content = fs.readFileSync(tomlPath, 'utf8');
-      // Extract secret if it's in TOML format, or just use raw text
-      const match = content.match(/secret_key\s*=\s*"([^"]+)"/);
+      const match = content.match(/secret_key\s*=\s*'([^']+)'/);
       if (match) env.SECRET_KEY = match[1];
       else env.SECRET_KEY = content.trim();
     } catch (e) {}
@@ -86,11 +89,13 @@ function startPlayit(serverId, serverDir) {
   proc.stdout.on('data', onData);
   proc.stderr.on('data', onData);
 
-  proc.on('close', () => {
-    registry.delete(serverId);
+  proc.on('close', (code) => {
+    entry.status = 'crashed';
+    entry.logs += `\n[Info] Playit process exited with code ${code}`;
   });
-  proc.on('error', () => {
-    registry.delete(serverId);
+  proc.on('error', (err) => {
+    entry.status = 'crashed';
+    entry.logs += `\n[Error] Failed to spawn playit: ${err.message}`;
   });
 }
 
@@ -110,8 +115,9 @@ function getStatus(serverId, serverDir) {
 
   const entry = registry.get(serverId);
   if (entry) {
-    if (entry.status === 'starting') return { status: 'claiming', claimLink: null, logs: entry.logs };
-    if (entry.status === 'claiming') return { status: 'claiming', claimLink: entry.claimLink, logs: entry.logs };
+    if (['starting', 'claiming', 'crashed'].includes(entry.status)) {
+      return { status: entry.status, claimLink: entry.claimLink, logs: entry.logs };
+    }
   }
 
   if (fs.existsSync(tomlPath)) {
