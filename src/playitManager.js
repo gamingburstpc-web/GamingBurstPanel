@@ -60,7 +60,7 @@ function startPlayit(serverId, serverDir) {
     } catch (e) {}
   }
 
-  const proc = spawn(playitBin, ['--secret_path', tomlPath], {
+  const proc = spawn(playitBin, ['--secret-path', tomlPath], {
     cwd: serverDir,
     env: env,
     stdio: ['pipe', 'pipe', 'pipe']
