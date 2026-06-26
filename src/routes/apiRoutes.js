@@ -224,11 +224,29 @@ function getDirSizeSync(dirPath) {
   return size;
 }
 
+function getVpsDiskInfo() {
+  try {
+    const stat = fs.statfsSync('/');
+    const total = stat.blocks * stat.bsize;
+    const free = stat.bavail * stat.bsize;
+    return { total, used: total - free };
+  } catch(e) { return { total: 0, used: 0 }; }
+}
+
 router.get('/servers/:id', (req, res) => {
   const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found.' });
   const disk_usage = getDirSizeSync(server.server_dir);
-  res.json({ ...server, is_live: pm.isRunning(server.id), disk_usage });
+  const vpsDisk = getVpsDiskInfo();
+  res.json({ 
+    ...server, 
+    is_live: pm.isRunning(server.id), 
+    disk_usage,
+    vps_disk_total: vpsDisk.total,
+    vps_disk_used: vpsDisk.used,
+    vps_ram_total: require('os').totalmem(),
+    vps_ram_used: require('os').totalmem() - require('os').freemem()
+  });
 });
 
 // ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
@@ -619,6 +637,111 @@ router.post('/servers/:id/playit/reset', requirePermission('files'), (req, res) 
     playitManager.resetPlayit(server.id, server.server_dir);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ── PLAYERS MANAGEMENT ────────────────────────────────────────────────────────
+
+router.get('/servers/:id/players', requirePermission('console'), async (req, res) => {
+  const serverId = req.params.id;
+  if (!pm.isRunning(serverId)) return res.json({ players: [] });
+  const emitter = pm.getEmitter(serverId);
+  if (!emitter) return res.json({ players: [] });
+
+  return new Promise((resolve) => {
+    let timeout = setTimeout(() => {
+      emitter.off('line', onLine);
+      resolve(res.json({ players: [] }));
+    }, 2000);
+
+    let foundList = false;
+    const onLine = (line) => {
+      if (line.includes('players online')) {
+        const parts = line.split(':');
+        if (parts.length > 1 && parts[parts.length - 1].trim().length > 0) {
+          const p = parts[parts.length - 1].split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
+          clearTimeout(timeout);
+          emitter.off('line', onLine);
+          resolve(res.json({ players: p }));
+        } else {
+          foundList = true;
+        }
+      } else if (foundList) {
+        const p = line.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
+        clearTimeout(timeout);
+        emitter.off('line', onLine);
+        resolve(res.json({ players: p }));
+      }
+    };
+    emitter.on('line', onLine);
+    pm.sendCommand(serverId, 'list');
+  });
+});
+
+router.post('/servers/:id/players/command', requirePermission('console'), express.json(), (req, res) => {
+  const { action, player } = req.body;
+  let cmd = '';
+  if (action === 'kick') cmd = `kick ${player}`;
+  else if (action === 'ban') cmd = `ban ${player}`;
+  else if (action === 'unban') cmd = `pardon ${player}`;
+  else if (action === 'whitelist_add') cmd = `whitelist add ${player}`;
+  else if (action === 'whitelist_remove') cmd = `whitelist remove ${player}`;
+  else if (action === 'whitelist_on') cmd = `whitelist on`;
+  else if (action === 'whitelist_off') cmd = `whitelist off`;
+  
+  if (cmd) pm.sendCommand(req.params.id, cmd);
+  res.json({ ok: true });
+});
+
+router.get('/servers/:id/players/lists', requirePermission('console'), (req, res) => {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  let banned = [], whitelist = [];
+  try {
+    const bFile = path.join(server.server_dir, 'banned-players.json');
+    if (fs.existsSync(bFile)) banned = JSON.parse(fs.readFileSync(bFile, 'utf8'));
+  } catch(e) {}
+  try {
+    const wFile = path.join(server.server_dir, 'whitelist.json');
+    if (fs.existsSync(wFile)) whitelist = JSON.parse(fs.readFileSync(wFile, 'utf8'));
+  } catch(e) {}
+  
+  let whitelistEnabled = false;
+  try {
+    const props = fs.readFileSync(path.join(server.server_dir, 'server.properties'), 'utf8');
+    whitelistEnabled = props.includes('white-list=true');
+  } catch(e) {}
+
+  res.json({ banned, whitelist, whitelistEnabled });
+});
+
+router.post('/servers/:id/players/coordinates', requirePermission('console'), express.json(), async (req, res) => {
+  const { player } = req.body;
+  const serverId = req.params.id;
+  if (!pm.isRunning(serverId)) return res.json({ error: 'Server offline' });
+  const emitter = pm.getEmitter(serverId);
+  if (!emitter) return res.json({ error: 'No emitter' });
+
+  return new Promise((resolve) => {
+    let timeout = setTimeout(() => {
+      emitter.off('line', onLine);
+      resolve(res.json({ error: 'Not supported on Bedrock or player missing.' }));
+    }, 1500);
+
+    const onLine = (line) => {
+      if (line.includes('has the following entity data:')) {
+        const match = line.match(/\[(.*?)\]/);
+        if (match) {
+          clearTimeout(timeout);
+          emitter.off('line', onLine);
+          // format [-123.45d, 64.0d, 567.89d] to X: -123, Y: 64, Z: 567
+          let coords = match[1].replace(/d/g, '').split(',').map(n => Math.round(parseFloat(n)));
+          if (coords.length === 3) resolve(res.json({ coordinates: `X: ${coords[0]}, Y: ${coords[1]}, Z: ${coords[2]}` }));
+          else resolve(res.json({ coordinates: match[1] }));
+        }
+      }
+    };
+    emitter.on('line', onLine);
+    pm.sendCommand(serverId, `data get entity ${player} Pos`);
+  });
 });
 
 module.exports = router;

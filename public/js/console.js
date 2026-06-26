@@ -84,6 +84,28 @@ async function loadServer() {
   document.getElementById('serverTz').textContent   = `🌏 ${serverData.env_tz}`;
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
 
+  const formatBytes = (bytes) => {
+    if (bytes > 1024 * 1024 * 1024) return [(bytes / (1024 * 1024 * 1024)).toFixed(2), 'GB'];
+    if (bytes > 1024 * 1024) return [(bytes / (1024 * 1024)).toFixed(1), 'MB'];
+    return [(bytes / 1024).toFixed(1), 'KB'];
+  };
+
+  const [svrDiskVal, svrDiskUnit] = formatBytes(serverData.disk_usage || 0);
+  document.getElementById('metDisk').textContent = svrDiskVal;
+  document.getElementById('metDiskUnit').textContent = svrDiskUnit;
+
+  const [vpsDiskUsedVal, vpsDiskUsedUnit] = formatBytes(serverData.vps_disk_used || 0);
+  const [vpsDiskTotalVal, vpsDiskTotalUnit] = formatBytes(serverData.vps_disk_total || 0);
+  document.getElementById('metVpsDisk').textContent = `VPS: ${vpsDiskUsedVal} ${vpsDiskUsedUnit} / ${vpsDiskTotalVal} ${vpsDiskTotalUnit}`;
+  
+  const vpsDiskPct = serverData.vps_disk_total ? Math.min(Math.round((serverData.vps_disk_used / serverData.vps_disk_total) * 100), 100) : 0;
+  const db = document.getElementById('diskBar');
+  if (db) { db.style.width = vpsDiskPct + '%'; db.className = 'progress-fill' + (vpsDiskPct > 90 ? ' crit' : ''); }
+
+  const [vpsRamUsedVal, vpsRamUsedUnit] = formatBytes(serverData.vps_ram_used || 0);
+  const [vpsRamTotalVal, vpsRamTotalUnit] = formatBytes(serverData.vps_ram_total || 0);
+  document.getElementById('metVpsRam').textContent = `VPS: ${vpsRamUsedVal} ${vpsRamUsedUnit} / ${vpsRamTotalVal} ${vpsRamTotalUnit}`;
+
   updateStatusUI(serverData.status);
 
   // Role-based UI adjustments

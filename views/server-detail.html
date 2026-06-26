@@ -62,19 +62,30 @@
     <div id="alertSuccess" class="alert alert-success hidden" style="margin-bottom:16px;"><span>✓</span><span id="alertSuccessMsg"></span></div>
 
     <!-- Metrics -->
-    <div class="metrics-bar mb-4">
+    <div class="metrics-bar mb-4" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));gap:16px;">
       <div class="metric-card">
         <div class="metric-label" style="display:flex;justify-content:space-between;">
-          <span>Server RAM Usage</span>
-          <span class="text-muted text-sm" style="font-weight:normal" title="Estimated JVM heap usage.">(estimated)</span>
+          <span>RAM Usage</span>
+          <span class="text-muted text-sm" style="font-weight:normal" title="Server Process RAM">Server</span>
         </div>
         <div><span class="metric-value" id="metRam">0</span><span class="metric-unit">MB</span><span class="text-muted text-sm" id="metRamMax"></span></div>
-        <div class="progress-track"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
+        <div class="text-muted text-sm" style="margin-top:6px" id="metVpsRam">VPS: --</div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="ramBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label" style="display:flex;justify-content:space-between;">
+          <span>Disk Space</span>
+          <span class="text-muted text-sm" style="font-weight:normal">Server</span>
+        </div>
+        <div><span class="metric-value" id="metDisk">0</span><span class="metric-unit" id="metDiskUnit">MB</span></div>
+        <div class="text-muted text-sm" style="margin-top:6px" id="metVpsDisk">VPS: --</div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="diskBar" style="width:0%"></div></div>
       </div>
       <div class="metric-card">
         <div class="metric-label">CPU Usage</div>
         <div><span class="metric-value" id="metCpu">0</span><span class="metric-unit">%</span></div>
-        <div class="progress-track"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
+        <div class="text-muted text-sm" style="margin-top:6px;visibility:hidden">Spacer</div>
+        <div class="progress-track mt-2"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
       </div>
     </div>
 
@@ -84,6 +95,7 @@
       <button id="tabBtnFiles" class="btn btn-secondary" onclick="switchServerTab('files')">📁 Files</button>
       <button id="tabBtnPlugins" class="btn btn-secondary" onclick="switchServerTab('plugins')">🔌 Plugins</button>
       <button id="tabBtnPlayit" class="btn btn-secondary" onclick="switchServerTab('playit')">🌐 Playit</button>
+      <button id="tabBtnPlayers" class="btn btn-secondary admin-only" onclick="switchServerTab('players')">👥 Players</button>
     </div>
 
     <!-- Console Tab -->
@@ -215,7 +227,7 @@
     </div>
 
     <!-- Playit Tab -->
-    <div id="tabPlayit" class="hidden">
+    <div id="tabPlayit" class="hidden server-tab">
       <div class="card p-4">
         <h3 class="mb-4">Playit.gg Tunnel Setup</h3>
         <div id="playitStateDownload">
@@ -261,6 +273,45 @@
       </div>
     </div>
 
+    <!-- Players Tab -->
+    <div id="tabPlayers" class="hidden server-tab">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:24px">
+        <!-- Online Players -->
+        <div class="card p-4">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+            <h3 style="margin:0">Online Players</h3>
+            <button class="btn btn-secondary btn-sm" onclick="loadOnlinePlayers()">↻ Refresh</button>
+          </div>
+          <div id="onlinePlayersList" style="display:flex;flex-direction:column;gap:12px;"></div>
+        </div>
+
+        <!-- Server Lists (Whitelist / Bans) -->
+        <div style="display:flex;flex-direction:column;gap:24px">
+          <!-- Whitelist -->
+          <div class="card p-4">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <h3 style="margin:0">Whitelist</h3>
+              <div id="whitelistStatusBadge" class="badge badge-stopped">Disabled</div>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:16px">
+              <button class="btn btn-secondary btn-sm" id="btnToggleWhitelist" onclick="toggleWhitelist()">Toggle Whitelist</button>
+              <div style="display:flex;gap:8px;flex:1">
+                <input type="text" id="whitelistAddInput" class="form-input form-input-sm" style="flex:1" placeholder="Username...">
+                <button class="btn btn-primary btn-sm" onclick="addWhitelist()">Add</button>
+              </div>
+            </div>
+            <div id="whitelistList" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto"></div>
+          </div>
+          
+          <!-- Banned Players -->
+          <div class="card p-4">
+            <h3 class="mb-4">Banned Players</h3>
+            <div id="bannedPlayersList" style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Server info -->
     <div class="card mt-4">
       <div class="card-header"><div class="card-title">Server Info</div></div>
@@ -272,5 +323,6 @@
 <script src="/public/js/files.js?v=2"></script>
 <script src="/public/js/plugins.js?v=2"></script>
 <script src="/public/js/playit.js?v=2"></script>
+<script src="/public/js/players.js?v=2"></script>
 </body>
 </html>
