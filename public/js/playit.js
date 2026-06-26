@@ -30,6 +30,14 @@ async function loadPlayitStatus() {
         a.removeAttribute('href');
         a.innerText = 'Generating...';
       }
+      
+      const logBox = document.getElementById('playitLogBox');
+      if (logBox && data.logs) {
+        logBox.classList.remove('hidden');
+        logBox.innerText = data.logs;
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+      
       if (!playitPollInterval) playitPollInterval = setInterval(loadPlayitStatus, 3000);
     } else if (data.status === 'connected') {
       if (playitPollInterval) { clearInterval(playitPollInterval); playitPollInterval = null; }

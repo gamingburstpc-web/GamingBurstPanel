@@ -63,15 +63,17 @@ function startPlayit(serverId, serverDir) {
     stdio: ['pipe', 'pipe', 'pipe']
   });
 
-  const entry = { proc, claimLink: null, status: 'starting' };
+  const entry = { proc, claimLink: null, status: 'starting', logs: '' };
   registry.set(serverId, entry);
 
   const onData = (data) => {
     const output = data.toString();
+    entry.logs += output;
+    if (entry.logs.length > 5000) entry.logs = entry.logs.slice(-5000);
     console.log('[Playit]', output.trim());
     if (!fs.existsSync(tomlPath)) {
-      const match = output.match(/https:\/\/playit\.gg\/claim\/[a-zA-Z0-9]+/);
-      if (match) {
+      const match = output.match(/https?:\/\/[a-zA-Z0-9\.\-]+\/[a-zA-Z0-9\/]+/);
+      if (match && match[0].includes('playit')) {
         entry.claimLink = match[0];
         entry.status = 'claiming';
       }
@@ -108,8 +110,8 @@ function getStatus(serverId, serverDir) {
 
   const entry = registry.get(serverId);
   if (entry) {
-    if (entry.status === 'starting') return { status: 'claiming', claimLink: null };
-    if (entry.status === 'claiming') return { status: 'claiming', claimLink: entry.claimLink };
+    if (entry.status === 'starting') return { status: 'claiming', claimLink: null, logs: entry.logs };
+    if (entry.status === 'claiming') return { status: 'claiming', claimLink: entry.claimLink, logs: entry.logs };
   }
 
   if (fs.existsSync(tomlPath)) {
