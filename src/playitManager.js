@@ -68,11 +68,11 @@ function startPlayit(serverId, serverDir) {
 
   const onData = (data) => {
     const output = data.toString();
-    // Look for claim link in output
+    console.log('[Playit]', output.trim());
     if (!fs.existsSync(tomlPath)) {
-      const match = output.match(/(https:\/\/playit\.gg\/claim\/[a-zA-Z0-9]+)/);
+      const match = output.match(/https:\/\/playit\.gg\/claim\/[a-zA-Z0-9]+/);
       if (match) {
-        entry.claimLink = match[1];
+        entry.claimLink = match[0];
         entry.status = 'claiming';
       }
     } else {
@@ -121,14 +121,15 @@ function getStatus(serverId, serverDir) {
 }
 
 function setupClaim(serverId, serverDir) {
-  // If we don't have toml, starting it will automatically generate the claim link
+  const tomlPath = getTomlPath(serverDir);
+  if (fs.existsSync(tomlPath)) fs.unlinkSync(tomlPath);
   stopPlayit(serverId);
   startPlayit(serverId, serverDir);
 }
 
 function setupSecret(serverId, serverDir, secret) {
   const tomlPath = getTomlPath(serverDir);
-  fs.writeFileSync(tomlPath, `secret_key="${secret}"\n`);
+  fs.writeFileSync(tomlPath, `secret_key='${secret}'\n`);
   stopPlayit(serverId);
   startPlayit(serverId, serverDir);
 }
