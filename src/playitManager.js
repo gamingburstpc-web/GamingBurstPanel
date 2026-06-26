@@ -17,6 +17,7 @@ function getTomlPath(serverDir) {
 async function downloadPlayit(serverDir) {
   return new Promise((resolve, reject) => {
     const dest = getPlayitPath(serverDir);
+    if (fs.existsSync(dest)) fs.unlinkSync(dest); // Force fresh download of CLI version
     const file = fs.createWriteStream(dest);
     const get = (url) => {
       https.get(url, { headers: { 'User-Agent': 'GamingBurst-Panel/1.0' } }, (res) => {
@@ -34,7 +35,7 @@ async function downloadPlayit(serverDir) {
         reject(err);
       });
     };
-    get('https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-linux-amd64');
+    get('https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-cli-linux-amd64');
   });
 }
 

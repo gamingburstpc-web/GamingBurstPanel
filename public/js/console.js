@@ -1,5 +1,10 @@
 'use strict';
 
+window.showAlert = function(type, msg) {
+  console.log(`[${type}] ${msg}`);
+  if (type !== 'info') alert(msg);
+};
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function toggleSidebar() {
   const s = document.getElementById('sidebar');

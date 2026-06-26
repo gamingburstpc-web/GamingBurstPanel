@@ -698,9 +698,17 @@ router.post('/servers/:id/players/command', requirePermission('console'), expres
       if (require('fs').existsSync(propsPath)) {
         let props = require('fs').readFileSync(propsPath, 'utf8');
         if (action === 'whitelist_on') {
-          props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=true');
+          if (/white-list\s*=\s*(false|true)/.test(props)) {
+            props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=true');
+          } else {
+            props += '\nwhite-list=true\n';
+          }
         } else {
-          props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=false');
+          if (/white-list\s*=\s*(false|true)/.test(props)) {
+            props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=false');
+          } else {
+            props += '\nwhite-list=false\n';
+          }
         }
         require('fs').writeFileSync(propsPath, props);
       }
