@@ -97,6 +97,7 @@ async function searchPlugins() {
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
           ${hit.categories.filter(c => ['spigot','paper','bukkit'].includes(c)).map(c => `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">${c}</span>`).join('')}
+          <span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">MC: ${hit.versions ? (hit.versions.length > 3 ? hit.versions.slice(-3).join(', ') + '...' : hit.versions.join(', ')) : 'Unknown'}</span>
           <span style="font-size:11px;color:var(--text-muted);">Source: Modrinth</span>
           <span style="font-size:11px;color:var(--text-muted);">Downloads: ${hit.downloads}</span>
         </div>

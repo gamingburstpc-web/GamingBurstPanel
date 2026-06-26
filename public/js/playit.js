@@ -25,6 +25,10 @@ async function loadPlayitStatus() {
         const a = document.getElementById('playitClaimLink');
         a.href = data.claimLink;
         a.innerText = data.claimLink;
+      } else {
+        const a = document.getElementById('playitClaimLink');
+        a.removeAttribute('href');
+        a.innerText = 'Generating...';
       }
       if (!playitPollInterval) playitPollInterval = setInterval(loadPlayitStatus, 3000);
     } else if (data.status === 'connected') {

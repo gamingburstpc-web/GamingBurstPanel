@@ -106,16 +106,15 @@ function getStatus(serverId, serverDir) {
 
   if (!fs.existsSync(playitBin)) return { status: 'not_installed' };
 
-  if (fs.existsSync(tomlPath)) {
-    // Make sure it's running
-    if (!registry.has(serverId)) startPlayit(serverId, serverDir);
-    return { status: 'connected', tunnels: [] }; // We could parse tunnels if we had API, but keeping it simple for now
+  const entry = registry.get(serverId);
+  if (entry) {
+    if (entry.status === 'starting') return { status: 'claiming', claimLink: null };
+    if (entry.status === 'claiming') return { status: 'claiming', claimLink: entry.claimLink };
   }
 
-  // Installed, but no toml. Check if it's currently claiming.
-  const entry = registry.get(serverId);
-  if (entry && entry.status === 'claiming' && entry.claimLink) {
-    return { status: 'claiming', claimLink: entry.claimLink };
+  if (fs.existsSync(tomlPath)) {
+    if (!entry) startPlayit(serverId, serverDir);
+    return { status: 'connected', tunnels: [] };
   }
 
   return { status: 'installed' };
