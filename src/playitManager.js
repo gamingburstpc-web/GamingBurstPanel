@@ -35,7 +35,7 @@ async function downloadPlayit(serverDir) {
         reject(err);
       });
     };
-    get('https://github.com/playit-cloud/playit-agent/releases/latest/download/playit-cli-linux-amd64');
+    get('https://github.com/playit-cloud/playit-agent/releases/download/v0.14.0/playit-linux-amd64');
   });
 }
 
@@ -57,13 +57,7 @@ function startPlayit(serverId, serverDir) {
     } catch (e) {}
   }
 
-  const socketPath = path.join(serverDir, 'playit.sock');
-  let args = ['--secret-path', tomlPath, '--socket-path', socketPath];
-  if (!fs.existsSync(tomlPath)) {
-    args = ['setup', '--secret-path', tomlPath, '--socket-path', socketPath];
-  }
-
-  const proc = spawn(playitBin, args, {
+  const proc = spawn(playitBin, ['--secret_path', tomlPath], {
     cwd: serverDir,
     env: env,
     stdio: ['pipe', 'pipe', 'pipe']
