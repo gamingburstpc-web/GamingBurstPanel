@@ -7,16 +7,23 @@ let currentEditFile = '';
 const canAccessFiles = () => currentUser?.isAdmin || currentUser?.permissions?.includes('files');
 
 function switchServerTab(tab) {
-  document.getElementById('tabConsole').classList.toggle('hidden', tab !== 'console');
-  document.getElementById('tabFiles').classList.toggle('hidden', tab !== 'files');
-  
-  document.getElementById('tabBtnConsole').classList.toggle('active', tab === 'console');
-  document.getElementById('tabBtnConsole').classList.toggle('btn-primary', tab === 'console');
-  document.getElementById('tabBtnConsole').classList.toggle('btn-secondary', tab !== 'console');
-  
-  document.getElementById('tabBtnFiles').classList.toggle('active', tab === 'files');
-  document.getElementById('tabBtnFiles').classList.toggle('btn-primary', tab === 'files');
-  document.getElementById('tabBtnFiles').classList.toggle('btn-secondary', tab !== 'files');
+  // Hide all tabs
+  document.querySelectorAll('.server-tab').forEach(el => el.classList.add('hidden'));
+  // Show target
+  const target = document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  if (target) target.classList.remove('hidden');
+
+  // Update all buttons
+  const allBtns = ['Console', 'Files', 'Plugins', 'Playit', 'Players'];
+  allBtns.forEach(name => {
+    const btn = document.getElementById('tabBtn' + name);
+    if (btn) {
+      const isActive = tab === name.toLowerCase();
+      btn.classList.toggle('active', isActive);
+      btn.classList.toggle('btn-primary', isActive);
+      btn.classList.toggle('btn-secondary', !isActive);
+    }
+  });
 
   if (tab === 'files') {
     if (!canAccessFiles()) {
@@ -24,6 +31,13 @@ function switchServerTab(tab) {
     } else {
       loadFiles();
     }
+  } else if (tab === 'plugins' && typeof loadPlugins === 'function') {
+    loadPlugins();
+  } else if (tab === 'playit' && typeof loadPlayitStatus === 'function') {
+    loadPlayitStatus();
+  } else if (tab === 'players' && typeof loadOnlinePlayers === 'function') {
+    loadOnlinePlayers();
+    if (typeof loadPlayerLists === 'function') loadPlayerLists();
   }
 }
 

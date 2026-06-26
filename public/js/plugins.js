@@ -220,28 +220,4 @@ function uploadPluginFile(event) {
   event.target.value = '';
 }
 
-// Hook into tab switching
-const originalSwitchServerTab = window.switchServerTab;
-window.switchServerTab = function(tabName) {
-  if (originalSwitchServerTab) originalSwitchServerTab(tabName);
-  
-  document.getElementById('tabConsole').classList.add('hidden');
-  document.getElementById('tabFiles').classList.add('hidden');
-  document.getElementById('tabPlugins').classList.add('hidden');
-  
-  document.getElementById('tabBtnConsole').classList.remove('active');
-  document.getElementById('tabBtnFiles').classList.remove('active');
-  document.getElementById('tabBtnPlugins').classList.remove('active');
-  
-  if (tabName === 'console') {
-    document.getElementById('tabConsole').classList.remove('hidden');
-    document.getElementById('tabBtnConsole').classList.add('active');
-  } else if (tabName === 'files') {
-    document.getElementById('tabFiles').classList.remove('hidden');
-    document.getElementById('tabBtnFiles').classList.add('active');
-  } else if (tabName === 'plugins') {
-    document.getElementById('tabPlugins').classList.remove('hidden');
-    document.getElementById('tabBtnPlugins').classList.add('active');
-    if (currentPlugins.length === 0) loadInstalledPlugins();
-  }
-};
+

@@ -2,16 +2,6 @@
 
 let isWhitelistEnabled = false;
 
-// Initialize players tab when switched to
-const oldSwitchServerTab = switchServerTab;
-window.switchServerTab = (tab) => {
-  oldSwitchServerTab(tab);
-  if (tab === 'players') {
-    loadOnlinePlayers();
-    loadPlayerLists();
-  }
-};
-
 async function loadOnlinePlayers() {
   const listEl = document.getElementById('onlinePlayersList');
   if (!listEl) return;

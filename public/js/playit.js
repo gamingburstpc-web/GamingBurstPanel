@@ -138,19 +138,4 @@ async function resetPlayit() {
   }
 }
 
-// Hook into tab switching
-const originalSwitchServerTabPlayit = window.switchServerTab;
-window.switchServerTab = function(tabName) {
-  if (originalSwitchServerTabPlayit) originalSwitchServerTabPlayit(tabName);
-  
-  if (document.getElementById('tabPlayit')) {
-    document.getElementById('tabPlayit').classList.add('hidden');
-    document.getElementById('tabBtnPlayit').classList.remove('active');
-  }
-  
-  if (tabName === 'playit') {
-    document.getElementById('tabPlayit').classList.remove('hidden');
-    document.getElementById('tabBtnPlayit').classList.add('active');
-    loadPlayitStatus();
-  }
-};
+

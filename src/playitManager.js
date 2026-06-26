@@ -7,10 +7,6 @@ const { spawn } = require('child_process');
 const registry = new Map(); // serverId -> { proc, claimLink, status }
 
 function getPlayitPath(serverDir) {
-  try {
-    const stdout = require('child_process').execSync('which playit', { stdio: 'pipe' }).toString().trim();
-    if (stdout && fs.existsSync(stdout)) return stdout;
-  } catch(e) {}
   return path.join(serverDir, 'playit');
 }
 
