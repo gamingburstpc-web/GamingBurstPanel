@@ -689,6 +689,24 @@ router.post('/servers/:id/players/command', requirePermission('console'), expres
   else if (action === 'whitelist_off') cmd = `whitelist off`;
   
   if (cmd) pm.sendCommand(req.params.id, cmd);
+
+  // Force update server.properties for UI feedback
+  if (action === 'whitelist_on' || action === 'whitelist_off') {
+    const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+    if (server) {
+      const propsPath = require('path').join(server.server_dir, 'server.properties');
+      if (require('fs').existsSync(propsPath)) {
+        let props = require('fs').readFileSync(propsPath, 'utf8');
+        if (action === 'whitelist_on') {
+          props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=true');
+        } else {
+          props = props.replace(/white-list\s*=\s*(false|true)/g, 'white-list=false');
+        }
+        require('fs').writeFileSync(propsPath, props);
+      }
+    }
+  }
+
   res.json({ ok: true });
 });
 

@@ -57,8 +57,12 @@ function startPlayit(serverId, serverDir) {
   }
 
   const socketPath = path.join(serverDir, 'playit.sock');
+  let args = ['--secret-path', tomlPath, '--socket-path', socketPath];
+  if (!fs.existsSync(tomlPath)) {
+    args = ['setup', '--secret-path', tomlPath, '--socket-path', socketPath];
+  }
 
-  const proc = spawn(playitBin, ['--secret-path', tomlPath, '--socket-path', socketPath], {
+  const proc = spawn(playitBin, args, {
     cwd: serverDir,
     env: env,
     stdio: ['pipe', 'pipe', 'pipe']
