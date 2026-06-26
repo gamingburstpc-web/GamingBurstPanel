@@ -221,13 +221,28 @@ async function sendPlayerCommand(action, player = '') {
 }
 
 function toggleWhitelist() {
-  sendPlayerCommand(isWhitelistEnabled ? 'whitelist_off' : 'whitelist_on');
+  const btn = document.getElementById('btnToggleWhitelist');
+  if (btn) { btn.disabled = true; btn.textContent = 'Toggling...'; }
+  
+  isWhitelistEnabled = !isWhitelistEnabled;
+  sendPlayerCommand(isWhitelistEnabled ? 'whitelist_on' : 'whitelist_off');
+  
+  const badge = document.getElementById('whitelistStatusBadge');
+  if (badge) {
+    badge.className = isWhitelistEnabled ? 'badge badge-running' : 'badge badge-stopped';
+    badge.textContent = isWhitelistEnabled ? 'Enabled' : 'Disabled';
+  }
+  
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = 'Toggle Whitelist'; } }, 1500);
 }
 
 function addWhitelist() {
   const input = document.getElementById('whitelistAddInput');
   const user = input.value.trim();
   if (!user) return;
+  const btn = event?.target;
+  if (btn) { btn.disabled = true; btn.textContent = 'Adding...'; }
   sendPlayerCommand('whitelist_add', user);
   input.value = '';
+  setTimeout(() => { if (btn) { btn.disabled = false; btn.textContent = 'Add Player'; } }, 1500);
 }

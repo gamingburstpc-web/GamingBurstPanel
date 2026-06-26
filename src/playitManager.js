@@ -56,7 +56,9 @@ function startPlayit(serverId, serverDir) {
     } catch (e) {}
   }
 
-  const proc = spawn(playitBin, ['--secret-path', tomlPath], {
+  const socketPath = path.join(serverDir, 'playit.sock');
+
+  const proc = spawn(playitBin, ['--secret-path', tomlPath, '--socket-path', socketPath], {
     cwd: serverDir,
     env: env,
     stdio: ['pipe', 'pipe', 'pipe']
