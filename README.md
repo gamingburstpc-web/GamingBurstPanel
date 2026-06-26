@@ -20,8 +20,12 @@ curl -sSL https://raw.githubusercontent.com/gamingburstpc-web/GamingBurstPanel/m
 When a new update is pushed to the GitHub repository, run this one-liner command on your VPS to automatically pull the latest changes, update configurations, and restart the panel safely:
 
 ```bash
-sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git reset --hard && git pull origin main" && sudo bash /opt/gbpanel/panel/install.sh
+sudo systemctl stop gbpanel && sudo -u gbpanel bash -c "cd /opt/gbpanel/panel && git fetch origin main && git reset --hard origin/main" && sudo bash /opt/gbpanel/panel/install.sh
 ```
+
+> [!NOTE]
+> **Your Data is 100% Safe**
+> Running this update command will **never** delete your servers, plugins, or panel database. It only updates the core panel files from GitHub and leaves your `data/` and `servers/` directories completely untouched.
 
 ---
 
