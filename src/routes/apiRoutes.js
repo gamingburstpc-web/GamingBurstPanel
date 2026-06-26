@@ -211,10 +211,24 @@ router.get('/servers', (req, res) => {
 });
 
 // ── GET /api/servers/:id ──────────────────────────────────────────────────────
+function getDirSizeSync(dirPath) {
+  let size = 0;
+  try {
+    const items = fs.readdirSync(dirPath, { withFileTypes: true });
+    for (const item of items) {
+      const p = path.join(dirPath, item.name);
+      if (item.isDirectory()) size += getDirSizeSync(p);
+      else size += fs.statSync(p).size;
+    }
+  } catch(e) {}
+  return size;
+}
+
 router.get('/servers/:id', (req, res) => {
   const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found.' });
-  res.json({ ...server, is_live: pm.isRunning(server.id) });
+  const disk_usage = getDirSizeSync(server.server_dir);
+  res.json({ ...server, is_live: pm.isRunning(server.id), disk_usage });
 });
 
 // ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
@@ -416,10 +430,11 @@ router.get('/servers/:id/files', requirePermission('files'), (req, res) => {
     const files = fs.readdirSync(target, { withFileTypes: true }).map(f => {
       const p = path.join(target, f.name);
       const s = fs.statSync(p);
+      const isDir = f.isDirectory();
       return {
         name: f.name,
-        isDir: f.isDirectory(),
-        size: s.size,
+        isDir: isDir,
+        size: isDir ? getDirSizeSync(p) : s.size,
         modified: s.mtime
       };
     }).sort((a, b) => b.isDir - a.isDir || a.name.localeCompare(b.name));

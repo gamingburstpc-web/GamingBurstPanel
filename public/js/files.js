@@ -47,7 +47,10 @@ async function loadFiles() {
     let html = '';
     for (const f of files) {
       const icon = f.isDir ? '📁' : '📄';
-      const sizeStr = f.isDir ? '--' : (f.size / 1024).toFixed(1) + ' KB';
+      let sizeStr = '';
+      if (f.size > 1024 * 1024 * 1024) sizeStr = (f.size / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+      else if (f.size > 1024 * 1024) sizeStr = (f.size / (1024 * 1024)).toFixed(1) + ' MB';
+      else sizeStr = (f.size / 1024).toFixed(1) + ' KB';
       
       let actionButtons = '';
       if (!f.isDir) {
