@@ -213,7 +213,9 @@ async function sendPlayerCommand(action, player = '') {
     // Refresh after a small delay to allow server file updates
     setTimeout(() => {
       loadOnlinePlayers();
-      loadPlayerLists();
+      if (action !== 'whitelist_on' && action !== 'whitelist_off') {
+        loadPlayerLists();
+      }
     }, 1000);
   } catch(e) {
     alert('Command failed: ' + e.message);
