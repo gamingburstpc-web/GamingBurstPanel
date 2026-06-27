@@ -783,6 +783,8 @@ router.post('/servers/:id/players/coordinates', requirePermission('console'), ex
     emitter.on('line', onLine);
     pm.sendCommand(serverId, `data get entity ${player} Pos`);
   });
+});
+
 // ── SERVER SETTINGS ───────────────────────────────────────────────────────────
 router.get('/servers/:id/settings', requirePermission('console'), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
