@@ -382,6 +382,65 @@ async function cmdUpdatePanel() {
   }
 }
 
+async function cmdBackgroundMode() {
+  banner();
+  print(`${C.bold}Native Background Process Manager${C.reset}\n`);
+  
+  const { spawn } = require('child_process');
+  const pidFile = path.join(process.cwd(), 'panel.pid');
+  const logFile = path.join(process.cwd(), 'panel.log');
+  
+  if (fs.existsSync(pidFile)) {
+    const pid = parseInt(fs.readFileSync(pidFile, 'utf8'), 10);
+    let isRunning = false;
+    try {
+      process.kill(pid, 0); // test if running
+      isRunning = true;
+    } catch(e) {
+      // not running
+    }
+    
+    if (isRunning) {
+      info(`Panel is currently running in background (PID: ${pid}).`);
+      const ans = await ask('Do you want to stop it? (y/n): ');
+      if (ans.toLowerCase() === 'y') {
+        try {
+          process.kill(pid, 'SIGTERM');
+          fs.unlinkSync(pidFile);
+          success('Background panel stopped successfully.');
+        } catch(e) {
+          error('Failed to stop process: ' + e.message);
+        }
+      }
+      return;
+    } else {
+      // Stale PID file
+      try { fs.unlinkSync(pidFile); } catch(e){}
+    }
+  }
+  
+  // Start process
+  print(`${C.cyan}Starting panel in background...${C.reset}`);
+  try {
+    const out = fs.openSync(logFile, 'a');
+    const err = fs.openSync(logFile, 'a');
+    
+    const child = spawn('node', ['server.js'], {
+      detached: true,
+      stdio: ['ignore', out, err]
+    });
+    
+    child.unref(); // Detach from parent
+    fs.writeFileSync(pidFile, child.pid.toString());
+    
+    success(`Panel started in background (PID: ${child.pid})!`);
+    info(`Logs are being saved to: ${logFile}`);
+    info(`To stop the panel later, just select this menu option again.`);
+  } catch (e) {
+    error('Failed to start panel: ' + e.message);
+  }
+}
+
 async function cmdMenu() {
   banner();
   print(`${C.bold}Please select an option:${C.reset}\n`);
@@ -392,6 +451,7 @@ async function cmdMenu() {
   print(`  ${C.cyan}5.${C.reset} List Servers`);
   print(`  ${C.cyan}6.${C.reset} Show Panel Status`);
   print(`  ${C.cyan}7.${C.reset} Update Panel`);
+  print(`  ${C.cyan}8.${C.reset} Start/Stop Panel (Background Mode)`);
   print(`  ${C.cyan}0.${C.reset} Exit\n`);
   
   const choice = await ask('Enter a number: ');
@@ -413,6 +473,7 @@ async function cmdMenu() {
     case '5': await cmdServerList(); break;
     case '6': await cmdPanelStatus(); break;
     case '7': await cmdUpdatePanel(); break;
+    case '8': await cmdBackgroundMode(); break;
     case '0': print('Goodbye!'); process.exit(0);
     default: error('Invalid option'); break;
   }
