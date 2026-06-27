@@ -34,7 +34,7 @@ router.post('/login', (req, res) => {
     return res.status(429).json({ error: 'Too many failed attempts. Try again in 15 minutes.' });
   }
 
-  const { username, password } = req.body;
+  const { username, password, rememberMe } = req.body;
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required.' });
   }
@@ -48,11 +48,16 @@ router.post('/login', (req, res) => {
   clearAttempts(ip);
   const sessionId = createSession(user);
 
-  res.cookie('session', sessionId, {
+  const cookieOptions = {
     httpOnly: true,
-    sameSite: 'Strict',
-    maxAge:   24 * 60 * 60 * 1000,
-  });
+    sameSite: 'Strict'
+  };
+  
+  if (rememberMe) {
+    cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000; // 30 days
+  }
+  
+  res.cookie('session', sessionId, cookieOptions);
 
   if (user.must_change === 1) return res.json({ redirect: '/change-password' });
   return res.json({ redirect: '/dashboard' });

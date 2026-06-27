@@ -69,7 +69,7 @@ async function deletePlugin(filename) {
   }
 }
 
-async function searchPlugins() {
+async function searchPlugins(provider = 'modrinth') {
   const query = document.getElementById('pluginSearchInput').value.trim();
   const type = document.getElementById('pluginSortType').value;
   const version = document.getElementById('pluginSortVersion').value;
@@ -80,44 +80,81 @@ async function searchPlugins() {
     return;
   }
   
-  container.innerHTML = '<div style="color:var(--text-muted)"><span class="spinner"></span> Searching Modrinth...</div>';
-  
-  try {
-    const facets = [["project_type:plugin"]];
-    if (type) facets.push([`categories:${type}`]);
-    if (version) facets.push([`versions:${version}`]);
-    
-    const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query)}&facets=${encodeURIComponent(JSON.stringify(facets))}&limit=20`;
-    const res = await fetch(url);
-    const data = await res.json();
-    
-    if (data.hits.length === 0) {
-      container.innerHTML = '<div style="color:var(--text-muted)">No plugins found.</div>';
-      return;
-    }
-    
-    container.innerHTML = data.hits.map(hit => `
-      <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-          <div>
-            <div style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px">
-              ${hit.icon_url ? `<img src="${hit.icon_url}" style="width:20px;height:20px;border-radius:4px">` : ''}
-              <a href="https://modrinth.com/plugin/${hit.slug}" target="_blank" style="color:var(--text-primary)">${hit.title}</a>
+  if (provider === 'modrinth') {
+    container.innerHTML = '<div style="color:var(--text-muted)"><span class="spinner"></span> Searching Modrinth...</div>';
+    try {
+      const facets = [["project_type:plugin"]];
+      if (type) facets.push([`categories:${type}`]);
+      // ADD BUKKIT LOADER TO PREVENT FORGE/FABRIC MODS
+      facets.push(['categories:bukkit', 'categories:spigot', 'categories:paper']);
+      
+      if (version) facets.push([`versions:${version}`]);
+      
+      const url = `https://api.modrinth.com/v2/search?query=${encodeURIComponent(query)}&facets=${encodeURIComponent(JSON.stringify(facets))}&limit=20`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (data.hits.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted)">No plugins found.</div>';
+        return;
+      }
+      
+      container.innerHTML = data.hits.map(hit => `
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px">
+                ${hit.icon_url ? `<img src="${hit.icon_url}" style="width:20px;height:20px;border-radius:4px">` : ''}
+                <a href="https://modrinth.com/plugin/${hit.slug}" target="_blank" style="color:var(--text-primary)">${hit.title}</a>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${hit.description}</div>
             </div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${hit.description}</div>
+            <button class="btn btn-primary btn-sm admin-only" onclick="installModrinthPlugin('${hit.project_id}')">⬇ Add to Server</button>
           </div>
-          <button class="btn btn-primary btn-sm admin-only" onclick="installModrinthPlugin('${hit.project_id}')">⬇ Add to Server</button>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            ${hit.categories.filter(c => ['spigot','paper','bukkit'].includes(c)).map(c => `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">${c}</span>`).join('')}
+            <span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">MC: ${hit.versions ? (hit.versions.length > 3 ? hit.versions.slice(-3).join(', ') + '...' : hit.versions.join(', ')) : 'Unknown'}</span>
+            <span style="font-size:11px;color:var(--text-muted);">Source: Modrinth</span>
+            <span style="font-size:11px;color:var(--text-muted);">Downloads: ${hit.downloads}</span>
+          </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
-          ${hit.categories.filter(c => ['spigot','paper','bukkit'].includes(c)).map(c => `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">${c}</span>`).join('')}
-          <span style="font-size:11px;color:var(--text-muted);background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">MC: ${hit.versions ? (hit.versions.length > 3 ? hit.versions.slice(-3).join(', ') + '...' : hit.versions.join(', ')) : 'Unknown'}</span>
-          <span style="font-size:11px;color:var(--text-muted);">Source: Modrinth</span>
-          <span style="font-size:11px;color:var(--text-muted);">Downloads: ${hit.downloads}</span>
+      `).join('');
+    } catch(e) {
+      container.innerHTML = `<div style="color:var(--red)">Search failed: ${e.message}</div>`;
+    }
+  } else if (provider === 'hangar') {
+    container.innerHTML = '<div style="color:var(--text-muted)"><span class="spinner"></span> Searching Hangar...</div>';
+    try {
+      const url = `https://hangar.papermc.io/api/v1/projects?q=${encodeURIComponent(query)}&limit=20`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (!data.result || data.result.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-muted)">No plugins found.</div>';
+        return;
+      }
+      
+      container.innerHTML = data.result.map(hit => `
+        <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div>
+              <div style="font-weight:600;font-size:15px;display:flex;align-items:center;gap:6px">
+                <a href="https://hangar.papermc.io/${hit.namespace.owner}/${hit.namespace.slug}" target="_blank" style="color:var(--text-primary)">${hit.name}</a>
+              </div>
+              <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${hit.description}</div>
+            </div>
+            <button class="btn btn-success btn-sm admin-only" onclick="installHangarPlugin('${hit.namespace.owner}', '${hit.namespace.slug}')">⬇ Add to Server</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <span class="badge" style="background:rgba(34,197,94,0.1);color:var(--green)">${hit.category}</span>
+            <span style="font-size:11px;color:var(--text-muted);">Source: Hangar</span>
+            <span style="font-size:11px;color:var(--text-muted);">Downloads: ${hit.stats.downloads}</span>
+          </div>
         </div>
-      </div>
-    `).join('');
-  } catch(e) {
-    container.innerHTML = `<div style="color:var(--red)">Search failed: ${e.message}</div>`;
+      `).join('');
+    } catch(e) {
+      container.innerHTML = `<div style="color:var(--red)">Search failed: ${e.message}</div>`;
+    }
   }
 }
 
@@ -197,6 +234,59 @@ async function installModrinthPlugin(projectId) {
     }
     
   } catch (e) {
+    showAlert('error', e.message);
+    document.getElementById('pluginProgressContainer').classList.add('hidden');
+  }
+}
+
+async function installHangarPlugin(owner, slug) {
+  try {
+    window.cancelPluginDownload = false;
+    showAlert('info', 'Finding latest compatible version from Hangar...');
+    
+    // We get the target version string if requested
+    const targetVersion = document.getElementById('pluginSortVersion').value;
+    
+    // Hangar API allows filtering by platform and version? We'll just fetch latest.
+    const versionUrl = `https://hangar.papermc.io/api/v1/projects/${owner}/${slug}/versions?limit=10`;
+    const res = await fetch(versionUrl);
+    const data = await res.json();
+    
+    if (!data.result || data.result.length === 0) {
+      throw new Error('No versions found on Hangar.');
+    }
+    
+    let targetRelease = null;
+    if (targetVersion) {
+      targetRelease = data.result.find(v => v.name.includes(targetVersion) || (v.description && v.description.includes(targetVersion)));
+    }
+    
+    if (!targetRelease) targetRelease = data.result[0];
+    
+    const downloads = targetRelease.downloads;
+    
+    let platform = 'PAPER';
+    if (!downloads.PAPER) {
+      if (downloads.WATERFALL) platform = 'WATERFALL';
+      else if (downloads.VELOCITY) platform = 'VELOCITY';
+      else platform = Object.keys(downloads)[0];
+    }
+    
+    if (!platform || !downloads[platform]) {
+      throw new Error('No compatible downloads available for this plugin on Hangar.');
+    }
+    
+    const downloadInfo = downloads[platform];
+    if (downloadInfo.downloadUrl) {
+      await doDownloadTask(downloadInfo.downloadUrl, downloadInfo.fileInfo.name, 'paper');
+    } else if (downloadInfo.externalUrl) {
+      showAlert('warning', 'This plugin uses an external download link. Opening in new tab...');
+      window.open(downloadInfo.externalUrl, '_blank');
+      document.getElementById('pluginProgressContainer').classList.add('hidden');
+    } else {
+      throw new Error('No valid download URL provided by Hangar.');
+    }
+  } catch(e) {
     showAlert('error', e.message);
     document.getElementById('pluginProgressContainer').classList.add('hidden');
   }

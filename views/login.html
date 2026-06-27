@@ -42,6 +42,11 @@
             <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:inline-flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="rememberMe" name="rememberMe" checked style="accent-color:var(--accent);">
+          Remember me on this device
+        </label>
       </div>
       <button id="loginBtn" type="submit" class="btn btn-primary login-btn">Sign In</button>
     </form>
@@ -78,6 +83,7 @@
         body: JSON.stringify({
           username: document.getElementById('username').value.trim(),
           password: document.getElementById('password').value,
+          rememberMe: document.getElementById('rememberMe').checked
         }),
       });
       const data = await res.json();

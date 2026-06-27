@@ -23,6 +23,18 @@
       <div class="nav-label" style="margin-top:16px">Account</div>
       <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
       <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+      <div class="nav-label" style="margin-top:16px">Theme</div>
+      <div style="padding: 0 16px;">
+        <select id="themeSelector" class="form-select" style="width: 100%; font-size: 13px;">
+          <option value="default">Dark (Default)</option>
+          <option value="black">Black</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="red">Red</option>
+          <option value="purple">Purple</option>
+          <option value="orange">Orange</option>
+        </select>
+      </div>
     </nav>
     <div class="sidebar-footer">
       <div class="user-info">
@@ -190,7 +202,7 @@
         </div>
         
         <div class="form-group admin-only" style="display:flex;gap:8px;flex-wrap:wrap">
-          <input type="text" id="pluginSearchInput" class="form-input" placeholder="Search plugins on Modrinth..." style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter') searchPlugins()">
+          <input type="text" id="pluginSearchInput" class="form-input" placeholder="Search plugins..." style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter') searchPlugins('modrinth')">
           <select id="pluginSortType" class="form-select" style="width:140px">
             <option value="">Any Type</option>
             <option value="paper">Paper</option>
@@ -216,7 +228,8 @@
             <input type="checkbox" id="pluginReleaseOnly" checked>
             Release Only
           </label>
-          <button class="btn btn-primary" onclick="searchPlugins()">Search</button>
+          <button class="btn btn-primary" onclick="searchPlugins('modrinth')">Search Modrinth (Bukkit)</button>
+          <button class="btn btn-success" onclick="searchPlugins('hangar')">Search Hangar (Paper/Purpur)</button>
         </div>
         
         <div id="pluginProgressContainer" class="hidden mb-4 p-3" style="background:var(--bg-elevated);border-radius:8px;border:1px solid var(--border)">
@@ -329,21 +342,7 @@
         <div class="card" style="margin-bottom:20px;">
           <h2 class="card-title">Server Settings</h2>
           
-          <!-- Theme -->
-          <div style="margin-bottom: 20px;">
-            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Panel Theme</label>
-            <select id="themeSelector" class="form-select" style="max-width: 300px;">
-              <option value="default">Dark (Default)</option>
-              <option value="black">Black</option>
-              <option value="blue">Blue</option>
-              <option value="green">Green</option>
-              <option value="red">Red</option>
-              <option value="purple">Purple</option>
-              <option value="orange">Orange</option>
-            </select>
-          </div>
-
-          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+          <hr style="border:0; border-top:1px solid var(--border); margin: 0 0 20px 0;">
 
           <!-- Version -->
           <div class="form-group">

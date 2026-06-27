@@ -209,7 +209,14 @@ function downloadFile(url, destPath) {
 // ── GET /api/servers ──────────────────────────────────────────────────────────
 router.get('/servers', (req, res) => {
   const servers = getDb().prepare('SELECT * FROM servers ORDER BY created_at DESC').all();
-  res.json(servers.map(s => ({ ...s, is_live: pm.isRunning(s.id) })));
+  res.json(servers.map(s => {
+    const isLive = pm.isRunning(s.id);
+    return {
+      ...s,
+      is_live: isLive,
+      status: isLive ? (s.status === 'starting' ? 'starting' : 'running') : s.status
+    };
+  }));
 });
 
 // ── GET /api/servers/:id ──────────────────────────────────────────────────────
@@ -240,9 +247,11 @@ router.get('/servers/:id', (req, res) => {
   if (!server) return res.status(404).json({ error: 'Server not found.' });
   const disk_usage = getDirSizeSync(server.server_dir);
   const vpsDisk = getVpsDiskInfo();
+  const isLive = pm.isRunning(server.id);
   res.json({ 
     ...server, 
-    is_live: pm.isRunning(server.id), 
+    is_live: isLive, 
+    status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
     disk_usage,
     vps_disk_total: vpsDisk.total,
     vps_disk_used: vpsDisk.used,
@@ -731,28 +740,32 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
       recentLines.push(line);
       if (recentLines.length > 5) recentLines.shift();
       
-      const match = line.match(/(?:players online|online players|there are .* online)[^:]*:\s*(.*)/i);
-      if (match) {
-        const playersStr = match[1].trim();
-        if (playersStr.length > 0) {
-          const p = playersStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
-          if (!p[0].toLowerCase().includes('out of maximum')) {
+      const summaryMatch = line.match(/(?:players online|online players|there are .* online|out of maximum)/i);
+      if (summaryMatch) {
+        // Is there a colon AFTER the summary phrase?
+        const afterSummary = line.substring(summaryMatch.index + summaryMatch[0].length);
+        const colonIdx = afterSummary.indexOf(':');
+        
+        if (colonIdx !== -1) {
+          const playersStr = afterSummary.substring(colonIdx + 1).trim();
+          if (playersStr.length > 0) {
+            const p = playersStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
             clearTimeout(timeout);
             emitter.off('line', onLine);
             return resolve(res.json({ players: p }));
           }
         }
         
-        // The list is likely wrapped to the next line (e.g. Essentials), wait 100ms
+        // No players after colon, or no colon at all (e.g. 0 players, or Essentials multi-line)
         foundList = true;
         setTimeout(() => {
-          if (foundList) { // Next line didn't trigger
+          if (foundList) { // Next line didn't trigger, must be empty
             foundList = false;
             clearTimeout(timeout);
             emitter.off('line', onLine);
             resolve(res.json({ players: [] }));
           }
-        }, 100);
+        }, 150);
       } else if (foundList) {
         foundList = false; // Prevent further matching
         // Next line might contain the list if it wrapped (like Essentials)
