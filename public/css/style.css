@@ -58,6 +58,16 @@
   --accent-hover: #fb923c;
 }
 
+[data-theme="black"] {
+  --accent: #ffffff;
+  --accent-glow: rgba(255, 255, 255, 0.15);
+  --accent-hover: #e0e0e0;
+  --bg-base: #000000;
+  --bg-surface: #0a0a0a;
+  --bg-elevated: #111111;
+  --bg-card: #0d0d0d;
+}
+
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{font-size:16px;scroll-behavior:smooth;}
 body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-base);color:var(--text-primary);line-height:1.6;min-height:100vh;-webkit-font-smoothing:antialiased;}
@@ -173,6 +183,8 @@ button,input,select,textarea{font-family:inherit;}
 .btn-danger:hover{background:var(--red);color:#fff;}
 .btn-ghost{background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border);}
 .btn-ghost:hover{background:var(--bg-hover);color:var(--text-primary);}
+.btn-secondary{background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border);}
+.btn-secondary:hover{background:var(--bg-hover);border-color:var(--border-bright);}
 .btn-warning{background:rgba(245,158,11,.15);color:var(--yellow);border:1px solid rgba(245,158,11,.3);}
 .btn-warning:hover{background:var(--yellow);color:#000;}
 .btn-sm{padding:6px 12px;font-size:12px;}

@@ -332,8 +332,9 @@
           <!-- Theme -->
           <div style="margin-bottom: 20px;">
             <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Panel Theme</label>
-            <select id="themeSelector" class="form-control" style="max-width: 300px;">
+            <select id="themeSelector" class="form-select" style="max-width: 300px;">
               <option value="default">Dark (Default)</option>
+              <option value="black">Black</option>
               <option value="blue">Blue</option>
               <option value="green">Green</option>
               <option value="red">Red</option>
@@ -404,7 +405,7 @@
             
             <div id="antiXrayEngineDiv" style="display:none; align-items:center; gap: 10px;">
               <label style="color:var(--text-secondary); font-size:0.9em;">Engine Mode:</label>
-              <select id="settingsAntiXrayEngine" class="form-control" style="width: 100px;" onchange="updateAntiXrayEngine()">
+              <select id="settingsAntiXrayEngine" class="form-select" style="width: 100px;" onchange="updateAntiXrayEngine()">
                 <option value="1">Engine 1</option>
                 <option value="2">Engine 2</option>
               </select>

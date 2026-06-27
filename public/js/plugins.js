@@ -24,7 +24,11 @@ async function loadInstalledPlugins() {
       return;
     }
     const files = await res.json();
-    if (!files || files.length === 0) {
+    if (files.error || !Array.isArray(files)) {
+      container.innerHTML = `<div style="color:var(--text-muted)">${files.error || 'No plugins folder found.'}</div>`;
+      return;
+    }
+    if (files.length === 0) {
       container.innerHTML = '<div style="color:var(--text-muted)">No plugins installed.</div>';
       return;
     }
@@ -132,7 +136,7 @@ async function installModrinthPlugin(projectId) {
     let versions = await res.json();
     
     const targetVersion = document.getElementById('pluginSortVersion').value;
-    const targetLoader = document.getElementById('pluginSortLoader').value; // 'paper', 'spigot', 'velocity', etc
+    const targetLoader = document.getElementById('pluginSortType').value; // 'paper', 'spigot', 'velocity', etc
     const releaseOnly = document.getElementById('pluginReleaseOnly').checked;
     
     if (releaseOnly) {
@@ -158,8 +162,20 @@ async function installModrinthPlugin(projectId) {
       const v = versions[i];
       if (!v.files || v.files.length === 0) continue;
       
+      if (targetLoader) {
+        const t = targetLoader.toLowerCase();
+        const validLoaders = [t];
+        if (t === 'paper') validLoaders.push('spigot', 'bukkit');
+        if (t === 'spigot') validLoaders.push('paper', 'bukkit');
+        if (t === 'velocity') validLoaders.push('bungeecord', 'waterdogpe');
+        if (t === 'bungeecord') validLoaders.push('waterdogpe');
+        
+        const hasValidLoader = v.loaders.some(l => validLoaders.includes(l.toLowerCase()));
+        if (!hasValidLoader) continue;
+      }
+      
       // Attempt to match the specific loader (e.g., "paper") inside the filename
-      let file = v.files.find(f => f.filename.toLowerCase().includes(targetLoader.toLowerCase()));
+      let file = targetLoader ? v.files.find(f => f.filename.toLowerCase().includes(targetLoader.toLowerCase())) : null;
       
       // Fallbacks
       if (!file) file = v.files.find(f => f.primary);
