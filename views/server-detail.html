@@ -116,8 +116,11 @@
       <div class="card" id="consoleCard">
         <div class="card-header">
           <div class="card-title">Live Console</div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
             <span id="wsStatus" class="badge badge-stopped"><span class="badge-dot"></span> disconnected</span>
+            <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text-secondary);cursor:pointer;user-select:none;">
+              <input type="checkbox" id="autoscrollToggle" checked> Autoscroll
+            </label>
             <button class="btn btn-ghost btn-sm admin-only" onclick="clearConsole()">Clear</button>
           </div>
         </div>
@@ -419,12 +422,12 @@
     </div>
   </main>
 </div>
-<script src="/public/js/theme.js?v=104"></script>
-<script src="/public/js/console.js?v=104"></script>
-<script src="/public/js/files.js?v=104"></script>
-<script src="/public/js/plugins.js?v=104"></script>
-<script src="/public/js/playit.js?v=104"></script>
-<script src="/public/js/players.js?v=104"></script>
-<script src="/public/js/settings.js?v=104"></script>
+<script src="/public/js/theme.js?v=105"></script>
+<script src="/public/js/console.js?v=105"></script>
+<script src="/public/js/files.js?v=105"></script>
+<script src="/public/js/plugins.js?v=105"></script>
+<script src="/public/js/playit.js?v=105"></script>
+<script src="/public/js/players.js?v=105"></script>
+<script src="/public/js/settings.js?v=105"></script>
 </body>
 </html>

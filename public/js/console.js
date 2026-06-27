@@ -78,7 +78,9 @@ function appendLine(text) {
   el.className = 'terminal-line';
   el.innerHTML = formatLine(text);
   terminal?.appendChild(el);
-  if (terminal && terminal.scrollTop + terminal.clientHeight >= terminal.scrollHeight - 100) {
+  
+  const autoScroll = document.getElementById('autoscrollToggle');
+  if (terminal && (!autoScroll || autoScroll.checked)) {
     terminal.scrollTop = terminal.scrollHeight;
   }
 }
