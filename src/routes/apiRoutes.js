@@ -518,9 +518,10 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
     await new Promise((resolve, reject) => {
       downloadClient.get(url, (response) => {
         if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          // Handle one redirect
-          const redirectClient = response.headers.location.startsWith('https') ? https : require('http');
-          redirectClient.get(response.headers.location, (redirRes) => {
+          // Handle one redirect (resolve relative URLs)
+          const redirectUrl = new URL(response.headers.location, url).href;
+          const redirectClient = redirectUrl.startsWith('https') ? https : require('http');
+          redirectClient.get(redirectUrl, (redirRes) => {
              redirRes.pipe(dest);
              dest.on('finish', () => resolve());
              redirRes.on('error', reject);
