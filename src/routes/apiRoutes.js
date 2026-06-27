@@ -505,41 +505,60 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
     const { url, filename, validateLoader } = req.body;
     if (!url || !filename) return res.status(400).json({ error: 'Missing url or filename' });
     
-    // safePath for plugins/filename
-    const { target } = safePath(req.params.id, 'plugins/' + filename);
-    if (!fs.existsSync(path.dirname(target))) {
-      fs.mkdirSync(path.dirname(target), { recursive: true });
-    }
-    
-    // Create write stream
-    const dest = fs.createWriteStream(target);
-    const downloadClient = url.startsWith('https') ? https : require('http');
+    let finalFilename = filename;
+    let finalTarget = '';
     
     await new Promise((resolve, reject) => {
-      downloadClient.get(url, (response) => {
-        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location) {
-          // Handle one redirect (resolve relative URLs)
-          const redirectUrl = new URL(response.headers.location, url).href;
+      const handleResponse = (res, urlUsed) => {
+        if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+          const redirectUrl = new URL(res.headers.location, urlUsed).href;
           const redirectClient = redirectUrl.startsWith('https') ? https : require('http');
-          redirectClient.get(redirectUrl, (redirRes) => {
-             redirRes.pipe(dest);
-             dest.on('finish', () => resolve());
-             redirRes.on('error', reject);
-             dest.on('error', reject);
-          }).on('error', reject);
-        } else {
-          response.pipe(dest);
-          dest.on('finish', () => resolve());
-          response.on('error', reject);
-          dest.on('error', reject);
+          redirectClient.get(redirectUrl, (redirRes) => handleResponse(redirRes, redirectUrl)).on('error', reject);
+          return;
         }
-      }).on('error', reject);
+        
+        if (res.statusCode !== 200) return reject(new Error('Download failed with status ' + res.statusCode));
+        
+        // Try to get filename from Content-Disposition
+        let cdFilename = null;
+        if (res.headers['content-disposition']) {
+          const match = res.headers['content-disposition'].match(/filename="?([^"]+)"?/);
+          if (match && match[1]) cdFilename = match[1];
+        }
+        
+        if (cdFilename) {
+          finalFilename = cdFilename;
+        } else {
+          // Try to guess from the final URL path if it has .jar
+          const urlPath = new URL(urlUsed).pathname;
+          const nameFromUrl = urlPath.split('/').pop();
+          if (nameFromUrl && nameFromUrl.endsWith('.jar')) {
+             finalFilename = nameFromUrl;
+          }
+        }
+        
+        const { target } = safePath(req.params.id, 'plugins/' + finalFilename);
+        finalTarget = target;
+        
+        if (!fs.existsSync(path.dirname(finalTarget))) {
+          fs.mkdirSync(path.dirname(finalTarget), { recursive: true });
+        }
+        
+        const dest = fs.createWriteStream(finalTarget);
+        res.pipe(dest);
+        dest.on('finish', () => resolve());
+        res.on('error', reject);
+        dest.on('error', reject);
+      };
+      
+      const downloadClient = url.startsWith('https') ? https : require('http');
+      downloadClient.get(url, (res) => handleResponse(res, url)).on('error', reject);
     });
     
     // Post-download validation using adm-zip
     if (validateLoader) {
       try {
-        const zip = new AdmZip(target);
+        const zip = new AdmZip(finalTarget);
         const zipEntries = zip.getEntries().map(e => e.entryName);
         
         let isValid = false;
@@ -558,16 +577,16 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
         
         if (!isValid) {
           // Validation failed, delete the file
-          fs.unlinkSync(target);
+          fs.unlinkSync(finalTarget);
           return res.status(400).json({ error: 'Validation failed: Missing manifest for ' + validateLoader });
         }
       } catch (err) {
-        fs.unlinkSync(target);
+        fs.unlinkSync(finalTarget);
         return res.status(400).json({ error: 'Validation failed: Could not read archive' });
       }
     }
     
-    res.json({ ok: true });
+    res.json({ ok: true, filename: finalFilename });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

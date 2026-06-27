@@ -329,7 +329,8 @@ async function doDownloadTask(url, filename, validateLoader = null) {
   }
   
   progBar.style.width = '100%';
-  showAlert('success', `${filename} installed successfully!`);
+  const finalName = data.filename || filename;
+  showAlert('success', `${finalName} installed successfully!`);
   loadInstalledPlugins();
   
   setTimeout(() => {
