@@ -3,6 +3,12 @@
 let currentFilePath = '';
 let currentEditFile = '';
 
+window.addEventListener('click', (e) => {
+  if (!e.target.matches('.dropbtn')) {
+    document.querySelectorAll('.dropdown-content').forEach(d => d.parentElement.classList.remove('show'));
+  }
+});
+
 // Check access
 const canAccessFiles = () => currentUser?.isAdmin || currentUser?.permissions?.includes('files');
 
@@ -66,21 +72,28 @@ async function loadFiles() {
       else if (f.size > 1024 * 1024) sizeStr = (f.size / (1024 * 1024)).toFixed(1) + ' MB';
       else sizeStr = (f.size / 1024).toFixed(1) + ' KB';
       
-      let actionButtons = '';
+      let actionButtons = `
+        <div class="dropdown">
+          <button class="btn btn-sm btn-secondary dropbtn" onclick="this.parentElement.classList.toggle('show')" title="Actions">⋮</button>
+          <div class="dropdown-content">
+      `;
+      
       if (!f.isDir) {
-        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="downloadFile('${f.name}')" title="Download">📥</button> `;
-        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="editFile('${f.name}')" title="Edit">✏️</button> `;
+        actionButtons += `<button onclick="downloadFile('${f.name}')">📥 Download</button>`;
+        actionButtons += `<button onclick="editFile('${f.name}')">✏️ Edit</button>`;
       }
       
       if (f.name.endsWith('.tar.gz') || f.name.endsWith('.zip') || f.name.endsWith('.tgz')) {
-        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="archiveAction('decompress', '${f.name}')" title="Unarchive">🔓</button> `;
+        actionButtons += `<button onclick="archiveAction('decompress', '${f.name}')">🔓 Unarchive</button>`;
       } else {
-        actionButtons += `<button class="btn btn-sm btn-ghost" onclick="archiveAction('compress', '${f.name}')" title="Archive">🔒</button> `;
+        actionButtons += `<button onclick="archiveAction('compress', '${f.name}')">🔒 Archive</button>`;
       }
 
-      actionButtons += `<button class="btn btn-sm btn-ghost" onclick="renameFile('${f.name}')" title="Rename">✏️</button> `;
-      actionButtons += `<button class="btn btn-sm btn-ghost" onclick="moveFile('${f.name}')" title="Move">✂️</button> `;
-      actionButtons += `<button class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="deleteFile('${f.name}')" title="Delete">🗑</button>`;
+      actionButtons += `<button onclick="renameFile('${f.name}')">📝 Rename</button>`;
+      actionButtons += `<button onclick="moveFile('${f.name}')">✂️ Move</button>`;
+      actionButtons += `<button style="color:var(--red);" onclick="deleteFile('${f.name}')">🗑 Delete</button>`;
+      
+      actionButtons += `</div></div>`;
 
       html += `<tr>
         <td>

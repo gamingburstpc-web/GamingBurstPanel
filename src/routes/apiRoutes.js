@@ -513,13 +513,15 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
           const redirectClient = response.headers.location.startsWith('https') ? https : require('http');
           redirectClient.get(response.headers.location, (redirRes) => {
              redirRes.pipe(dest);
-             redirRes.on('end', resolve);
+             dest.on('finish', () => resolve());
              redirRes.on('error', reject);
+             dest.on('error', reject);
           }).on('error', reject);
         } else {
           response.pipe(dest);
-          response.on('end', resolve);
+          dest.on('finish', () => resolve());
           response.on('error', reject);
+          dest.on('error', reject);
         }
       }).on('error', reject);
     });
@@ -712,9 +714,11 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
   if (!emitter) return res.json({ players: [] });
 
   return new Promise((resolve) => {
+    let recentLines = [];
     let timeout = setTimeout(() => {
       emitter.off('line', onLine);
-      resolve(res.json({ players: [] }));
+      const trace = recentLines.length > 0 ? recentLines.join(' | ') : 'No output received';
+      resolve(res.status(400).json({ error: 'Timeout waiting for list command. Console trace: ' + trace }));
     }, 5000);
 
     let foundList = false;
@@ -723,23 +727,35 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
       const line = rawLine.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
       const lower = line.toLowerCase();
       
-      if (lower.includes('players online') || lower.includes('online players') || lower.match(/there are .* online/)) {
-        const parts = line.split(':');
-        if (parts.length > 1 && parts[parts.length - 1].trim().length > 0) {
-          // If the line has a colon, assume everything after the LAST colon is the player list
-          const p = parts[parts.length - 1].split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
-          // Only resolve if it actually found players, otherwise it might be a prefix line like Essentials
-          if (p.length > 0 && !p[0].toLowerCase().includes('out of maximum')) {
+      // Keep track of recent lines for debugging if it fails
+      recentLines.push(line);
+      if (recentLines.length > 5) recentLines.shift();
+      
+      const match = line.match(/(?:players online|online players|there are .* online)[^:]*:\s*(.*)/i);
+      if (match) {
+        const playersStr = match[1].trim();
+        if (playersStr.length > 0) {
+          const p = playersStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
+          if (!p[0].toLowerCase().includes('out of maximum')) {
             clearTimeout(timeout);
             emitter.off('line', onLine);
-            resolve(res.json({ players: p }));
-            return;
+            return resolve(res.json({ players: p }));
           }
         }
+        
+        // The list is likely wrapped to the next line (e.g. Essentials), wait 100ms
         foundList = true;
+        setTimeout(() => {
+          if (foundList) { // Next line didn't trigger
+            foundList = false;
+            clearTimeout(timeout);
+            emitter.off('line', onLine);
+            resolve(res.json({ players: [] }));
+          }
+        }, 100);
       } else if (foundList) {
-        // This is the next line after the header (used by some plugins like Essentials)
-        // Extract everything after the last colon, or just use the line if no colon
+        foundList = false; // Prevent further matching
+        // Next line might contain the list if it wrapped (like Essentials)
         let playerStr = line;
         if (line.includes(':')) {
            const parts = line.split(':');
@@ -748,7 +764,7 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
         const p = playerStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
         clearTimeout(timeout);
         emitter.off('line', onLine);
-        resolve(res.json({ players: p }));
+        return resolve(res.json({ players: p }));
       }
     };
     emitter.on('line', onLine);

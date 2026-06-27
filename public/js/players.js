@@ -17,6 +17,11 @@ async function loadOnlinePlayers() {
     const res = await fetch(`/api/servers/${serverId}/players`);
     const data = await res.json();
     
+    if (data.error) {
+      listEl.innerHTML = `<div style="color:var(--red);" class="text-center py-4">${data.error}</div>`;
+      return;
+    }
+    
     if (!data.players || data.players.length === 0) {
       listEl.innerHTML = '<div class="text-muted text-center py-4">No players online.</div>';
       return;

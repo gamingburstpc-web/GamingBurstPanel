@@ -32,30 +32,50 @@
   --accent: #3b82f6;
   --accent-glow: rgba(59, 130, 246, 0.18);
   --accent-hover: #60a5fa;
+  --bg-base:       #0a0e14;
+  --bg-surface:    #10151f;
+  --bg-elevated:   #161d2a;
+  --bg-card:       #121924;
 }
 
 [data-theme="green"] {
   --accent: #10b981;
   --accent-glow: rgba(16, 185, 129, 0.18);
   --accent-hover: #34d399;
+  --bg-base:       #0a110e;
+  --bg-surface:    #0e1814;
+  --bg-elevated:   #14231d;
+  --bg-card:       #111e18;
 }
 
 [data-theme="red"] {
   --accent: #ef4444;
   --accent-glow: rgba(239, 68, 68, 0.18);
   --accent-hover: #f87171;
+  --bg-base:       #140a0a;
+  --bg-surface:    #1e0e0e;
+  --bg-elevated:   #2a1414;
+  --bg-card:       #221111;
 }
 
 [data-theme="purple"] {
   --accent: #8b5cf6;
   --accent-glow: rgba(139, 92, 246, 0.18);
   --accent-hover: #a78bfa;
+  --bg-base:       #0f0a14;
+  --bg-surface:    #160e1e;
+  --bg-elevated:   #1f142a;
+  --bg-card:       #1a1122;
 }
 
 [data-theme="orange"] {
   --accent: #f97316;
   --accent-glow: rgba(249, 115, 22, 0.18);
   --accent-hover: #fb923c;
+  --bg-base:       #14100a;
+  --bg-surface:    #1e170e;
+  --bg-elevated:   #2a2014;
+  --bg-card:       #221a11;
 }
 
 [data-theme="black"] {
@@ -341,4 +361,42 @@ button,input,select,textarea{font-family:inherit;}
   .server-card-actions .btn{width:100%;}
   .topbar-actions{width:100%;}
   .topbar-actions .btn{flex:1;}
+}
+
+/* ── Dropdown Menu ──────────────────────────────────────────────────────── */
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  right: 0;
+  background-color: var(--bg-surface);
+  min-width: 140px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 1000;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 0;
+}
+.dropdown-content button {
+  color: var(--text-primary);
+  padding: 8px 16px;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9em;
+}
+.dropdown-content button:hover {
+  background-color: var(--bg-hover);
+}
+.dropdown.show .dropdown-content {
+  display: block;
 }
