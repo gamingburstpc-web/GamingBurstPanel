@@ -521,13 +521,26 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
         
         // Try to get filename from Content-Disposition
         let cdFilename = null;
-        if (res.headers['content-disposition']) {
-          const match = res.headers['content-disposition'].match(/filename="?([^"]+)"?/);
-          if (match && match[1]) cdFilename = match[1];
+        const cd = res.headers['content-disposition'];
+        if (cd) {
+          const matchStar = cd.match(/filename\*=UTF-8''([^;]+)/i);
+          if (matchStar && matchStar[1]) {
+            cdFilename = decodeURIComponent(matchStar[1]);
+          } else {
+            const match = cd.match(/filename="?([^"]+)"?/i);
+            if (match && match[1]) {
+              cdFilename = match[1];
+              // Remove RFC 2047 encoding if present
+              if (cdFilename.startsWith('=?UTF-8?Q?') && cdFilename.endsWith('?=')) {
+                cdFilename = cdFilename.replace('=?UTF-8?Q?', '').replace('?=', '');
+              }
+            }
+          }
         }
         
         if (cdFilename) {
-          finalFilename = cdFilename;
+          // Sanitize filename for Windows
+          finalFilename = cdFilename.replace(/[<>:"/\\|?*]/g, '_');
         } else {
           // Try to guess from the final URL path if it has .jar
           const urlPath = new URL(urlUsed).pathname;

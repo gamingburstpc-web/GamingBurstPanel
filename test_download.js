@@ -13,6 +13,7 @@ function testDownload() {
       const client = redirectUrl.startsWith('https') ? https : require('http');
       client.get(redirectUrl, (res2) => {
         console.log('Redirect 1 status code:', res2.statusCode);
+        console.log('Headers:', res2.headers);
         if (res2.statusCode >= 300 && res2.statusCode < 400 && res2.headers.location) {
             const redirectUrl2 = new URL(res2.headers.location, redirectUrl).href;
             console.log('Redirecting again to:', redirectUrl2);
