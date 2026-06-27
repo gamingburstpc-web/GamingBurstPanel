@@ -487,6 +487,10 @@ async function main() {
     return await cmdMenu();
   }
 
+  if (cmd === 'bg') {
+    return await cmdBackgroundMode();
+  }
+
   if (cmd === 'user') {
     if (sub === 'add')   return await cmdUserAdd();
     if (sub === 'list')  return await cmdUserList();
