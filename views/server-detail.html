@@ -94,8 +94,22 @@
       <button id="tabBtnConsole" class="btn btn-secondary active" onclick="switchServerTab('console')">📟 Console</button>
       <button id="tabBtnFiles" class="btn btn-secondary" onclick="switchServerTab('files')">📁 Files</button>
       <button id="tabBtnPlugins" class="btn btn-secondary" onclick="switchServerTab('plugins')">🔌 Plugins</button>
-      <button id="tabBtnPlayit" class="btn btn-secondary" onclick="switchServerTab('playit')">🌐 Playit</button>
-      <button id="tabBtnPlayers" class="btn btn-secondary admin-only" onclick="switchServerTab('players')">👥 Players</button>
+        <button class="nav-btn" onclick="switchServerTab('playit')" id="tabPlayitBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+          </svg> Playit
+        </button>
+        <button class="nav-btn" onclick="switchServerTab('players')" id="tabPlayersBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg> Players
+        </button>
+        <button class="nav-btn" onclick="switchServerTab('settings')" id="tabSettingsBtn">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg> Settings
+        </button>
     </div>
 
     <!-- Console Tab -->
@@ -316,13 +330,105 @@
     <div class="card mt-4">
       <div class="card-header"><div class="card-title">Server Info</div></div>
       <div id="serverInfo" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:16px"></div>
+      <!-- SETTINGS TAB -->
+      <div id="sectionSettings" class="section-container" style="display: none;">
+        <div class="card" style="margin-bottom:20px;">
+          <h2 class="card-title">Server Settings</h2>
+          
+          <!-- Theme -->
+          <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Panel Theme</label>
+            <select id="themeSelector" class="form-control" style="max-width: 300px;">
+              <option value="default">Dark (Default)</option>
+              <option value="blue">Blue</option>
+              <option value="green">Green</option>
+              <option value="red">Red</option>
+              <option value="purple">Purple</option>
+              <option value="orange">Orange</option>
+            </select>
+          </div>
+
+          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+
+          <!-- Change Version -->
+          <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Change Server Version</label>
+            <p style="font-size: 0.9em; color: var(--yellow); margin-bottom: 10px;">
+              <strong>WARNING:</strong> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.
+            </p>
+            <div style="display:flex; gap:10px; margin-bottom: 10px;">
+              <select id="settingsVersionType" class="form-control" style="max-width: 150px;">
+                <option value="version">Paper Version</option>
+                <option value="url">Direct .jar URL</option>
+              </select>
+              <input type="text" id="settingsVersionInput" class="form-control" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
+              <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion">Update Version</button>
+            </div>
+          </div>
+
+          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+
+          <!-- Server MOTD -->
+          <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Server MOTD</label>
+            <div style="display:flex; gap:10px;">
+              <input type="text" id="settingsMotdInput" class="form-control" placeholder="A Minecraft Server" style="flex:1;">
+              <button class="btn btn-primary" onclick="updateServerProperties()" id="btnSaveProperties">Save</button>
+            </div>
+          </div>
+
+          <!-- Server Logo -->
+          <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Server Logo (Auto-resizes to 64x64)</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="file" id="settingsLogoInput" class="form-control" accept="image/png, image/jpeg" style="flex:1;">
+              <button class="btn btn-primary" onclick="uploadServerLogo()" id="btnUploadLogo">Upload Logo</button>
+            </div>
+          </div>
+
+          <!-- Cracked / Online-Mode -->
+          <div style="margin-bottom: 20px; display:flex; align-items:center; justify-content:space-between;">
+            <div>
+              <label style="display:block; margin-bottom:2px; color:var(--text-secondary);">Enable Cracked (Offline Mode)</label>
+              <span style="font-size:0.85em; color:var(--text-muted);">If enabled, players can join without a premium Minecraft account (online-mode=false).</span>
+            </div>
+            <button class="btn btn-secondary" id="btnToggleCracked" onclick="toggleCracked()">Toggle</button>
+          </div>
+
+          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+
+          <!-- Anti-Xray -->
+          <div style="margin-bottom: 20px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 10px;">
+              <div>
+                <label style="display:block; margin-bottom:2px; color:var(--text-secondary);">Paper Anti-Xray</label>
+                <span style="font-size:0.85em; color:var(--text-muted);">Block players from using x-ray resource packs (Paper only).</span>
+              </div>
+              <button class="btn btn-secondary" id="btnToggleAntiXray" onclick="toggleAntiXray()">Toggle</button>
+            </div>
+            
+            <div id="antiXrayEngineDiv" style="display:none; align-items:center; gap: 10px;">
+              <label style="color:var(--text-secondary); font-size:0.9em;">Engine Mode:</label>
+              <select id="settingsAntiXrayEngine" class="form-control" style="width: 100px;" onchange="updateAntiXrayEngine()">
+                <option value="1">Engine 1</option>
+                <option value="2">Engine 2</option>
+              </select>
+              <span style="font-size:0.8em; color:var(--text-muted);">Engine 1 hides ores. Engine 2 replaces stone with fake ores (causes more lag but is better).</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
     </div>
   </main>
 </div>
+<script src="/public/js/theme.js"></script>
 <script src="/public/js/console.js?v=5"></script>
 <script src="/public/js/files.js?v=4"></script>
 <script src="/public/js/plugins.js?v=5"></script>
 <script src="/public/js/playit.js?v=4"></script>
 <script src="/public/js/players.js?v=6"></script>
+<script src="/public/js/settings.js?v=1"></script>
 </body>
 </html>

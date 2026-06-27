@@ -651,7 +651,7 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
     let timeout = setTimeout(() => {
       emitter.off('line', onLine);
       resolve(res.json({ players: [] }));
-    }, 2000);
+    }, 5000);
 
     let foundList = false;
     const onLine = (rawLine) => {
@@ -783,6 +783,139 @@ router.post('/servers/:id/players/coordinates', requirePermission('console'), ex
     emitter.on('line', onLine);
     pm.sendCommand(serverId, `data get entity ${player} Pos`);
   });
+// ── SERVER SETTINGS ───────────────────────────────────────────────────────────
+router.get('/servers/:id/settings', requirePermission('console'), (req, res) => {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Not found' });
+  
+  let motd = '';
+  let onlineMode = true;
+  let antiXray = false;
+  let antiXrayEngine = 1;
+
+  try {
+    const propsPath = path.join(server.server_dir, 'server.properties');
+    if (fs.existsSync(propsPath)) {
+      const props = fs.readFileSync(propsPath, 'utf8');
+      const motdMatch = props.match(/^motd=(.*)$/m);
+      if (motdMatch) motd = motdMatch[1].trim();
+      const onlineMatch = props.match(/^online-mode=(true|false)$/m);
+      if (onlineMatch) onlineMode = onlineMatch[1] === 'true';
+    }
+  } catch(e) {}
+
+  try {
+    const paperPath = path.join(server.server_dir, 'config', 'paper-world-defaults.yml');
+    if (fs.existsSync(paperPath)) {
+      const paperYml = fs.readFileSync(paperPath, 'utf8');
+      const xrayMatch = paperYml.match(/anti-xray:\s*[\r\n]+(?:\s*#.*[\r\n]+)*\s*enabled:\s*(true|false)/);
+      if (xrayMatch) antiXray = xrayMatch[1] === 'true';
+      const engineMatch = paperYml.match(/engine-mode:\s*([12])/);
+      if (engineMatch) antiXrayEngine = parseInt(engineMatch[1], 10);
+    }
+  } catch(e) {}
+
+  res.json({ motd, onlineMode, antiXray, antiXrayEngine });
+});
+
+router.post('/servers/:id/settings/properties', requirePermission('console'), express.json(), (req, res) => {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Not found' });
+  
+  const { motd, onlineMode } = req.body;
+  try {
+    const propsPath = path.join(server.server_dir, 'server.properties');
+    if (fs.existsSync(propsPath)) {
+      let props = fs.readFileSync(propsPath, 'utf8');
+      if (motd !== undefined) {
+        if (/^motd=.*$/m.test(props)) props = props.replace(/^motd=.*$/m, `motd=${motd}`);
+        else props += `\nmotd=${motd}\n`;
+      }
+      if (onlineMode !== undefined) {
+        if (/^online-mode=(true|false)$/m.test(props)) props = props.replace(/^online-mode=(true|false)$/m, `online-mode=${onlineMode}`);
+        else props += `\nonline-mode=${onlineMode}\n`;
+      }
+      fs.writeFileSync(propsPath, props);
+    }
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/servers/:id/settings/antixray', requirePermission('console'), express.json(), (req, res) => {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Not found' });
+  
+  const { enabled, engine } = req.body;
+  try {
+    const paperDir = path.join(server.server_dir, 'config');
+    const paperPath = path.join(paperDir, 'paper-world-defaults.yml');
+    
+    if (fs.existsSync(paperPath)) {
+      let paperYml = fs.readFileSync(paperPath, 'utf8');
+      
+      const xrayBlockRegex = /(anti-xray:\s*[\r\n]+(?:\s*#.*[\r\n]+)*\s*enabled:\s*)(true|false)/;
+      if (xrayBlockRegex.test(paperYml)) {
+        paperYml = paperYml.replace(xrayBlockRegex, `$1${enabled ? 'true' : 'false'}`);
+      }
+      
+      if (engine !== undefined) {
+        const engineRegex = /(anti-xray:[\s\S]*?engine-mode:\s*)([12])/;
+        if (engineRegex.test(paperYml)) {
+          paperYml = paperYml.replace(engineRegex, `$1${engine}`);
+        }
+      }
+      fs.writeFileSync(paperPath, paperYml);
+    }
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/servers/:id/settings/logo', requirePermission('files'), express.json({limit: '5mb'}), (req, res) => {
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Not found' });
+  
+  const { image } = req.body;
+  if (!image || !image.startsWith('data:image/png;base64,')) {
+    return res.status(400).json({ error: 'Invalid image data' });
+  }
+  
+  try {
+    const base64Data = image.replace(/^data:image\/png;base64,/, "");
+    const logoPath = path.join(server.server_dir, 'server-icon.png');
+    fs.writeFileSync(logoPath, base64Data, 'base64');
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/servers/:id/settings/version', requirePermission('console'), express.json(), async (req, res) => {
+  const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
+  if (!server) return res.status(404).json({ error: 'Not found' });
+  
+  const { type, value } = req.body;
+  if (!value) return res.status(400).json({ error: 'Version or URL is required' });
+  
+  try {
+    let finalJar = '';
+    if (type === 'url') {
+      finalJar = path.join(server.server_dir, `custom-${Date.now()}.jar`);
+      await downloadFile(value, finalJar);
+    } else {
+      const paper = await fetchPaper(value);
+      finalJar = path.join(server.server_dir, paper.jarName);
+      await downloadFile(paper.url, finalJar);
+    }
+    
+    getDb().prepare('UPDATE servers SET jar_path = ? WHERE id = ?').run(finalJar, server.id);
+    res.json({ ok: true });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 module.exports = router;
