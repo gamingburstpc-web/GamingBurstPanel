@@ -539,6 +539,37 @@ router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── POST /api/servers/:id/files/rename ────────────────────────────────────────
+router.post('/servers/:id/files/rename', requirePermission('files'), express.json(), (req, res) => {
+  try {
+    const { oldPath, newPath } = req.body;
+    if (!oldPath || !newPath) return res.status(400).json({ error: 'Paths required' });
+    const oldTarget = safePath(req.params.id, oldPath).target;
+    const newTarget = safePath(req.params.id, newPath).target;
+    if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
+    fs.renameSync(oldTarget, newTarget);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+// ── POST /api/servers/:id/files/move ──────────────────────────────────────────
+router.post('/servers/:id/files/move', requirePermission('files'), express.json(), (req, res) => {
+  try {
+    const { oldPath, newPath } = req.body;
+    if (!oldPath || !newPath) return res.status(400).json({ error: 'Paths required' });
+    const oldTarget = safePath(req.params.id, oldPath).target;
+    const newTarget = safePath(req.params.id, newPath).target;
+    if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
+    
+    // Ensure destination directory exists
+    const destDir = path.dirname(newTarget);
+    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+    
+    fs.renameSync(oldTarget, newTarget);
+    res.json({ ok: true });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
 // ── GET /api/servers/:id/files/download ───────────────────────────────────────
 router.get('/servers/:id/files/download', requirePermission('files'), (req, res) => {
   try {
@@ -907,6 +938,10 @@ router.post('/servers/:id/settings/version', requirePermission('console'), expre
     if (type === 'url') {
       finalJar = path.join(server.server_dir, `custom-${Date.now()}.jar`);
       await downloadFile(value, finalJar);
+    } else if (type === 'vanilla') {
+      const vanilla = await fetchVanilla(value);
+      finalJar = path.join(server.server_dir, vanilla.jarName);
+      await downloadFile(vanilla.url, finalJar);
     } else {
       const paper = await fetchPaper(value);
       finalJar = path.join(server.server_dir, paper.jarName);

@@ -89,6 +89,11 @@ async function loadServer() {
   document.getElementById('serverTz').textContent   = `🌏 ${serverData.env_tz}`;
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
 
+  if (serverData.jar_path && serverData.jar_path.toLowerCase().includes('vanilla')) {
+    const pluginsBtn = document.getElementById('tabBtnPlugins');
+    if (pluginsBtn) pluginsBtn.style.display = 'none';
+  }
+
   const formatBytesStr = (bytes) => {
     if (bytes > 1024 * 1024 * 1024) return (bytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
     if (bytes > 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';

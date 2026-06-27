@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="pageTitle">Server — GamingBurst Panel</title>
-  <link rel="stylesheet" href="/public/css/style.css?v=2">
+  <link rel="stylesheet" href="/public/css/style.css?v=3">
 </head>
 <body>
 <div class="layout">
@@ -337,39 +337,40 @@
 
           <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
 
-          <!-- Change Version -->
-          <div style="margin-bottom: 20px;">
-            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Change Server Version</label>
-            <p style="font-size: 0.9em; color: var(--yellow); margin-bottom: 10px;">
-              <strong>WARNING:</strong> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.
-            </p>
-            <div style="display:flex; gap:10px; margin-bottom: 10px;">
-              <select id="settingsVersionType" class="form-control" style="max-width: 150px;">
-                <option value="version">Paper Version</option>
+          <!-- Version -->
+          <div class="form-group">
+            <label>Change Server Version</label>
+            <p style="font-size:12px;color:var(--yellow);margin-bottom:8px;"><b>WARNING:</b> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.</p>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <select id="settingsVersionType" class="input" style="flex:0 0 auto;">
+                <option value="paper">Paper Version</option>
+                <option value="vanilla">Vanilla Version</option>
                 <option value="url">Direct .jar URL</option>
               </select>
-              <input type="text" id="settingsVersionInput" class="form-control" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
-              <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion">Update Version</button>
+              <input type="text" id="settingsVersionInput" class="input" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
+              <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion" style="flex:0 0 auto; white-space:nowrap;">Update Version</button>
             </div>
           </div>
 
-          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+          <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
 
-          <!-- Server MOTD -->
-          <div style="margin-bottom: 20px;">
-            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Server MOTD</label>
-            <div style="display:flex; gap:10px;">
-              <input type="text" id="settingsMotdInput" class="form-control" placeholder="A Minecraft Server" style="flex:1;">
-              <button class="btn btn-primary" onclick="updateServerProperties()" id="btnSaveProperties">Save</button>
-            </div>
-          </div>
-
-          <!-- Server Logo -->
-          <div style="margin-bottom: 20px;">
-            <label style="display:block; margin-bottom:5px; color:var(--text-secondary);">Server Logo (Auto-resizes to 64x64)</label>
+          <!-- MOTD -->
+          <div class="form-group">
+            <label>Server MOTD</label>
             <div style="display:flex; gap:10px; align-items:center;">
-              <input type="file" id="settingsLogoInput" class="form-control" accept="image/png, image/jpeg" style="flex:1;">
-              <button class="btn btn-primary" onclick="uploadServerLogo()" id="btnUploadLogo">Upload Logo</button>
+              <input type="text" id="settingsMotdInput" class="input" style="flex:1;">
+              <button class="btn btn-primary" onclick="updateServerProperties()" id="btnSaveProperties" style="flex:0 0 auto;">Save</button>
+            </div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
+
+          <!-- Logo -->
+          <div class="form-group">
+            <label>Server Logo (Auto-resizes to 64x64)</label>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="file" id="settingsLogoInput" accept="image/png, image/jpeg" class="input" style="flex:1; max-width:400px;">
+              <button class="btn btn-primary" onclick="uploadServerLogo()" id="btnUploadLogo" style="flex:0 0 auto;">Upload Logo</button>
             </div>
           </div>
 

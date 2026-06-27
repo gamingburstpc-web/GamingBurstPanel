@@ -1,5 +1,14 @@
 let currentPlugins = [];
 
+function formatSize(bytes) {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+
 function initPlugins() {
   loadInstalledPlugins();
 }
@@ -117,6 +126,8 @@ async function installModrinthPlugin(projectId) {
     const versions = await res.json();
     
     const targetVersion = document.getElementById('pluginSortVersion').value;
+    const targetLoader = document.getElementById('pluginSortLoader').value; // 'paper', 'spigot', 'velocity', etc
+    
     let selectedVersion = null;
     
     if (targetVersion) {
@@ -128,7 +139,13 @@ async function installModrinthPlugin(projectId) {
       throw new Error('No compatible jar file found.');
     }
     
-    const file = selectedVersion.files.find(f => f.primary) || selectedVersion.files[0];
+    // Attempt to match the specific loader (e.g., "paper") inside the filename
+    let file = selectedVersion.files.find(f => f.filename.toLowerCase().includes(targetLoader.toLowerCase()));
+    
+    // Fallbacks
+    if (!file) file = selectedVersion.files.find(f => f.primary);
+    if (!file) file = selectedVersion.files[0];
+    
     downloadPluginUrl(file.url, file.filename);
   } catch (e) {
     showAlert('error', e.message);

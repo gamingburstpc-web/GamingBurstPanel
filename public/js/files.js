@@ -78,6 +78,8 @@ async function loadFiles() {
         actionButtons += `<button class="btn btn-sm btn-ghost" onclick="archiveAction('compress', '${f.name}')" title="Archive">🔒</button> `;
       }
 
+      actionButtons += `<button class="btn btn-sm btn-ghost" onclick="renameFile('${f.name}')" title="Rename">✏️</button> `;
+      actionButtons += `<button class="btn btn-sm btn-ghost" onclick="moveFile('${f.name}')" title="Move">✂️</button> `;
       actionButtons += `<button class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="deleteFile('${f.name}')" title="Delete">🗑</button>`;
 
       html += `<tr>
@@ -224,5 +226,48 @@ async function uploadFile(file) {
     alertE.classList.remove('hidden');
     alertE.querySelector('#alertMsg').textContent = e.message;
     document.getElementById('fileUpload').value = '';
+  }
+}
+
+async function renameFile(oldName) {
+  const newName = prompt(`Enter new name for ${oldName}:`, oldName);
+  if (!newName || newName === oldName) return;
+  const oldPath = currentFilePath ? currentFilePath + '/' + oldName : oldName;
+  const newPath = currentFilePath ? currentFilePath + '/' + newName : newName;
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/rename`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ oldPath, newPath })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'Failed to rename');
+    loadFiles();
+  } catch (e) {
+    showAlert('error', e.message);
+  }
+}
+
+async function moveFile(filename) {
+  const destPath = prompt(`Enter destination path for ${filename} (relative to server root):`, currentFilePath);
+  if (destPath === null) return;
+  
+  const oldPath = currentFilePath ? currentFilePath + '/' + filename : filename;
+  const newPath = destPath ? destPath + '/' + filename : filename;
+  
+  if (oldPath === newPath) return;
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/move`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ oldPath, newPath })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error || 'Failed to move');
+    loadFiles();
+  } catch (e) {
+    showAlert('error', e.message);
   }
 }
