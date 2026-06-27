@@ -1,8 +1,37 @@
 'use strict';
 
 window.showAlert = function(type, msg) {
+  if (msg === undefined) {
+    msg = type;
+    type = 'info';
+  }
   console.log(`[${type}] ${msg}`);
-  if (type !== 'info') alert(msg);
+  
+  const alertEl = document.getElementById('alert');
+  const alertSuccessEl = document.getElementById('alertSuccess');
+  
+  if (alertEl && alertSuccessEl) {
+    if (type === 'success' || type === 'info') {
+      document.getElementById('alertSuccessMsg').innerText = msg;
+      alertSuccessEl.classList.remove('hidden');
+      alertEl.classList.add('hidden');
+    } else {
+      document.getElementById('alertMsg').innerText = msg;
+      alertEl.classList.remove('hidden');
+      alertSuccessEl.classList.add('hidden');
+    }
+    
+    // Scroll to top to see the alert
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+      if (alertEl) alertEl.classList.add('hidden');
+      if (alertSuccessEl) alertSuccessEl.classList.add('hidden');
+    }, 5000);
+  } else {
+    alert(msg);
+  }
 };
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────

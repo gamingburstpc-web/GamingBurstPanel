@@ -280,9 +280,15 @@ async function installHangarPlugin(owner, slug) {
     if (downloadInfo.downloadUrl) {
       await doDownloadTask(downloadInfo.downloadUrl, downloadInfo.fileInfo.name, 'paper');
     } else if (downloadInfo.externalUrl) {
-      showAlert('warning', 'This plugin uses an external download link. Opening in new tab...');
-      window.open(downloadInfo.externalUrl, '_blank');
-      document.getElementById('pluginProgressContainer').classList.add('hidden');
+      try {
+        const fallbackName = downloadInfo.fileInfo?.name || (slug + '.jar');
+        await doDownloadTask(downloadInfo.externalUrl, fallbackName, 'paper');
+      } catch (err) {
+        // Fallback to opening in a new tab if direct download validation fails (e.g. it was a webpage)
+        showAlert('warning', 'This plugin uses an external download link. Opening in new tab...');
+        window.open(downloadInfo.externalUrl, '_blank');
+        document.getElementById('pluginProgressContainer').classList.add('hidden');
+      }
     } else {
       throw new Error('No valid download URL provided by Hangar.');
     }
