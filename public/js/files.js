@@ -37,8 +37,8 @@ function switchServerTab(tab) {
     } else {
       loadFiles();
     }
-  } else if (tab === 'plugins' && typeof loadPlugins === 'function') {
-    loadPlugins();
+  } else if (tab === 'plugins' && typeof initPlugins === 'function') {
+    initPlugins();
   } else if (tab === 'playit' && typeof loadPlayitStatus === 'function') {
     loadPlayitStatus();
   } else if (tab === 'players' && typeof loadOnlinePlayers === 'function') {

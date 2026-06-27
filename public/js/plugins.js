@@ -56,10 +56,8 @@ async function loadInstalledPlugins() {
 async function deletePlugin(filename) {
   if (!confirm(`Are you sure you want to delete ${filename}?`)) return;
   try {
-    const res = await fetch(`/api/servers/${serverId}/files/delete`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ path: 'plugins/' + filename })
+    const res = await fetch(`/api/servers/${serverId}/files?path=${encodeURIComponent('plugins/' + filename)}`, {
+      method: 'DELETE'
     });
     if (!res.ok) throw new Error('Delete failed');
     showAlert('success', `Plugin ${filename} deleted.`);
