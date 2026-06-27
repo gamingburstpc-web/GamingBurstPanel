@@ -4,6 +4,8 @@ const express  = require('express');
 const path     = require('path');
 const fs       = require('fs');
 const https    = require('https');
+const crypto   = require('crypto');
+const AdmZip   = require('adm-zip');
 const { requireAuth, requireAdmin, requirePermission, cookieMiddleware, hashPassword } = require('../auth');
 const { getDb } = require('../db');
 const pm = require('../processManager');
@@ -491,7 +493,7 @@ router.post('/servers/:id/files/upload', requirePermission('files'), express.raw
 // ── POST /api/servers/:id/plugins/download-url ──────────────────────────────
 router.post('/servers/:id/plugins/download-url', requirePermission('files'), express.json(), async (req, res) => {
   try {
-    const { url, filename } = req.body;
+    const { url, filename, validateLoader } = req.body;
     if (!url || !filename) return res.status(400).json({ error: 'Missing url or filename' });
     
     // safePath for plugins/filename
@@ -521,6 +523,37 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
         }
       }).on('error', reject);
     });
+    
+    // Post-download validation using adm-zip
+    if (validateLoader) {
+      try {
+        const zip = new AdmZip(target);
+        const zipEntries = zip.getEntries().map(e => e.entryName);
+        
+        let isValid = false;
+        const loaderLower = validateLoader.toLowerCase();
+        
+        if (loaderLower === 'paper' || loaderLower === 'spigot' || loaderLower === 'bukkit') {
+          if (zipEntries.includes('plugin.yml')) isValid = true;
+        } else if (loaderLower === 'velocity') {
+          if (zipEntries.includes('velocity-plugin.json')) isValid = true;
+        } else if (loaderLower === 'bungeecord' || loaderLower === 'waterdogpe') {
+          if (zipEntries.includes('bungee.yml')) isValid = true;
+        } else {
+          // Unsupported loader for strict validation, assume valid or ignore
+          isValid = true;
+        }
+        
+        if (!isValid) {
+          // Validation failed, delete the file
+          fs.unlinkSync(target);
+          return res.status(400).json({ error: 'Validation failed: Missing manifest for ' + validateLoader });
+        }
+      } catch (err) {
+        fs.unlinkSync(target);
+        return res.status(400).json({ error: 'Validation failed: Could not read archive' });
+      }
+    }
     
     res.json({ ok: true });
   } catch (e) {

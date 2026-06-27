@@ -11,10 +11,11 @@
     "gbpanel": "./bin/gbpanel.js"
   },
   "dependencies": {
+    "adm-zip": "^0.5.17",
     "bcryptjs": "^2.4.3",
-    "node-sqlite3-wasm": "^0.8.30",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "node-sqlite3-wasm": "^0.8.30",
     "ws": "^8.17.0"
   },
   "engines": {

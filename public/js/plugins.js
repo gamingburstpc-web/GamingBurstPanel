@@ -117,38 +117,72 @@ async function searchPlugins() {
   }
 }
 
+window.cancelPluginDownload = false;
+function cancelPluginDownload() {
+  window.cancelPluginDownload = true;
+}
+
 async function installModrinthPlugin(projectId) {
   try {
-    showAlert('info', 'Finding latest compatible version...');
+    window.cancelPluginDownload = false;
+    showAlert('info', 'Finding latest compatible versions...');
     // Get versions
     const versionUrl = `https://api.modrinth.com/v2/project/${projectId}/version`;
     const res = await fetch(versionUrl);
-    const versions = await res.json();
+    let versions = await res.json();
     
     const targetVersion = document.getElementById('pluginSortVersion').value;
     const targetLoader = document.getElementById('pluginSortLoader').value; // 'paper', 'spigot', 'velocity', etc
+    const releaseOnly = document.getElementById('pluginReleaseOnly').checked;
     
-    let selectedVersion = null;
+    if (releaseOnly) {
+      versions = versions.filter(v => v.version_type === 'release');
+    }
     
     if (targetVersion) {
-      selectedVersion = versions.find(v => v.game_versions.includes(targetVersion));
-    }
-    if (!selectedVersion && versions.length > 0) selectedVersion = versions[0];
-    
-    if (!selectedVersion || selectedVersion.files.length === 0) {
-      throw new Error('No compatible jar file found.');
+      versions = versions.filter(v => v.game_versions.includes(targetVersion));
     }
     
-    // Attempt to match the specific loader (e.g., "paper") inside the filename
-    let file = selectedVersion.files.find(f => f.filename.toLowerCase().includes(targetLoader.toLowerCase()));
+    if (versions.length === 0) {
+      throw new Error('No compatible versions found.');
+    }
     
-    // Fallbacks
-    if (!file) file = selectedVersion.files.find(f => f.primary);
-    if (!file) file = selectedVersion.files[0];
+    let installed = false;
+    for (let i = 0; i < versions.length; i++) {
+      if (window.cancelPluginDownload) {
+        showAlert('warning', 'Installation cancelled by user.');
+        document.getElementById('pluginProgressContainer').classList.add('hidden');
+        return;
+      }
+      
+      const v = versions[i];
+      if (!v.files || v.files.length === 0) continue;
+      
+      // Attempt to match the specific loader (e.g., "paper") inside the filename
+      let file = v.files.find(f => f.filename.toLowerCase().includes(targetLoader.toLowerCase()));
+      
+      // Fallbacks
+      if (!file) file = v.files.find(f => f.primary);
+      if (!file) file = v.files[0];
+      
+      try {
+        await doDownloadTask(file.url, file.filename, targetLoader);
+        installed = true;
+        break; // Success! Exit loop.
+      } catch (e) {
+        console.warn(`Version ${v.version_number} failed validation:`, e.message);
+        showAlert('warning', `Version ${v.version_number} failed. Trying older version...`);
+        // Loop continues to next version
+      }
+    }
     
-    downloadPluginUrl(file.url, file.filename);
+    if (!installed && !window.cancelPluginDownload) {
+      throw new Error('All available versions failed validation or were incompatible.');
+    }
+    
   } catch (e) {
     showAlert('error', e.message);
+    document.getElementById('pluginProgressContainer').classList.add('hidden');
   }
 }
 
@@ -160,7 +194,7 @@ function showDirectLinkUpload() {
   }
 }
 
-async function downloadPluginUrl(url, filename) {
+async function doDownloadTask(url, filename, validateLoader = null) {
   const progContainer = document.getElementById('pluginProgressContainer');
   const progText = document.getElementById('pluginProgressText');
   const progBar = document.getElementById('pluginProgressBar');
@@ -168,30 +202,41 @@ async function downloadPluginUrl(url, filename) {
   progContainer.classList.remove('hidden');
   progText.innerText = `Downloading ${filename}...`;
   progBar.style.width = '50%';
+  progBar.classList.remove('crit');
   
-  try {
-    const res = await fetch(`/api/servers/${serverId}/plugins/download-url`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ url, filename })
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-    
-    progBar.style.width = '100%';
-    showAlert('success', `${filename} installed successfully!`);
-    loadInstalledPlugins();
-  } catch (e) {
+  const res = await fetch(`/api/servers/${serverId}/plugins/download-url`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ url, filename, validateLoader })
+  });
+  const data = await res.json();
+  if (data.error) {
     progBar.style.width = '0%';
     progBar.classList.add('crit');
-    showAlert('error', `Download failed: ${e.message}`);
+    throw new Error(data.error);
   }
+  
+  progBar.style.width = '100%';
+  showAlert('success', `${filename} installed successfully!`);
+  loadInstalledPlugins();
   
   setTimeout(() => {
     progContainer.classList.add('hidden');
     progBar.style.width = '0%';
     progBar.classList.remove('crit');
   }, 3000);
+}
+
+// Backwards compatibility for showDirectLinkUpload
+async function downloadPluginUrl(url, filename) {
+  try {
+    await doDownloadTask(url, filename, null);
+  } catch (e) {
+    showAlert('error', `Download failed: ${e.message}`);
+    setTimeout(() => {
+      document.getElementById('pluginProgressContainer').classList.add('hidden');
+    }, 3000);
+  }
 }
 
 function uploadPluginFile(event) {

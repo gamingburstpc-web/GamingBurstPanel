@@ -212,11 +212,18 @@
             <option value="1.17.1">1.17.1</option>
             <option value="1.16.5">1.16.5</option>
           </select>
+          <label style="display:flex; align-items:center; gap:6px; color:var(--text-primary); cursor:pointer; font-size:14px; white-space:nowrap;">
+            <input type="checkbox" id="pluginReleaseOnly" checked>
+            Release Only
+          </label>
           <button class="btn btn-primary" onclick="searchPlugins()">Search</button>
         </div>
         
         <div id="pluginProgressContainer" class="hidden mb-4 p-3" style="background:var(--bg-elevated);border-radius:8px;border:1px solid var(--border)">
-          <div id="pluginProgressText" style="font-size:13px;font-weight:600;margin-bottom:8px">Downloading...</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">
+            <div id="pluginProgressText" style="font-size:13px;font-weight:600;">Downloading...</div>
+            <button class="btn btn-sm btn-ghost" style="color:var(--red);" id="btnCancelPluginDownload" onclick="cancelPluginDownload()">Stop</button>
+          </div>
           <div class="progress-track"><div id="pluginProgressBar" class="progress-fill" style="width:0%"></div></div>
         </div>
         
