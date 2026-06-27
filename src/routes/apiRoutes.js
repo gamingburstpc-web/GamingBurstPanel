@@ -716,7 +716,7 @@ router.post('/servers/:id/playit/reset', requirePermission('files'), (req, res) 
 
 // ── PLAYERS MANAGEMENT ────────────────────────────────────────────────────────
 
-router.get('/servers/:id/players', requirePermission('console'), async (req, res) => {
+router.get('/servers/:id/players', requirePermission('players'), async (req, res) => {
   const serverId = req.params.id;
   if (!pm.isRunning(serverId)) return res.json({ players: [] });
   const emitter = pm.getEmitter(serverId);
@@ -785,7 +785,7 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
   });
 });
 
-router.post('/servers/:id/players/command', requirePermission('console'), express.json(), (req, res) => {
+router.post('/servers/:id/players/command', requirePermission('players'), express.json(), (req, res) => {
   const { action, player } = req.body;
   let cmd = '';
   if (action === 'kick') cmd = `kick ${player}`;
@@ -826,7 +826,7 @@ router.post('/servers/:id/players/command', requirePermission('console'), expres
   res.json({ ok: true });
 });
 
-router.get('/servers/:id/players/lists', requirePermission('console'), (req, res) => {
+router.get('/servers/:id/players/lists', requirePermission('players'), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   let banned = [], whitelist = [];
   try {
@@ -847,7 +847,7 @@ router.get('/servers/:id/players/lists', requirePermission('console'), (req, res
   res.json({ banned, whitelist, whitelistEnabled });
 });
 
-router.post('/servers/:id/players/coordinates', requirePermission('console'), express.json(), async (req, res) => {
+router.post('/servers/:id/players/coordinates', requirePermission('players'), express.json(), async (req, res) => {
   const { player } = req.body;
   const serverId = req.params.id;
   if (!pm.isRunning(serverId)) return res.json({ error: 'Server offline' });
@@ -879,7 +879,7 @@ router.post('/servers/:id/players/coordinates', requirePermission('console'), ex
 });
 
 // ── SERVER SETTINGS ───────────────────────────────────────────────────────────
-router.get('/servers/:id/settings', requirePermission('console'), (req, res) => {
+router.get('/servers/:id/settings', requirePermission('settings'), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
@@ -913,7 +913,7 @@ router.get('/servers/:id/settings', requirePermission('console'), (req, res) => 
   res.json({ motd, onlineMode, antiXray, antiXrayEngine });
 });
 
-router.post('/servers/:id/settings/properties', requirePermission('console'), express.json(), (req, res) => {
+router.post('/servers/:id/settings/properties', requirePermission('settings'), express.json(), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
@@ -938,7 +938,7 @@ router.post('/servers/:id/settings/properties', requirePermission('console'), ex
   }
 });
 
-router.post('/servers/:id/settings/antixray', requirePermission('console'), express.json(), (req, res) => {
+router.post('/servers/:id/settings/antixray', requirePermission('settings'), express.json(), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
@@ -969,7 +969,7 @@ router.post('/servers/:id/settings/antixray', requirePermission('console'), expr
   }
 });
 
-router.post('/servers/:id/settings/logo', requirePermission('files'), express.json({limit: '5mb'}), (req, res) => {
+router.post('/servers/:id/settings/logo', requirePermission('settings'), express.json({limit: '5mb'}), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
@@ -988,7 +988,7 @@ router.post('/servers/:id/settings/logo', requirePermission('files'), express.js
   }
 });
 
-router.post('/servers/:id/settings/version', requirePermission('console'), express.json(), async (req, res) => {
+router.post('/servers/:id/settings/version', requirePermission('settings'), express.json(), async (req, res) => {
   const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   

@@ -349,12 +349,12 @@
             <label>Change Server Version</label>
             <p style="font-size:12px;color:var(--yellow);margin-bottom:8px;"><b>WARNING:</b> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.</p>
             <div style="display:flex; gap:10px; align-items:center;">
-              <select id="settingsVersionType" class="input" style="flex:0 0 auto;">
+              <select id="settingsVersionType" class="form-select" style="flex:0 0 auto;">
                 <option value="paper">Paper Version</option>
                 <option value="vanilla">Vanilla Version</option>
                 <option value="url">Direct .jar URL</option>
               </select>
-              <input type="text" id="settingsVersionInput" class="input" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
+              <input type="text" id="settingsVersionInput" class="form-input" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
               <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion" style="flex:0 0 auto; white-space:nowrap;">Update Version</button>
             </div>
           </div>
@@ -365,7 +365,8 @@
           <div class="form-group">
             <label>Server MOTD</label>
             <div style="display:flex; gap:10px; align-items:center;">
-              <input type="text" id="settingsMotdInput" class="input" style="flex:1;">
+              <input type="color" id="settingsMotdColor" style="flex:0 0 40px; height: 40px; padding: 0; border: none; border-radius: var(--radius); cursor: pointer;" title="Choose MOTD Color">
+              <input type="text" id="settingsMotdInput" class="form-input" style="flex:1;" placeholder="Enter server MOTD text...">
               <button class="btn btn-primary" onclick="updateServerProperties()" id="btnSaveProperties" style="flex:0 0 auto;">Save</button>
             </div>
           </div>
@@ -376,7 +377,7 @@
           <div class="form-group">
             <label>Server Logo (Auto-resizes to 64x64)</label>
             <div style="display:flex; gap:10px; align-items:center;">
-              <input type="file" id="settingsLogoInput" accept="image/png, image/jpeg" class="input" style="flex:1; max-width:400px;">
+              <input type="file" id="settingsLogoInput" accept="image/png, image/jpeg" class="form-input" style="flex:1; max-width:400px; padding-top: 7px;">
               <button class="btn btn-primary" onclick="uploadServerLogo()" id="btnUploadLogo" style="flex:0 0 auto;">Upload Logo</button>
             </div>
           </div>
@@ -418,12 +419,12 @@
     </div>
   </main>
 </div>
-<script src="/public/js/theme.js?v=101"></script>
-<script src="/public/js/console.js?v=101"></script>
-<script src="/public/js/files.js?v=101"></script>
-<script src="/public/js/plugins.js?v=101"></script>
-<script src="/public/js/playit.js?v=101"></script>
-<script src="/public/js/players.js?v=101"></script>
-<script src="/public/js/settings.js?v=101"></script>
+<script src="/public/js/theme.js?v=102"></script>
+<script src="/public/js/console.js?v=102"></script>
+<script src="/public/js/files.js?v=102"></script>
+<script src="/public/js/plugins.js?v=102"></script>
+<script src="/public/js/playit.js?v=102"></script>
+<script src="/public/js/players.js?v=102"></script>
+<script src="/public/js/settings.js?v=102"></script>
 </body>
 </html>

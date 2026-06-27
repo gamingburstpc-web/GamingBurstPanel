@@ -9,7 +9,22 @@ async function loadSettings() {
       currentSettings = await res.json();
       
       const motdInput = document.getElementById('settingsMotdInput');
-      if (motdInput) motdInput.value = currentSettings.motd || '';
+      const motdColor = document.getElementById('settingsMotdColor');
+      if (motdInput) {
+        let rawMotd = currentSettings.motd || '';
+        let extractedHex = '#ffffff'; // default
+        
+        // Check if motd starts with \u00A7x hex sequence
+        const hexMatch = rawMotd.match(/^\\u00A7x(?:\\u00A7([0-9a-fA-F])){6}/);
+        if (hexMatch) {
+          const rawCode = hexMatch[0];
+          extractedHex = '#' + rawCode.replace(/\\u00A7x/g, '').replace(/\\u00A7/g, '');
+          rawMotd = rawMotd.substring(rawCode.length);
+        }
+        
+        motdInput.value = rawMotd;
+        if (motdColor) motdColor.value = extractedHex;
+      }
       
       const crackedBtn = document.getElementById('btnToggleCracked');
       if (crackedBtn) {
@@ -77,7 +92,19 @@ async function updateServerVersion() {
 }
 
 async function updateServerProperties() {
-  const motd = document.getElementById('settingsMotdInput').value;
+  let motd = document.getElementById('settingsMotdInput').value;
+  const motdColor = document.getElementById('settingsMotdColor');
+  
+  if (motdColor && motdColor.value && motdColor.value !== '#ffffff') {
+    // Convert #RRGGBB to \u00A7x\u00A7R\u00A7R\u00A7G\u00A7G\u00A7B\u00A7B
+    const hex = motdColor.value.substring(1);
+    let mcColor = '\\u00A7x';
+    for (let i = 0; i < hex.length; i++) {
+      mcColor += '\\u00A7' + hex[i];
+    }
+    motd = mcColor + motd;
+  }
+  
   const btn = document.getElementById('btnSaveProperties');
   
   btn.disabled = true;
