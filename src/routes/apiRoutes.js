@@ -654,19 +654,34 @@ router.get('/servers/:id/players', requirePermission('console'), async (req, res
     }, 2000);
 
     let foundList = false;
-    const onLine = (line) => {
-      if (line.includes('players online')) {
+    const onLine = (rawLine) => {
+      // Strip ANSI codes for easier parsing
+      const line = rawLine.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+      const lower = line.toLowerCase();
+      
+      if (lower.includes('players online') || lower.includes('online players') || lower.match(/there are .* online/)) {
         const parts = line.split(':');
         if (parts.length > 1 && parts[parts.length - 1].trim().length > 0) {
+          // If the line has a colon, assume everything after the LAST colon is the player list
           const p = parts[parts.length - 1].split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
-          clearTimeout(timeout);
-          emitter.off('line', onLine);
-          resolve(res.json({ players: p }));
-        } else {
-          foundList = true;
+          // Only resolve if it actually found players, otherwise it might be a prefix line like Essentials
+          if (p.length > 0 && !p[0].toLowerCase().includes('out of maximum')) {
+            clearTimeout(timeout);
+            emitter.off('line', onLine);
+            resolve(res.json({ players: p }));
+            return;
+          }
         }
+        foundList = true;
       } else if (foundList) {
-        const p = line.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
+        // This is the next line after the header (used by some plugins like Essentials)
+        // Extract everything after the last colon, or just use the line if no colon
+        let playerStr = line;
+        if (line.includes(':')) {
+           const parts = line.split(':');
+           playerStr = parts[parts.length - 1];
+        }
+        const p = playerStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
         clearTimeout(timeout);
         emitter.off('line', onLine);
         resolve(res.json({ players: p }));
