@@ -14,7 +14,7 @@ function switchServerTab(tab) {
   if (target) target.classList.remove('hidden');
 
   // Update all buttons
-  const allBtns = ['Console', 'Files', 'Plugins', 'Playit', 'Players'];
+  const allBtns = ['Console', 'Files', 'Plugins', 'Playit', 'Players', 'Settings'];
   allBtns.forEach(name => {
     const btn = document.getElementById('tabBtn' + name);
     if (btn) {
