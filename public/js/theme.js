@@ -1,10 +1,13 @@
 // theme.js
-document.addEventListener('DOMContentLoaded', () => {
+(function() {
   const savedTheme = localStorage.getItem('gb_theme') || 'default';
   if (savedTheme !== 'default') {
     document.documentElement.setAttribute('data-theme', savedTheme);
   }
+})();
 
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('gb_theme') || 'default';
   const themeSelector = document.getElementById('themeSelector');
   if (themeSelector) {
     themeSelector.value = savedTheme;
