@@ -6,7 +6,7 @@ const fs       = require('fs');
 const https    = require('https');
 const crypto   = require('crypto');
 const AdmZip   = require('adm-zip');
-const { requireAuth, requireAdmin, requirePermission, cookieMiddleware, hashPassword } = require('../auth');
+const { requireAuth, requireAdmin, requirePermission, cookieMiddleware, hashPassword, updateUserSessions, destroyUserSessions } = require('../auth');
 const { getDb } = require('../db');
 const pm = require('../processManager');
 
@@ -85,6 +85,9 @@ router.delete('/users/:id', requireAdmin, (req, res) => {
   
   const db = getDb();
   db.prepare('DELETE FROM users WHERE id = ?').run(id);
+  
+  destroyUserSessions(id);
+  
   res.json({ ok: true });
 });
 
@@ -112,6 +115,13 @@ router.put('/users/:id', requireAdmin, (req, res) => {
         UPDATE users SET username = ?, is_admin = ?, permissions = ? WHERE id = ?
       `).run(username.trim(), adminFlag, permsJson, id);
     }
+
+    updateUserSessions(id, {
+      username: username.trim(),
+      isAdmin: adminFlag === 1,
+      permissions: Array.isArray(permissions) ? permissions : []
+    });
+
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

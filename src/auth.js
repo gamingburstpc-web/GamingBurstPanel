@@ -140,6 +140,25 @@ function requirePermission(perm) {
   };
 }
 
+function updateUserSessions(userId, updates) {
+  for (const [id, s] of sessions) {
+    if (s.userId === userId) {
+      if (updates.username !== undefined) s.username = updates.username;
+      if (updates.isAdmin !== undefined) s.isAdmin = updates.isAdmin;
+      if (updates.permissions !== undefined) s.permissions = updates.permissions;
+      if (updates.mustChange !== undefined) s.mustChange = updates.mustChange;
+    }
+  }
+}
+
+function destroyUserSessions(userId) {
+  for (const [id, s] of sessions) {
+    if (s.userId === userId) {
+      sessions.delete(id);
+    }
+  }
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -154,4 +173,6 @@ module.exports = {
   checkRateLimit,
   recordFailedAttempt,
   clearAttempts,
+  updateUserSessions,
+  destroyUserSessions,
 };
