@@ -127,7 +127,8 @@ async function updateServerProperties() {
       body: JSON.stringify({ motd, onlineMode: currentSettings.onlineMode, difficulty })
     });
     if (res.ok) {
-      window.showAlert('Properties saved! Restart required.');
+      currentSettings.motd = motd;
+      window.showAlert('Settings saved! MOTD and cracked mode changes require a restart, but difficulty applies instantly.');
     }
   } catch (e) {
     window.showAlert('Failed to save properties.');

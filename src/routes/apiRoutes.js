@@ -1031,7 +1031,8 @@ router.get('/servers/:id/settings', requirePermission('settings'), (req, res) =>
 });
 
 router.post('/servers/:id/settings/properties', requirePermission('settings'), express.json(), (req, res) => {
-  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
+  const serverId = parseInt(req.params.id, 10);
+  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(serverId);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
   const { motd, onlineMode, difficulty } = req.body;
@@ -1050,6 +1051,11 @@ router.post('/servers/:id/settings/properties', requirePermission('settings'), e
       if (difficulty !== undefined) {
         if (/^difficulty=(peaceful|easy|normal|hard)$/m.test(props)) props = props.replace(/^difficulty=(peaceful|easy|normal|hard)$/m, `difficulty=${difficulty}`);
         else props += `\ndifficulty=${difficulty}\n`;
+        
+        // Apply instantly if server is running
+        if (pm.isRunning(serverId)) {
+          pm.sendCommand(serverId, `difficulty ${difficulty}`);
+        }
       }
       fs.writeFileSync(propsPath, props);
     }
