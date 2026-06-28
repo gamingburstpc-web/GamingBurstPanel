@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title id="pageTitle">Server — GamingBurst Panel</title>
-  <link rel="stylesheet" href="/public/css/style.css?v=101">
+  <link rel="stylesheet" href="/public/css/style.css?v=102">
 </head>
 <body>
 <div class="layout">
@@ -351,14 +351,14 @@
           <div class="form-group">
             <label>Change Server Version</label>
             <p style="font-size:12px;color:var(--yellow);margin-bottom:8px;"><b>WARNING:</b> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.</p>
-            <div style="display:flex; gap:10px; align-items:center;">
-              <select id="settingsVersionType" class="form-select" style="flex:0 0 auto;">
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
+              <select id="settingsVersionType" class="form-select" style="width: auto; flex: 0 0 auto;">
                 <option value="paper">Paper Version</option>
                 <option value="vanilla">Vanilla Version</option>
                 <option value="url">Direct .jar URL</option>
               </select>
-              <input type="text" id="settingsVersionInput" class="form-input" placeholder="e.g. 1.20.4 or latest" style="flex:1;">
-              <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion" style="flex:0 0 auto; white-space:nowrap;">Update Version</button>
+              <input type="text" id="settingsVersionInput" class="form-input" placeholder="e.g. 1.20.4 or latest" style="flex: 1; min-width: 150px;">
+              <button class="btn btn-primary" onclick="updateServerVersion()" id="btnUpdateVersion" style="flex: 0 0 auto; white-space: nowrap;">Update Version</button>
             </div>
           </div>
 
