@@ -1008,10 +1008,10 @@ router.get('/servers/:id/settings', requirePermission('settings'), (req, res) =>
     if (fs.existsSync(propsPath)) {
       const props = fs.readFileSync(propsPath, 'utf8');
       const motdMatch = props.match(/^motd=(.*)$/m);
-      if (motdMatch) motd = motdMatch[1].replace(/\r$/, '').trim();
-      const onlineMatch = props.match(/^online-mode=(true|false)\r?$/m);
+      if (motdMatch) motd = motdMatch[1].trim();
+      const onlineMatch = props.match(/^online-mode=(true|false)$/m);
       if (onlineMatch) onlineMode = onlineMatch[1] === 'true';
-      const difficultyMatch = props.match(/^difficulty=(peaceful|easy|normal|hard)\r?$/m);
+      const difficultyMatch = props.match(/^difficulty=(peaceful|easy|normal|hard)$/m);
       if (difficultyMatch) difficulty = difficultyMatch[1];
     }
   } catch(e) {}
@@ -1045,11 +1045,11 @@ router.post('/servers/:id/settings/properties', requirePermission('settings'), e
         else props += `\nmotd=${motd}\n`;
       }
       if (onlineMode !== undefined) {
-        if (/^online-mode=(true|false)\r?$/m.test(props)) props = props.replace(/^online-mode=(true|false)\r?$/m, `online-mode=${onlineMode}`);
+        if (/^online-mode=(true|false)$/m.test(props)) props = props.replace(/^online-mode=(true|false)$/m, `online-mode=${onlineMode}`);
         else props += `\nonline-mode=${onlineMode}\n`;
       }
       if (difficulty !== undefined) {
-        if (/^difficulty=(peaceful|easy|normal|hard)\r?$/m.test(props)) props = props.replace(/^difficulty=(peaceful|easy|normal|hard)\r?$/m, `difficulty=${difficulty}`);
+        if (/^difficulty=(peaceful|easy|normal|hard)$/m.test(props)) props = props.replace(/^difficulty=(peaceful|easy|normal|hard)$/m, `difficulty=${difficulty}`);
         else props += `\ndifficulty=${difficulty}\n`;
         
         // Apply instantly if server is running
