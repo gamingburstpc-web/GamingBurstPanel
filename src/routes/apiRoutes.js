@@ -997,12 +997,12 @@ router.post('/servers/:id/players/coordinates', requirePermission('players'), ex
 router.get('/servers/:id/settings', requirePermission('settings'), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
-  
-  let motd = '';
+  let motd = 'A Minecraft Server';
   let onlineMode = true;
+  let difficulty = 'easy';
   let antiXray = false;
   let antiXrayEngine = 1;
-
+  
   try {
     const propsPath = path.join(server.server_dir, 'server.properties');
     if (fs.existsSync(propsPath)) {
@@ -1011,6 +1011,8 @@ router.get('/servers/:id/settings', requirePermission('settings'), (req, res) =>
       if (motdMatch) motd = motdMatch[1].trim();
       const onlineMatch = props.match(/^online-mode=(true|false)$/m);
       if (onlineMatch) onlineMode = onlineMatch[1] === 'true';
+      const difficultyMatch = props.match(/^difficulty=(peaceful|easy|normal|hard)$/m);
+      if (difficultyMatch) difficulty = difficultyMatch[1];
     }
   } catch(e) {}
 
@@ -1025,14 +1027,14 @@ router.get('/servers/:id/settings', requirePermission('settings'), (req, res) =>
     }
   } catch(e) {}
 
-  res.json({ motd, onlineMode, antiXray, antiXrayEngine });
+  res.json({ motd, onlineMode, difficulty, antiXray, antiXrayEngine });
 });
 
 router.post('/servers/:id/settings/properties', requirePermission('settings'), express.json(), (req, res) => {
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Not found' });
   
-  const { motd, onlineMode } = req.body;
+  const { motd, onlineMode, difficulty } = req.body;
   try {
     const propsPath = path.join(server.server_dir, 'server.properties');
     if (fs.existsSync(propsPath)) {
@@ -1044,6 +1046,10 @@ router.post('/servers/:id/settings/properties', requirePermission('settings'), e
       if (onlineMode !== undefined) {
         if (/^online-mode=(true|false)$/m.test(props)) props = props.replace(/^online-mode=(true|false)$/m, `online-mode=${onlineMode}`);
         else props += `\nonline-mode=${onlineMode}\n`;
+      }
+      if (difficulty !== undefined) {
+        if (/^difficulty=(peaceful|easy|normal|hard)$/m.test(props)) props = props.replace(/^difficulty=(peaceful|easy|normal|hard)$/m, `difficulty=${difficulty}`);
+        else props += `\ndifficulty=${difficulty}\n`;
       }
       fs.writeFileSync(propsPath, props);
     }

@@ -26,6 +26,11 @@ async function loadSettings() {
         if (motdColor) motdColor.value = extractedHex;
       }
       
+      const difficultySelect = document.getElementById('settingsDifficultySelect');
+      if (difficultySelect && currentSettings.difficulty) {
+        difficultySelect.value = currentSettings.difficulty;
+      }
+      
       const crackedBtn = document.getElementById('btnToggleCracked');
       if (crackedBtn) {
         if (!currentSettings.onlineMode) {
@@ -105,6 +110,11 @@ async function updateServerProperties() {
     motd = mcColor + motd;
   }
   
+  currentSettings.motd = motd;
+  
+  const difficultySelect = document.getElementById('settingsDifficultySelect');
+  const difficulty = difficultySelect ? difficultySelect.value : undefined;
+  
   const btn = document.getElementById('btnSaveProperties');
   
   btn.disabled = true;
@@ -114,7 +124,7 @@ async function updateServerProperties() {
     const res = await fetch(`/api/servers/${serverId}/settings/properties`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ motd, onlineMode: currentSettings.onlineMode })
+      body: JSON.stringify({ motd, onlineMode: currentSettings.onlineMode, difficulty })
     });
     if (res.ok) {
       window.showAlert('Properties saved! Restart required.');
