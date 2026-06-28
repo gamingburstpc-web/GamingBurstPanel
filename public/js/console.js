@@ -190,8 +190,7 @@ async function loadServer() {
   const fields = [
     ['Directory',   serverData.server_dir],
     ['JAR',         serverData.jar_path.split('/').pop()],
-    ['Min RAM',     serverData.memory_min + ' MB'],
-    ['Max RAM',     serverData.memory_max + ' MB'],
+    ['RAM',         serverData.memory_max + ' MB'],
     ['Disk Usage',  serverData.disk_usage != null ? formatBytesStr(serverData.disk_usage) : 'Unknown'],
     ['Port',        serverData.port],
     ['Timezone',    serverData.env_tz],
