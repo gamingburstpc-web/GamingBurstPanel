@@ -116,9 +116,10 @@ async function updateServerProperties() {
   const difficulty = difficultySelect ? difficultySelect.value : undefined;
   
   const btn = document.getElementById('btnSaveProperties');
+  const btnDiff = document.getElementById('btnSaveDifficulty');
   
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  if (btnDiff) { btnDiff.disabled = true; btnDiff.textContent = 'Saving...'; }
   
   try {
     const res = await fetch(`/api/servers/${serverId}/settings/properties`, {
@@ -134,8 +135,8 @@ async function updateServerProperties() {
     window.showAlert('Failed to save properties.');
   }
   
-  btn.disabled = false;
-  btn.textContent = 'Save';
+  if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+  if (btnDiff) { btnDiff.disabled = false; btnDiff.textContent = 'Save'; }
 }
 
 async function toggleCracked() {

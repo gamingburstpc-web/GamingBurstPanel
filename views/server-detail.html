@@ -400,12 +400,13 @@
           <div class="form-group">
             <label>Game Difficulty</label>
             <div style="display:flex; gap:10px; align-items:center;">
-              <select id="settingsDifficultySelect" class="form-input" style="flex:1; max-width:200px;" onchange="updateServerProperties()">
+              <select id="settingsDifficultySelect" class="form-input" style="flex:1; max-width:200px;">
                 <option value="peaceful">Peaceful</option>
                 <option value="easy">Easy</option>
                 <option value="normal">Normal</option>
                 <option value="hard">Hard</option>
               </select>
+              <button class="btn btn-primary" onclick="updateServerProperties()" id="btnSaveDifficulty" style="flex:0 0 auto;">Save</button>
             </div>
           </div>
           
@@ -462,6 +463,6 @@
 <script src="/public/js/plugins.js?v=108"></script>
 <script src="/public/js/playit.js?v=108"></script>
 <script src="/public/js/players.js?v=108"></script>
-<script src="/public/js/settings.js?v=110"></script>
+<script src="/public/js/settings.js?v=111"></script>
 </body>
 </html>
