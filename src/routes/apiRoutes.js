@@ -81,6 +81,7 @@ router.post('/users', requireAdmin, (req, res) => {
 // ── DELETE /api/users/:id — ADMIN ONLY ───────────────────────────────────────
 router.delete('/users/:id', requireAdmin, (req, res) => {
   const id = parseInt(req.params.id, 10);
+  if (id === 1) return res.status(403).json({ error: 'The primary owner (User #1) cannot be deleted.' });
   if (id === req.session.userId) return res.status(400).json({ error: 'Cannot delete yourself.' });
   
   const db = getDb();
@@ -100,9 +101,17 @@ router.put('/users/:id', requireAdmin, (req, res) => {
   const db = getDb();
   const existing = db.prepare('SELECT id FROM users WHERE username = ? AND id != ?').get(username.trim(), id);
   if (existing) return res.status(400).json({ error: 'Username already exists.' });
+  
+  if (id === 1 && req.session.userId !== 1) {
+    return res.status(403).json({ error: 'Only the primary owner can modify their own account.' });
+  }
 
   const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
-  const adminFlag = is_admin ? 1 : 0;
+  let adminFlag = is_admin ? 1 : 0;
+  
+  if (id === 1) {
+    adminFlag = 1; // Primary owner is always an admin
+  }
 
   try {
     if (password && password.trim().length > 0) {
