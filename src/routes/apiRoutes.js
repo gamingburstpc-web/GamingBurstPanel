@@ -965,7 +965,7 @@ router.post('/servers/:id/players/coordinates', requirePermission('players'), ex
 
     const onLine = (line) => {
       if (line.includes('has the following entity data:')) {
-        const match = line.match(/\[(.*?)\]/);
+        const match = line.match(/entity data:\s*\[(.*?)\]/);
         if (match) {
           clearTimeout(timeout);
           emitter.off('line', onLine);
