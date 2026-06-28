@@ -828,34 +828,41 @@ router.get('/servers/:id/players', requirePermission('players'), async (req, res
 
     let foundList = false;
     const onLine = (rawLine) => {
-      // Strip ANSI codes for easier parsing
-      const line = rawLine.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
-      const lower = line.toLowerCase();
-      
-      // Keep track of recent lines for debugging if it fails
+      if (process.env.DEBUG_CONSOLE_PARSE) {
+        console.log('[DEBUG_CONSOLE_PARSE] RAW:', JSON.stringify(rawLine));
+      }
+
+      // Strip ANSI codes
+      let line = rawLine.replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, '');
+      // Strip console prefix
+      line = line.replace(/^\[[^\]]*\]:?\s*(\[[^\]]*\]:?\s*)?/i, '').trim();
+
       recentLines.push(line);
       if (recentLines.length > 5) recentLines.shift();
       
-      const summaryMatch = line.match(/(?:players online|online players|there are .* online|out of maximum)/i);
+      const summaryMatch = line.match(/there\s+are\s+(\d+)(?:\s*\/\s*|\s+of\s+a\s+max\s+of\s+)(\d+)\s+players?\s+online(?:[^:]*:)?\s*(.*)$/i);
+      
       if (summaryMatch) {
-        // Is there a colon AFTER the summary phrase?
-        const afterSummary = line.substring(summaryMatch.index + summaryMatch[0].length);
-        const colonIdx = afterSummary.indexOf(':');
+        const count = parseInt(summaryMatch[1], 10);
+        const playersStr = summaryMatch[3].trim();
         
-        if (colonIdx !== -1) {
-          const playersStr = afterSummary.substring(colonIdx + 1).trim();
-          if (playersStr.length > 0) {
-            const p = playersStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
-            clearTimeout(timeout);
-            emitter.off('line', onLine);
-            return resolve(res.json({ players: p }));
-          }
+        if (count === 0) {
+          clearTimeout(timeout);
+          emitter.off('line', onLine);
+          return resolve(res.json({ players: [] }));
+        }
+
+        if (playersStr.length > 0) {
+          const p = playersStr.split(',').map(x => x.trim().replace(/§[0-9a-fk-or]/ig, '')).filter(Boolean);
+          clearTimeout(timeout);
+          emitter.off('line', onLine);
+          return resolve(res.json({ players: p }));
         }
         
-        // No players after colon, or no colon at all (e.g. 0 players, or Essentials multi-line)
+        // No players on this line, but count > 0. Must be a multi-line output (e.g. Essentials).
         foundList = true;
         setTimeout(() => {
-          if (foundList) { // Next line didn't trigger, must be empty
+          if (foundList) {
             foundList = false;
             clearTimeout(timeout);
             emitter.off('line', onLine);
@@ -863,8 +870,7 @@ router.get('/servers/:id/players', requirePermission('players'), async (req, res
           }
         }, 150);
       } else if (foundList) {
-        foundList = false; // Prevent further matching
-        // Next line might contain the list if it wrapped (like Essentials)
+        foundList = false;
         let playerStr = line;
         if (line.includes(':')) {
            const parts = line.split(':');
