@@ -813,7 +813,7 @@ router.post('/servers/:id/playit/reset', requirePermission('playit'), (req, res)
 // ── PLAYERS MANAGEMENT ────────────────────────────────────────────────────────
 
 router.get('/servers/:id/players', requirePermission('players'), async (req, res) => {
-  const serverId = req.params.id;
+  const serverId = parseInt(req.params.id, 10);
   if (!pm.isRunning(serverId)) return res.json({ players: [] });
   const emitter = pm.getEmitter(serverId);
   if (!emitter) return res.json({ players: [] });
@@ -898,7 +898,8 @@ router.post('/servers/:id/players/command', requirePermission('players'), expres
   else if (action === 'whitelist_on') cmd = `whitelist on`;
   else if (action === 'whitelist_off') cmd = `whitelist off`;
   
-  if (cmd) pm.sendCommand(req.params.id, cmd);
+  const serverId = parseInt(req.params.id, 10);
+  if (cmd) pm.sendCommand(serverId, cmd);
 
   // Force update server.properties for UI feedback
   if (action === 'whitelist_on' || action === 'whitelist_off') {
@@ -951,7 +952,7 @@ router.get('/servers/:id/players/lists', requirePermission('players'), (req, res
 
 router.post('/servers/:id/players/coordinates', requirePermission('players'), express.json(), async (req, res) => {
   const { player } = req.body;
-  const serverId = req.params.id;
+  const serverId = parseInt(req.params.id, 10);
   if (!pm.isRunning(serverId)) return res.json({ error: 'Server offline' });
   const emitter = pm.getEmitter(serverId);
   if (!emitter) return res.json({ error: 'No emitter' });
