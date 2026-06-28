@@ -398,7 +398,10 @@
 
           <!-- Difficulty -->
           <div class="form-group">
-            <label>Game Difficulty</label>
+            <div style="margin-bottom: 8px;">
+              <label style="display:block; margin-bottom:2px;">Game Difficulty</label>
+              <span style="font-size:0.85em; color:var(--text-muted);">Minecraft ignores offline difficulty changes for existing worlds. Please change this while the server is turned on.</span>
+            </div>
             <div style="display:flex; gap:10px; align-items:center;">
               <select id="settingsDifficultySelect" class="form-input" style="flex:1; max-width:200px;">
                 <option value="peaceful">Peaceful</option>
