@@ -223,3 +223,15 @@ window.switchServerTab = function(tabName) {
     loadSettings();
   }
 };
+
+const versionTypeSelect = document.getElementById('settingsVersionType');
+const versionInput = document.getElementById('settingsVersionInput');
+if (versionTypeSelect && versionInput) {
+  versionTypeSelect.addEventListener('change', () => {
+    if (versionTypeSelect.value === 'url') {
+      versionInput.placeholder = 'Paste direct download URL (e.g. https://...)';
+    } else {
+      versionInput.placeholder = 'e.g. 1.20.4 or latest';
+    }
+  });
+}
