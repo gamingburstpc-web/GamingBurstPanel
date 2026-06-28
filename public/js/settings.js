@@ -235,3 +235,32 @@ if (versionTypeSelect && versionInput) {
     }
   });
 }
+
+async function updateServerRam() {
+  const ram = parseInt(document.getElementById('settingsRamInput').value, 10);
+  if (!ram || ram < 512) return window.showAlert('Please enter a valid RAM amount (minimum 512 MB).');
+  
+  const btn = document.getElementById('btnSaveRam');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/settings/ram`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ram })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.showAlert('RAM updated successfully. Restart the server to apply changes.');
+      if (typeof loadServer === 'function') loadServer(); // Refresh UI
+    } else {
+      window.showAlert(data.error || 'Failed to update RAM.');
+    }
+  } catch (err) {
+    window.showAlert(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
+}
+

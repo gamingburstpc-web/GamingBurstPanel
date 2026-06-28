@@ -53,6 +53,8 @@ async function loadOnlinePlayers() {
       name.textContent = player;
       name.style.fontWeight = '600';
       
+      const hasPerm = (p) => window.currentUser?.isAdmin || window.currentUser?.permissions?.includes(p);
+      
       const coordsBtn = document.createElement('button');
       coordsBtn.className = 'btn btn-ghost btn-sm';
       coordsBtn.title = 'Get Coordinates';
@@ -60,6 +62,8 @@ async function loadOnlinePlayers() {
       const coordsText = document.createElement('span');
       coordsText.className = 'text-muted text-sm';
       coordsText.style.marginLeft = '8px';
+      
+      if (!hasPerm('coordinates')) coordsBtn.style.display = 'none';
       
       coordsBtn.onclick = async () => {
         coordsText.textContent = 'Fetching...';
@@ -79,27 +83,34 @@ async function loadOnlinePlayers() {
       
       leftDiv.appendChild(avatar);
       leftDiv.appendChild(name);
-      leftDiv.appendChild(coordsBtn);
-      leftDiv.appendChild(coordsText);
       
       const rightDiv = document.createElement('div');
       rightDiv.style.display = 'flex';
+      rightDiv.style.alignItems = 'center';
       rightDiv.style.gap = '8px';
       
-      const btnKick = document.createElement('button');
-      btnKick.className = 'btn btn-secondary btn-sm';
-      btnKick.textContent = 'Kick';
-      btnKick.onclick = () => sendPlayerCommand('kick', player);
+      const kickBtn = document.createElement('button');
+      kickBtn.className = 'btn btn-secondary btn-sm';
+      kickBtn.textContent = 'Kick';
+      if (!hasPerm('kick')) kickBtn.style.display = 'none';
+      kickBtn.onclick = () => sendPlayerCommand('kick', player);
       
-      const btnBan = document.createElement('button');
-      btnBan.className = 'btn btn-danger btn-sm';
-      btnBan.textContent = 'Ban';
-      btnBan.onclick = () => {
-        if (confirm(`Are you sure you want to ban ${player}?`)) sendPlayerCommand('ban', player);
+      const banBtn = document.createElement('button');
+      banBtn.className = 'btn btn-danger btn-sm';
+      banBtn.style.background = 'rgba(239, 68, 68, 0.15)';
+      banBtn.style.color = '#ef4444';
+      banBtn.textContent = 'Ban';
+      if (!hasPerm('ban')) banBtn.style.display = 'none';
+      banBtn.onclick = async () => {
+        if (!confirm(`Are you sure you want to ban ${player}?`)) return;
+        await sendPlayerCommand('ban', player);
+        setTimeout(loadOnlinePlayers, 1000);
       };
       
-      rightDiv.appendChild(btnKick);
-      rightDiv.appendChild(btnBan);
+      rightDiv.appendChild(coordsText);
+      rightDiv.appendChild(coordsBtn);
+      rightDiv.appendChild(kickBtn);
+      rightDiv.appendChild(banBtn);
       
       div.appendChild(leftDiv);
       div.appendChild(rightDiv);

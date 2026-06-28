@@ -889,6 +889,15 @@ router.get('/servers/:id/players', requirePermission('players'), async (req, res
 
 router.post('/servers/:id/players/command', requirePermission('players'), express.json(), (req, res) => {
   const { action, player } = req.body;
+  const isAdmin = req.session.isAdmin;
+  const perms = req.session.permissions || [];
+  
+  if (action === 'kick' && !isAdmin && !perms.includes('kick')) {
+    return res.status(403).json({ error: 'Permission denied. Requires: kick' });
+  }
+  if ((action === 'ban' || action === 'unban') && !isAdmin && !perms.includes('ban')) {
+    return res.status(403).json({ error: 'Permission denied. Requires: ban' });
+  }
   let cmd = '';
   if (action === 'kick') cmd = `kick ${player}`;
   else if (action === 'ban') cmd = `ban ${player}`;
@@ -951,6 +960,9 @@ router.get('/servers/:id/players/lists', requirePermission('players'), (req, res
 });
 
 router.post('/servers/:id/players/coordinates', requirePermission('players'), express.json(), async (req, res) => {
+  if (!req.session.isAdmin && !req.session.permissions?.includes('coordinates')) {
+    return res.status(403).json({ error: 'Permission denied. Requires: coordinates' });
+  }
   const { player } = req.body;
   const serverId = parseInt(req.params.id, 10);
   if (!pm.isRunning(serverId)) return res.json({ error: 'Server offline' });
@@ -1088,6 +1100,19 @@ router.post('/servers/:id/settings/logo', requirePermission('settings'), express
     res.json({ ok: true });
   } catch(e) {
     res.status(500).json({ error: e.message });
+  }
+});
+
+router.post('/servers/:id/settings/ram', requirePermission('settings'), express.json(), (req, res) => {
+  const serverId = parseInt(req.params.id, 10);
+  const { ram } = req.body;
+  if (!ram || ram < 512) return res.status(400).json({ error: 'RAM must be at least 512 MB.' });
+  
+  try {
+    getDb().prepare('UPDATE servers SET memory_max = ?, memory_min = ? WHERE id = ?').run(ram, ram, serverId);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 

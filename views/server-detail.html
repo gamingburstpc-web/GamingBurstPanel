@@ -372,6 +372,18 @@
 
           <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
 
+          <!-- RAM -->
+          <div class="form-group">
+            <label>Server RAM (MB)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Changes to RAM will take effect the next time the server is started.</p>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="number" id="settingsRamInput" class="form-input" style="flex:1; max-width:200px;" placeholder="e.g. 2048">
+              <button class="btn btn-primary" onclick="updateServerRam()" id="btnSaveRam" style="flex:0 0 auto;">Save RAM</button>
+            </div>
+          </div>
+
+          <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
+
           <!-- MOTD -->
           <div class="form-group">
             <label>Server MOTD</label>
