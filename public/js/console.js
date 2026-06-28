@@ -207,6 +207,7 @@ async function loadServer() {
 }
 
 function updateStatusUI(status) {
+  if (serverData) serverData.status = status;
   const badge = document.getElementById('statusBadge');
   if (badge) { badge.className = `badge badge-${status}`; badge.innerHTML = `<span class="badge-dot"></span> ${status}`; }
   const isRunning = status === 'running' || status === 'starting';
