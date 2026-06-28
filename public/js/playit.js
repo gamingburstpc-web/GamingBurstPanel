@@ -59,7 +59,7 @@ async function loadPlayitStatus() {
           </div>
         `).join('');
       } else {
-        list.innerHTML = `<div class="text-muted text-sm">No tunnels configured yet. Add them in the Playit.gg dashboard.</div>`;
+        list.innerHTML = `<div class="text-muted text-sm">Your server is connected to the Playit network! Tunnels are active in the background. Manage your domains directly on the <a href="https://playit.gg" target="_blank" style="color:var(--accent);text-decoration:none;font-weight:600">Playit.gg Dashboard</a>.</div>`;
       }
     }
   } catch (e) {
