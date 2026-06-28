@@ -78,21 +78,43 @@ function handleConsole(ws, serverId, sess) {
   `).all(serverId).reverse();
   logs.forEach(r => send(r.line));
 
-  // Attach to live emitter if server is running
-  const emitter = pm.getEmitter(serverId);
-  if (emitter) {
-    const onLine  = (line) => send(line);
-    const onClose = (code) => {
-      send(`\n[Panel] Server stopped (exit code: ${code ?? 'null'})`);
-    };
-    emitter.on('line',  onLine);
-    emitter.on('close', onClose);
+  let activeEmitter = null;
+  let onLine = null;
+  let onCloseEvent = null;
 
-    ws.on('close', () => {
-      emitter.off('line',  onLine);
-      emitter.off('close', onClose);
-    });
-  }
+  const attachEmitter = () => {
+    if (activeEmitter) {
+      activeEmitter.off('line', onLine);
+      activeEmitter.off('close', onCloseEvent);
+    }
+    activeEmitter = pm.getEmitter(serverId);
+    if (activeEmitter) {
+      onLine = (line) => send(line);
+      onCloseEvent = (code) => {
+        send(`\n[Panel] Server stopped (exit code: ${code ?? 'null'})`);
+      };
+      activeEmitter.on('line', onLine);
+      activeEmitter.on('close', onCloseEvent);
+    }
+  };
+
+  attachEmitter(); // Attach immediately if already running
+
+  // If the server starts while we are connected, attach to the new emitter
+  const onStatus = ({ serverId: sid, status }) => {
+    if (sid === serverId && (status === 'starting' || status === 'running')) {
+      attachEmitter();
+    }
+  };
+  pm.globalEmitter.on('status', onStatus);
+
+  ws.on('close', () => {
+    if (activeEmitter) {
+      activeEmitter.off('line', onLine);
+      activeEmitter.off('close', onCloseEvent);
+    }
+    pm.globalEmitter.off('status', onStatus);
+  });
 
   // Handle commands sent from browser terminal
   ws.on('message', (raw) => {
