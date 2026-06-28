@@ -2,6 +2,7 @@
 
 let currentFilePath = '';
 let currentEditFile = '';
+let selectedFiles = [];
 
 window.addEventListener('click', (e) => {
   if (!e.target.matches('.dropbtn')) {
@@ -59,8 +60,13 @@ async function loadFiles() {
 
     document.getElementById('currentPath').textContent = '/' + currentFilePath;
 
+    selectedFiles = [];
+    updateBulkActionsBar();
+    const selectAllCb = document.getElementById('selectAllFiles');
+    if (selectAllCb) selectAllCb.checked = false;
+
     if (files.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">Directory is empty.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--text-muted)">Directory is empty.</td></tr>';
       return;
     }
 
@@ -96,6 +102,9 @@ async function loadFiles() {
       actionButtons += `</div></div>`;
 
       html += `<tr>
+        <td style="text-align:center;">
+          <input type="checkbox" class="file-checkbox" value="${esc(f.name)}" onchange="toggleFileSelection(this.value, this.checked)">
+        </td>
         <td>
           <span style="margin-right:8px">${icon}</span>
           ${f.isDir 
@@ -112,7 +121,7 @@ async function loadFiles() {
     }
     tbody.innerHTML = html;
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--red)">${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red)">${e.message}</td></tr>`;
   }
 }
 
@@ -283,4 +292,93 @@ async function moveFile(filename) {
   } catch (e) {
     showAlert('error', e.message);
   }
+}
+
+function toggleFileSelection(filename, checked) {
+  if (checked) {
+    if (!selectedFiles.includes(filename)) selectedFiles.push(filename);
+  } else {
+    selectedFiles = selectedFiles.filter(f => f !== filename);
+  }
+  updateBulkActionsBar();
+}
+
+function toggleSelectAllFiles(checked) {
+  const checkboxes = document.querySelectorAll('.file-checkbox');
+  selectedFiles = [];
+  checkboxes.forEach(cb => {
+    cb.checked = checked;
+    if (checked) selectedFiles.push(cb.value);
+  });
+  updateBulkActionsBar();
+}
+
+function updateBulkActionsBar() {
+  const bar = document.getElementById('bulkActionsBar');
+  const countSpan = document.getElementById('bulkSelectedCount');
+  if (!bar || !countSpan) return;
+  
+  if (selectedFiles.length > 0) {
+    countSpan.textContent = `${selectedFiles.length} file(s) selected`;
+    bar.classList.remove('hidden');
+  } else {
+    bar.classList.add('hidden');
+  }
+}
+
+async function bulkDelete() {
+  if (selectedFiles.length === 0) return;
+  if (!confirm(`Are you sure you want to delete ${selectedFiles.length} item(s)? This cannot be undone.`)) return;
+  
+  const paths = selectedFiles.map(f => currentFilePath ? `${currentFilePath}/${f}` : f);
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error);
+    selectedFiles = [];
+    loadFiles();
+  } catch (e) { alert('Delete failed: ' + e.message); }
+}
+
+async function bulkMove() {
+  if (selectedFiles.length === 0) return;
+  const newDir = prompt(`Enter destination directory for ${selectedFiles.length} item(s) (e.g. plugins or /):`, currentFilePath);
+  if (newDir === null) return;
+  
+  const destDir = newDir === '/' ? '' : newDir.replace(/^\/+|\/+$/g, '');
+  const paths = selectedFiles.map(f => currentFilePath ? `${currentFilePath}/${f}` : f);
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/move`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ paths, newDir: destDir })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error);
+    selectedFiles = [];
+    loadFiles();
+  } catch (e) { alert('Move failed: ' + e.message); }
+}
+
+async function bulkArchive() {
+  if (selectedFiles.length === 0) return;
+  
+  const paths = selectedFiles.map(f => currentFilePath ? `${currentFilePath}/${f}` : f);
+  try {
+    const res = await fetch(`/api/servers/${serverId}/files/archive`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'compress', paths })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error);
+    selectedFiles = [];
+    loadFiles();
+    alert(`Archived successfully to ${d.archive}`);
+  } catch (e) { alert('Archive failed: ' + e.message); }
 }

@@ -606,12 +606,19 @@ router.post('/servers/:id/plugins/download-url', requirePermission('files'), exp
 });
 
 // ── DELETE /api/servers/:id/files ─────────────────────────────────────────────
-router.delete('/servers/:id/files', requirePermission('files'), (req, res) => {
+router.delete('/servers/:id/files', requirePermission('files'), express.json(), (req, res) => {
   try {
-    const { baseDir, target } = safePath(req.params.id, req.query.path);
-    if (target === baseDir) return res.status(400).json({ error: 'Cannot delete root server directory' });
-    if (!fs.existsSync(target)) return res.status(404).json({ error: 'Not found' });
-    fs.rmSync(target, { recursive: true, force: true });
+    let paths = req.body.paths;
+    if (!paths && req.query.path) paths = [req.query.path];
+    if (!paths || !Array.isArray(paths)) return res.status(400).json({ error: 'Paths array required' });
+
+    for (const p of paths) {
+      const { baseDir, target } = safePath(req.params.id, p);
+      if (target === baseDir) continue; // Skip root
+      if (fs.existsSync(target)) {
+        fs.rmSync(target, { recursive: true, force: true });
+      }
+    }
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -632,17 +639,35 @@ router.post('/servers/:id/files/rename', requirePermission('files'), express.jso
 // ── POST /api/servers/:id/files/move ──────────────────────────────────────────
 router.post('/servers/:id/files/move', requirePermission('files'), express.json(), (req, res) => {
   try {
-    const { oldPath, newPath } = req.body;
-    if (!oldPath || !newPath) return res.status(400).json({ error: 'Paths required' });
-    const oldTarget = safePath(req.params.id, oldPath).target;
-    const newTarget = safePath(req.params.id, newPath).target;
-    if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
+    let { oldPath, newPath, paths, newDir } = req.body;
     
-    // Ensure destination directory exists
-    const destDir = path.dirname(newTarget);
-    if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+    // Legacy single move
+    if (oldPath && newPath) {
+      const oldTarget = safePath(req.params.id, oldPath).target;
+      const newTarget = safePath(req.params.id, newPath).target;
+      if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
+      const destDir = path.dirname(newTarget);
+      if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+      fs.renameSync(oldTarget, newTarget);
+      return res.json({ ok: true });
+    }
     
-    fs.renameSync(oldTarget, newTarget);
+    // Bulk move
+    if (!paths || !Array.isArray(paths) || newDir === undefined) {
+      return res.status(400).json({ error: 'paths array and newDir required' });
+    }
+    
+    for (const p of paths) {
+      const oldTarget = safePath(req.params.id, p).target;
+      const filename = path.basename(oldTarget);
+      const newTarget = safePath(req.params.id, newDir ? `${newDir}/${filename}` : filename).target;
+      
+      if (fs.existsSync(oldTarget)) {
+        const destDir = path.dirname(newTarget);
+        if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
+        fs.renameSync(oldTarget, newTarget);
+      }
+    }
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
@@ -658,13 +683,32 @@ router.get('/servers/:id/files/download', requirePermission('files'), (req, res)
 });
 
 // ── POST /api/servers/:id/files/archive ───────────────────────────────────────
-router.post('/servers/:id/files/archive', requirePermission('files'), (req, res) => {
+router.post('/servers/:id/files/archive', requirePermission('files'), express.json(), (req, res) => {
   const { execFile } = require('child_process');
   try {
-    const { action, path: userPath } = req.body;
-    if (!action || !userPath) return res.status(400).json({ error: 'Action and path required.' });
+    let { action, path: userPath, paths } = req.body;
+    if (!action) return res.status(400).json({ error: 'Action required.' });
 
-    const { baseDir, target } = safePath(req.params.id, userPath);
+    // Bulk archive (only compress supported)
+    if (paths && Array.isArray(paths) && action === 'compress') {
+      if (paths.length === 0) return res.status(400).json({ error: 'No paths provided' });
+      
+      const { target } = safePath(req.params.id, paths[0]);
+      const parentDir = path.dirname(target);
+      const baseNames = paths.map(p => path.basename(safePath(req.params.id, p).target));
+      const archiveName = `archive_${Date.now()}.tar.gz`;
+      const archivePath = path.join(parentDir, archiveName);
+      
+      execFile('tar', ['-czf', archivePath, '-C', parentDir, ...baseNames], (err) => {
+        if (err) return res.status(500).json({ error: `Compression failed: ${err.message}` });
+        res.json({ ok: true, archive: archiveName });
+      });
+      return;
+    }
+
+    if (!userPath) return res.status(400).json({ error: 'Path required.' });
+
+    const { target } = safePath(req.params.id, userPath);
     const parentDir = path.dirname(target);
     const baseName  = path.basename(target);
 

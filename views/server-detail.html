@@ -156,10 +156,17 @@
             <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
           </div>
         </div>
+        <div id="bulkActionsBar" class="hidden" style="background: var(--bg-hover); padding: 8px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center;">
+          <span id="bulkSelectedCount" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-right: auto;">0 selected</span>
+          <button class="btn btn-secondary btn-sm" onclick="bulkArchive()">🔒 Archive</button>
+          <button class="btn btn-secondary btn-sm" onclick="bulkMove()">✂️ Move</button>
+          <button class="btn btn-danger btn-sm" onclick="bulkDelete()">🗑 Delete</button>
+        </div>
         <div class="table-responsive">
           <table class="table" style="margin:0;">
             <thead>
               <tr>
+                <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAllFiles" onchange="toggleSelectAllFiles(this.checked)"></th>
                 <th style="width:50%">Name</th>
                 <th>Size</th>
                 <th>Modified</th>
@@ -423,11 +430,11 @@
     </div>
   </main>
 </div>
-<script src="/public/js/console.js?v=107"></script>
-<script src="/public/js/files.js?v=107"></script>
-<script src="/public/js/plugins.js?v=107"></script>
-<script src="/public/js/playit.js?v=107"></script>
-<script src="/public/js/players.js?v=107"></script>
-<script src="/public/js/settings.js?v=107"></script>
+<script src="/public/js/console.js?v=108"></script>
+<script src="/public/js/files.js?v=108"></script>
+<script src="/public/js/plugins.js?v=108"></script>
+<script src="/public/js/playit.js?v=108"></script>
+<script src="/public/js/players.js?v=108"></script>
+<script src="/public/js/settings.js?v=108"></script>
 </body>
 </html>
