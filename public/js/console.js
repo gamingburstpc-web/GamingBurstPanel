@@ -103,6 +103,20 @@ async function loadMe() {
     if (!currentUser.isAdmin) {
       document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
       document.getElementById('navUsers')?.style && (document.getElementById('navUsers').style.display = 'none');
+      
+      const perms = currentUser.permissions || [];
+      const toggleTab = (id, perm) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.toggle('hidden', !perms.includes(perm));
+      };
+      toggleTab('tabBtnConsole', 'console');
+      toggleTab('tabBtnFiles', 'files');
+      toggleTab('tabBtnPlugins', 'plugins');
+      toggleTab('tabBtnPlayit', 'playit');
+      toggleTab('tabBtnPlayers', 'players');
+      toggleTab('tabBtnSettings', 'settings');
+    } else {
+      ['Console', 'Files', 'Plugins', 'Playit', 'Players', 'Settings'].forEach(t => document.getElementById('tabBtn' + t)?.classList.remove('hidden'));
     }
   } catch {}
 }
@@ -196,9 +210,26 @@ function updateStatusUI(status) {
   const badge = document.getElementById('statusBadge');
   if (badge) { badge.className = `badge badge-${status}`; badge.innerHTML = `<span class="badge-dot"></span> ${status}`; }
   const isRunning = status === 'running' || status === 'starting';
-  document.getElementById('btnStart')?.classList.toggle('hidden', isRunning);
-  document.getElementById('btnStop')?.classList.toggle('hidden', !isRunning);
-  document.getElementById('btnRestart')?.classList.toggle('hidden', !isRunning);
+  
+  const hasPerm = (p) => currentUser?.isAdmin || currentUser?.permissions?.includes(p);
+  
+  if (hasPerm('start')) {
+    document.getElementById('btnStart')?.classList.toggle('hidden', isRunning);
+  } else {
+    document.getElementById('btnStart')?.classList.add('hidden');
+  }
+  
+  if (hasPerm('stop')) {
+    document.getElementById('btnStop')?.classList.toggle('hidden', !isRunning);
+  } else {
+    document.getElementById('btnStop')?.classList.add('hidden');
+  }
+  
+  if (hasPerm('restart')) {
+    document.getElementById('btnRestart')?.classList.toggle('hidden', !isRunning);
+  } else {
+    document.getElementById('btnRestart')?.classList.add('hidden');
+  }
 }
 
 // ── Actions ───────────────────────────────────────────────────────────────────

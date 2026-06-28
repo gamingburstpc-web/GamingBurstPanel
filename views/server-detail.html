@@ -104,12 +104,12 @@
 
     <!-- Tabs -->
     <div style="display:flex;gap:8px;margin-bottom:16px;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:12px;overflow-x:auto;">
-      <button id="tabBtnConsole" class="btn btn-secondary active" onclick="switchServerTab('console')">📟 Console</button>
-      <button id="tabBtnFiles" class="btn btn-secondary" onclick="switchServerTab('files')">📁 Files</button>
-      <button id="tabBtnPlugins" class="btn btn-secondary" onclick="switchServerTab('plugins')">🔌 Plugins</button>
-      <button id="tabBtnPlayit" class="btn btn-secondary" onclick="switchServerTab('playit')">🌐 Playit</button>
-      <button id="tabBtnPlayers" class="btn btn-secondary admin-only" onclick="switchServerTab('players')">👥 Players</button>
-      <button id="tabBtnSettings" class="btn btn-secondary admin-only" onclick="switchServerTab('settings')">⚙️ Settings</button>
+      <button id="tabBtnConsole" class="btn btn-secondary hidden" onclick="switchServerTab('console')">📟 Console</button>
+      <button id="tabBtnFiles" class="btn btn-secondary hidden" onclick="switchServerTab('files')">📁 Files</button>
+      <button id="tabBtnPlugins" class="btn btn-secondary hidden" onclick="switchServerTab('plugins')">🔌 Plugins</button>
+      <button id="tabBtnPlayit" class="btn btn-secondary hidden" onclick="switchServerTab('playit')">🌐 Playit</button>
+      <button id="tabBtnPlayers" class="btn btn-secondary hidden" onclick="switchServerTab('players')">👥 Players</button>
+      <button id="tabBtnSettings" class="btn btn-secondary hidden" onclick="switchServerTab('settings')">⚙️ Settings</button>
     </div>
 
     <!-- Console Tab -->
@@ -430,7 +430,7 @@
     </div>
   </main>
 </div>
-<script src="/public/js/console.js?v=108"></script>
+<script src="/public/js/console.js?v=109"></script>
 <script src="/public/js/files.js?v=108"></script>
 <script src="/public/js/plugins.js?v=108"></script>
 <script src="/public/js/playit.js?v=108"></script>

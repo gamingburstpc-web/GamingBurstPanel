@@ -499,8 +499,8 @@ router.post('/servers/:id/files/upload', requirePermission('files'), express.raw
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
-// ── POST /api/servers/:id/plugins/download-url ──────────────────────────────
-router.post('/servers/:id/plugins/download-url', requirePermission('files'), express.json(), async (req, res) => {
+// ── POST /api/servers/:id/plugins/download-url ────────────────────────────────
+router.post('/servers/:id/plugins/download-url', requirePermission('plugins'), express.json(), async (req, res) => {
   try {
     const { url, filename, validateLoader } = req.body;
     if (!url || !filename) return res.status(400).json({ error: 'Missing url or filename' });
@@ -745,7 +745,7 @@ router.post('/servers/:id/files/archive', requirePermission('files'), express.js
 // ── Playit API Endpoints ───────────────────────────────────────────────────────
 const playitManager = require('../playitManager');
 
-router.get('/servers/:id/playit/status', requirePermission('files'), (req, res) => {
+router.get('/servers/:id/playit/status', requirePermission('playit'), (req, res) => {
   try {
     const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
@@ -754,7 +754,7 @@ router.get('/servers/:id/playit/status', requirePermission('files'), (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/servers/:id/playit/download', requirePermission('files'), async (req, res) => {
+router.post('/servers/:id/playit/download', requirePermission('playit'), async (req, res) => {
   try {
     const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
@@ -763,7 +763,7 @@ router.post('/servers/:id/playit/download', requirePermission('files'), async (r
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/servers/:id/playit/claim', requirePermission('files'), (req, res) => {
+router.post('/servers/:id/playit/claim', requirePermission('playit'), (req, res) => {
   try {
     const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
@@ -772,7 +772,7 @@ router.post('/servers/:id/playit/claim', requirePermission('files'), (req, res) 
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/servers/:id/playit/secret', requirePermission('files'), (req, res) => {
+router.post('/servers/:id/playit/secret', requirePermission('playit'), (req, res) => {
   try {
     const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
@@ -782,7 +782,7 @@ router.post('/servers/:id/playit/secret', requirePermission('files'), (req, res)
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-router.post('/servers/:id/playit/reset', requirePermission('files'), (req, res) => {
+router.post('/servers/:id/playit/reset', requirePermission('playit'), (req, res) => {
   try {
     const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
