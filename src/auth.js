@@ -275,6 +275,7 @@ module.exports = {
   requirePermission,
   requireAnyPermission,
   cookieMiddleware,
+  parseSessionFromCookieHeader,
   checkRateLimit,
   recordFailedAttempt,
   clearAttempts,
