@@ -61,8 +61,14 @@ async function loadFiles() {
   
   try {
     const res = await fetch(`/api/servers/${serverId}/files?path=${encodeURIComponent(currentFilePath)}`);
+    if (res.status === 401) { location.href = '/login'; return; }
+    if (!res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      let msg = 'Failed to load files';
+      if (ct.includes('json')) { const d = await res.json(); msg = d.error || msg; }
+      throw new Error(msg);
+    }
     const files = await res.json();
-    if (!res.ok) throw new Error(files.error || 'Failed to load files');
 
     document.getElementById('currentPath').textContent = '/' + currentFilePath;
 

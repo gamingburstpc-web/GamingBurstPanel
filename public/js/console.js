@@ -1,5 +1,25 @@
 'use strict';
 
+// ── Global 401 interceptor: redirect to /login if session expired ─────────────
+(function() {
+  const _fetch = window.fetch;
+  window.fetch = async function(...args) {
+    const res = await _fetch(...args);
+    if (res.status === 401) {
+      // Clone so callers can still read the body if needed
+      const clone = res.clone();
+      const url = typeof args[0] === 'string' ? args[0] : args[0]?.url || '';
+      // Only redirect on API calls, not on /login itself
+      if (url.includes('/api/') && !location.pathname.includes('/login')) {
+        location.href = '/login';
+      }
+      return clone;
+    }
+    return res;
+  };
+})();
+
+
 window.showAlert = function(type, msg) {
   if (msg === undefined) {
     msg = type;
