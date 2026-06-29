@@ -111,22 +111,62 @@
           </div>
 
           <div class="form-group" id="permsGroup">
-            <label class="form-label">Granular Permissions</label>
-            <div class="form-hint" style="margin-bottom:8px;">Select what this sub-user can do:</div>
-            <div class="perm-grid">
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="start"> Start Server</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="stop"> Stop Server</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="restart"> Restart Server</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="console"> Use Console</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="files"> Manage Files</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="settings"> Manage Settings</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="players"> Manage Players</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="kick"> Kick Players</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="ban"> Ban Players</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="coordinates"> View Coordinates</label>
-              <label class="perm-item"><input type="checkbox" class="perm-cb" value="delete"> Delete Server</label>
+            <div style="margin-bottom: 24px;">
+              <label class="form-label">Global Permissions</label>
+              <div class="form-hint" style="margin-bottom:8px;">Permissions granted here apply to ALL servers.</div>
+              <div class="perm-grid" id="globalPerms">
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="start"> Start Server</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="stop"> Stop Server</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="restart"> Restart Server</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="console"> Use Console</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="files"> Manage Files</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="settings"> Manage Settings</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="players"> Manage Players</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="kick"> Kick Players</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="ban"> Ban Players</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="coordinates"> View Coordinates</label>
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="delete"> Delete Server</label>
+              </div>
+            </div>
+
+            <div style="border-top: 1px solid var(--border-color); padding-top: 24px; margin-bottom: 12px;">
+              <label class="form-label">Server-Specific Permissions</label>
+              <div class="form-hint" style="margin-bottom:12px;">Grant permissions strictly isolated to a specific server.</div>
+              
+              <div id="serverPermsContainer" style="display:flex; flex-direction:column; gap:16px; margin-bottom:16px;">
+                <!-- Server perm cards injected here -->
+              </div>
+              
+              <div style="display:flex; gap:10px; align-items:center; background:rgba(255,255,255,0.02); padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+                <select id="serverSelect" class="form-input" style="flex:1;">
+                  <option value="">Loading servers...</option>
+                </select>
+                <button type="button" class="btn" style="background:rgba(255,255,255,0.1);" onclick="addServerPermBlock()">+ Add Server</button>
+              </div>
             </div>
           </div>
+          
+          <template id="serverPermTemplate">
+            <div class="server-perm-card" style="background:rgba(0,0,0,0.2); border:1px solid var(--border-color); border-radius:8px; padding:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <div style="font-weight:600; color:var(--text-primary);" class="server-perm-title">Server Name</div>
+                <button type="button" class="btn btn-sm" style="background:rgba(248,81,73,0.1); color:#f85149; border:none;" onclick="this.closest('.server-perm-card').remove()">Remove</button>
+              </div>
+              <div class="perm-grid server-perm-grid">
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="start"> Start Server</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="stop"> Stop Server</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="restart"> Restart</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="console"> Console</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="files"> Files</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="settings"> Settings</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="players"> Players</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="kick"> Kick</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="ban"> Ban</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="coordinates"> Coordinates</label>
+                <label class="perm-item"><input type="checkbox" class="s-perm-cb" value="delete"> Delete</label>
+              </div>
+            </div>
+          </template>
 
           <div style="margin-top:24px; display:flex; gap:12px; align-items:center;">
             <button type="submit" id="addBtn" class="btn btn-primary" style="flex:1">Create User</button>

@@ -49,10 +49,12 @@ router.get('/me', (req, res) => {
 // ── GET /api/users — ADMIN ONLY ──────────────────────────────────────────────
 router.get('/users', requireAdmin, (req, res) => {
   const users = getDb().prepare('SELECT id, username, is_admin, permissions, created_at FROM users').all();
-  res.json(users.map(u => ({
-    ...u,
-    permissions: JSON.parse(u.permissions || '[]')
-  })));
+  res.json(users.map(u => {
+    let p = [];
+    try { p = JSON.parse(u.permissions || '[]'); } catch {}
+    if (Array.isArray(p)) p = { global: p, servers: {} };
+    return { ...u, permissions: p };
+  }));
 });
 
 // ── POST /api/users — ADMIN ONLY ─────────────────────────────────────────────
@@ -65,7 +67,12 @@ router.post('/users', requireAdmin, (req, res) => {
   if (existing) return res.status(400).json({ error: 'Username already exists.' });
 
   const hash = hashPassword(password);
-  const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+  let permsObj = { global: [], servers: {} };
+  if (permissions) {
+    if (Array.isArray(permissions)) permsObj.global = permissions;
+    else if (typeof permissions === 'object') permsObj = permissions;
+  }
+  const permsJson = JSON.stringify(permsObj);
   const adminFlag = is_admin ? 1 : 0;
 
   try {
@@ -106,7 +113,12 @@ router.put('/users/:id', requireAdmin, (req, res) => {
     return res.status(403).json({ error: 'Only the primary owner can modify their own account.' });
   }
 
-  const permsJson = JSON.stringify(Array.isArray(permissions) ? permissions : []);
+  let permsObj = { global: [], servers: {} };
+  if (permissions) {
+    if (Array.isArray(permissions)) permsObj.global = permissions;
+    else if (typeof permissions === 'object') permsObj = permissions;
+  }
+  const permsJson = JSON.stringify(permsObj);
   let adminFlag = is_admin ? 1 : 0;
   
   if (id === 1) {
@@ -128,7 +140,7 @@ router.put('/users/:id', requireAdmin, (req, res) => {
     updateUserSessions(id, {
       username: username.trim(),
       isAdmin: adminFlag === 1,
-      permissions: Array.isArray(permissions) ? permissions : []
+      permissions: permsObj
     });
 
     res.json({ ok: true });
@@ -227,7 +239,18 @@ function downloadFile(url, destPath) {
 
 // ── GET /api/servers ──────────────────────────────────────────────────────────
 router.get('/servers', (req, res) => {
-  const servers = getDb().prepare('SELECT * FROM servers ORDER BY created_at DESC').all();
+  let servers = getDb().prepare('SELECT * FROM servers ORDER BY created_at DESC').all();
+  
+  if (!req.session.isAdmin) {
+    const p = req.session.permissions || { global: [], servers: {} };
+    const perms = Array.isArray(p) ? { global: p, servers: {} } : p;
+    
+    servers = servers.filter(s => {
+      return (perms.global && perms.global.length > 0) || 
+             (perms.servers && perms.servers[s.id] && perms.servers[s.id].length > 0);
+    });
+  }
+  
   res.json(servers.map(s => {
     const isLive = pm.isRunning(s.id);
     return {

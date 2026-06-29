@@ -55,8 +55,16 @@ function verifyPassword(plain, hash) { return bcrypt.compareSync(plain, hash); }
 // ── Session management ────────────────────────────────────────────────────────
 function createSession(user) {
   const sessionId = crypto.randomUUID();
-  let perms = [];
-  try { perms = JSON.parse(user.permissions || '[]'); } catch {}
+  let perms = { global: [], servers: {} };
+  try { 
+    const p = JSON.parse(user.permissions || '[]'); 
+    if (Array.isArray(p)) {
+      perms.global = p;
+    } else if (p && typeof p === 'object') {
+      perms.global = p.global || [];
+      perms.servers = p.servers || {};
+    }
+  } catch {}
 
   sessions.set(sessionId, {
     userId:     user.id,
@@ -131,7 +139,15 @@ function requireAdmin(req, res, next) {
 function requirePermission(perm) {
   return (req, res, next) => {
     if (req.session?.isAdmin) return next();
-    if (req.session?.permissions?.includes(perm)) return next();
+    const p = req.session?.permissions || { global: [], servers: {} };
+    
+    if (Array.isArray(p)) {
+      if (p.includes(perm)) return next();
+    } else {
+      if (p.global?.includes(perm)) return next();
+      const serverId = req.params.id || req.body.serverId || req.query.serverId;
+      if (serverId && p.servers && p.servers[serverId]?.includes(perm)) return next();
+    }
     
     if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
       return res.status(403).json({ error: `Permission denied. Requires: ${perm}` });
