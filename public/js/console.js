@@ -113,6 +113,7 @@ async function loadMe() {
     const res = await fetch('/api/me');
     if (!res.ok) return;
     currentUser = await res.json();
+    window.currentUser = currentUser;
     const u = currentUser.username;
     if (document.getElementById('sidebarUsername')) document.getElementById('sidebarUsername').textContent = u;
     if (document.getElementById('avatarInitial'))   document.getElementById('avatarInitial').textContent  = u[0].toUpperCase();
