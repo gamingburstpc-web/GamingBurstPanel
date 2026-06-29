@@ -5,15 +5,49 @@ const bcrypt = require('bcryptjs');
 const { getDb } = require('./db');
 
 const BCRYPT_ROUNDS  = parseInt(process.env.BCRYPT_ROUNDS || '10', 10);
-const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days — persistent across restarts
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-// ── Session store: SQLite-backed (survives panel restarts) ─────────────────────
-function _db() { return getDb(); }
+// ── Session store: SQLite-backed with RAM fallback ────────────────────────────
+// If SQLite sessions table isn't ready yet, falls back to RAM automatically.
+// This prevents ANY database error from ever crashing the panel.
+const ramSessions = new Map(); // fallback only
+
+function dbSet(id, userId, data, expiresAt) {
+  try {
+    getDb().prepare('INSERT OR REPLACE INTO sessions (id, user_id, data, expires_at) VALUES (?, ?, ?, ?)')
+      .run(id, userId, JSON.stringify(data), expiresAt);
+    return true;
+  } catch { return false; }
+}
+
+function dbGet(id) {
+  try {
+    return getDb().prepare('SELECT data, expires_at FROM sessions WHERE id = ?').get(id);
+  } catch { return null; }
+}
+
+function dbDelete(id) {
+  try { getDb().prepare('DELETE FROM sessions WHERE id = ?').run(id); } catch {}
+}
+
+function dbDeleteUser(userId) {
+  try { getDb().prepare('DELETE FROM sessions WHERE user_id = ?').run(userId); } catch {}
+}
+
+function dbGetByUser(userId) {
+  try {
+    return getDb().prepare('SELECT id, data FROM sessions WHERE user_id = ?').all(userId);
+  } catch { return []; }
+}
 
 // Clean expired sessions every 30 minutes
 setInterval(() => {
-  try { _db().prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now()); } catch {}
+  try { getDb().prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now()); } catch {}
+  // Also clean RAM fallback
+  const now = Date.now();
+  for (const [k, v] of ramSessions) { if (v.expiresAt < now) ramSessions.delete(k); }
 }, 30 * 60 * 1000).unref();
+
 
 // ── Rate limiter (in-memory, resets on restart — that's fine) ─────────────────
 const loginAttempts = new Map();
@@ -73,46 +107,59 @@ function createSession(user) {
   };
 
   const expiresAt = Date.now() + SESSION_TTL_MS;
-  _db().prepare('INSERT OR REPLACE INTO sessions (id, user_id, data, expires_at) VALUES (?, ?, ?, ?)')
-    .run(sessionId, user.id, JSON.stringify(data), expiresAt);
-
+  const saved = dbSet(sessionId, user.id, data, expiresAt);
+  if (!saved) {
+    // SQLite not ready yet — store in RAM as fallback
+    ramSessions.set(sessionId, { ...data, expiresAt });
+  }
   return sessionId;
 }
 
 function getSession(sessionId) {
   if (!sessionId) return null;
-  try {
-    const row = _db().prepare('SELECT data, expires_at FROM sessions WHERE id = ?').get(sessionId);
-    if (!row) return null;
-    if (row.expires_at < Date.now()) {
-      _db().prepare('DELETE FROM sessions WHERE id = ?').run(sessionId);
-      return null;
-    }
-    // Slide the window: extend expiry on every access
-    _db().prepare('UPDATE sessions SET expires_at = ? WHERE id = ?')
-      .run(Date.now() + SESSION_TTL_MS, sessionId);
-    return JSON.parse(row.data);
-  } catch { return null; }
+  // Check RAM fallback first
+  const ram = ramSessions.get(sessionId);
+  if (ram) {
+    if (ram.expiresAt < Date.now()) { ramSessions.delete(sessionId); return null; }
+    ram.expiresAt = Date.now() + SESSION_TTL_MS;
+    return ram;
+  }
+  // Check SQLite
+  const row = dbGet(sessionId);
+  if (!row) return null;
+  if (row.expires_at < Date.now()) { dbDelete(sessionId); return null; }
+  // Slide the expiry window
+  try { getDb().prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run(Date.now() + SESSION_TTL_MS, sessionId); } catch {}
+  try { return JSON.parse(row.data); } catch { return null; }
 }
 
 function destroySession(sessionId) {
-  try { _db().prepare('DELETE FROM sessions WHERE id = ?').run(sessionId); } catch {}
+  ramSessions.delete(sessionId);
+  dbDelete(sessionId);
 }
 
 function updateUserSessions(userId, updates) {
-  try {
-    const rows = _db().prepare('SELECT id, data FROM sessions WHERE user_id = ?').all(userId);
-    for (const row of rows) {
-      try {
-        const data = JSON.parse(row.data);
-        if (updates.username    !== undefined) data.username    = updates.username;
-        if (updates.isAdmin     !== undefined) data.isAdmin     = updates.isAdmin;
-        if (updates.permissions !== undefined) data.permissions = updates.permissions;
-        if (updates.mustChange  !== undefined) data.mustChange  = updates.mustChange;
-        _db().prepare('UPDATE sessions SET data = ? WHERE id = ?').run(JSON.stringify(data), row.id);
-      } catch {}
+  // Update RAM sessions
+  for (const [id, s] of ramSessions) {
+    if (s.userId === userId) {
+      if (updates.username    !== undefined) s.username    = updates.username;
+      if (updates.isAdmin     !== undefined) s.isAdmin     = updates.isAdmin;
+      if (updates.permissions !== undefined) s.permissions = updates.permissions;
+      if (updates.mustChange  !== undefined) s.mustChange  = updates.mustChange;
     }
-  } catch {}
+  }
+  // Update SQLite sessions
+  const rows = dbGetByUser(userId);
+  for (const row of rows) {
+    try {
+      const data = JSON.parse(row.data);
+      if (updates.username    !== undefined) data.username    = updates.username;
+      if (updates.isAdmin     !== undefined) data.isAdmin     = updates.isAdmin;
+      if (updates.permissions !== undefined) data.permissions = updates.permissions;
+      if (updates.mustChange  !== undefined) data.mustChange  = updates.mustChange;
+      getDb().prepare('UPDATE sessions SET data = ? WHERE id = ?').run(JSON.stringify(data), row.id);
+    } catch {}
+  }
 }
 
 function destroyUserSessions(userId) {

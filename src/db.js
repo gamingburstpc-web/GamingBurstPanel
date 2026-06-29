@@ -88,16 +88,6 @@ const SCHEMA = `
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_logs_server ON server_logs(server_id);
-
-  CREATE TABLE IF NOT EXISTS sessions (
-    id         TEXT    PRIMARY KEY,
-    user_id    INTEGER NOT NULL,
-    data       TEXT    NOT NULL,
-    expires_at INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
-  CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
-  CREATE INDEX IF NOT EXISTS idx_sessions_exp  ON sessions(expires_at);
 `;
 
 // ── Migrations (safe to re-run) ───────────────────────────────────────────────
@@ -109,6 +99,21 @@ function runMigrations(db) {
   try { db.exec('ALTER TABLE servers ADD COLUMN expire_at INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN delete_after INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN bedrock_port INTEGER DEFAULT NULL'); } catch {}
+  // Sessions table — created here so it works on existing databases that predate the SCHEMA addition
+  try {
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id         TEXT    PRIMARY KEY,
+        user_id    INTEGER NOT NULL,
+        data       TEXT    NOT NULL,
+        expires_at INTEGER NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+      CREATE INDEX IF NOT EXISTS idx_sessions_exp  ON sessions(expires_at);
+    `);
+  } catch (e) {
+    console.error('[DB] Warning: could not create sessions table:', e.message);
+  }
 }
 
 // ── Seed admin/admin for dev/testing ─────────────────────────────────────────
