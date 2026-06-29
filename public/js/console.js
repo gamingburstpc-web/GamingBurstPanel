@@ -164,6 +164,26 @@ async function loadServer() {
   
   document.getElementById('serverTz').textContent   = `🌏 ${serverData.env_tz}`;
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
+  
+  if (serverData.expire_at) {
+    const vc = document.getElementById('validityCard');
+    if (vc) {
+      vc.style.display = 'flex';
+      vc.style.flexDirection = 'column';
+      const diffDays = Math.ceil((serverData.expire_at - Date.now()) / (1000 * 60 * 60 * 24));
+      const metVal = document.getElementById('metValidity');
+      metVal.textContent = diffDays > 0 ? `${diffDays} Days` : 'Expired';
+      if (diffDays <= 0) metVal.style.color = 'var(--red)';
+      else if (diffDays <= 3) metVal.style.color = 'var(--yellow)';
+      else metVal.style.color = 'var(--green)';
+
+      if (serverData.delete_after !== null && serverData.delete_after !== undefined) {
+        document.getElementById('metDeletionWarning').textContent = `Auto-deletes ${serverData.delete_after} day(s) after expiration`;
+      } else {
+        document.getElementById('metDeletionWarning').textContent = 'No auto-deletion set';
+      }
+    }
+  }
 
   if (serverData.jar_path && serverData.jar_path.toLowerCase().includes('vanilla')) {
     const pluginsBtn = document.getElementById('tabBtnPlugins');

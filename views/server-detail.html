@@ -98,8 +98,12 @@
       <div class="metric-card">
         <div class="metric-label">CPU Usage</div>
         <div><span class="metric-value" id="metCpu">0</span><span class="metric-unit">%</span></div>
-        <div class="text-muted text-sm" style="margin-top:6px;visibility:hidden">Spacer</div>
         <div class="progress-track mt-2"><div class="progress-fill" id="cpuBar" style="width:0%"></div></div>
+      </div>
+      <div class="metric-card" id="validityCard" style="display:none;">
+        <div class="metric-label">Server Validity</div>
+        <div><span class="metric-value" id="metValidity" style="font-size:1.5rem">--</span></div>
+        <div class="text-muted text-sm" style="margin-top:6px" id="metDeletionWarning"></div>
       </div>
     </div>
 
