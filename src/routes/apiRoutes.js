@@ -666,25 +666,35 @@ router.get('/status', (req, res) => {
 // ── POST /api/system/update ───────────────────────────────────────────────────
 router.post('/system/update', requireAdmin, async (req, res) => {
   try {
-    // 1. Send ok to frontend so it can start polling
+    // 1. Check if an update is actually available
+    const rootDir = path.resolve(__dirname, '../../');
+    execSync('git fetch origin main', { cwd: rootDir });
+    const local = execSync('git rev-parse HEAD', { cwd: rootDir }).toString().trim();
+    const remote = execSync('git rev-parse origin/main', { cwd: rootDir }).toString().trim();
+
+    if (local === remote) {
+      return res.json({ upToDate: true, msg: 'GamingBurst Panel is already completely up to date!' });
+    }
+
+    // 2. Send ok to frontend so it can start polling
     res.json({ ok: true, msg: 'Update initiated. Stopping servers...' });
     
-    // 2. Safely stop all running servers and wait for them to finish
+    // 3. Safely stop all running servers and wait for them to finish
     await pm.killAll();
 
-    // 3. Wait a moment to ensure file handles are released
+    // 4. Wait a moment to ensure file handles are released
     await new Promise(r => setTimeout(r, 2000));
 
-    // 4. Run git pull and npm install
+    // 5. Run git pull and npm install
     try {
-      execSync('git fetch origin main && git reset --hard origin/main && git pull origin main', { cwd: path.resolve(__dirname, '../../') });
-      execSync('npm install --omit=dev', { cwd: path.resolve(__dirname, '../../') });
+      execSync('git reset --hard origin/main && git pull origin main', { cwd: rootDir });
+      execSync('npm install --omit=dev', { cwd: rootDir });
     } catch (e) {
       console.error('[Update] Error running update commands:', e);
       // We will still exit so it reboots, but log the error
     }
 
-    // 5. Restart the panel via process.exit (systemd will restart it automatically)
+    // 6. Restart the panel via process.exit (systemd will restart it automatically)
     process.exit(0);
   } catch (err) {
     console.error('[Update] Fatal error during update:', err);
