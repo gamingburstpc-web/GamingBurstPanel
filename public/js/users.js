@@ -49,7 +49,7 @@ function filterUsers() {
     
     // Check owned servers
     availableServers.forEach(s => {
-      if (s.owner_id === u.id) {
+      if (s.owner_id == u.id) {
         isOwner = true;
         serversHtml.push(`<span class="badge" style="background:rgba(35,134,54,0.1);color:#3fb950">${s.name} (Owner)</span>`);
       }

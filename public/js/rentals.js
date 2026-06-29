@@ -112,6 +112,8 @@ function openManageForm(id) {
     endSubBtn.style.display = 'none';
   }
   
+  document.getElementById('customValidityBlock').style.display = 'none';
+  
   // Set User
   document.getElementById('userSelect').value = s.owner_id || '';
   
@@ -268,9 +270,27 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
   let expire_at = undefined;
   if (validityStr === 'permanent') {
     expire_at = null;
+  } else if (validityStr === 'custom') {
+    const mo = parseInt(document.getElementById('custMonths').value || '0', 10);
+    const wk = parseInt(document.getElementById('custWeeks').value || '0', 10);
+    const da = parseInt(document.getElementById('custDays').value || '0', 10);
+    const hr = parseInt(document.getElementById('custHours').value || '0', 10);
+    const mi = parseInt(document.getElementById('custMinutes').value || '0', 10);
+    
+    if (mo > 0 || wk > 0 || da > 0 || hr > 0 || mi > 0) {
+      const now = (server && server.expire_at && server.expire_at > Date.now()) ? server.expire_at : Date.now();
+      const totalMs = 
+        (mo * 30 * 24 * 60 * 60 * 1000) + 
+        (wk * 7 * 24 * 60 * 60 * 1000) + 
+        (da * 24 * 60 * 60 * 1000) + 
+        (hr * 60 * 60 * 1000) + 
+        (mi * 60 * 1000);
+      expire_at = now + totalMs;
+    }
   } else if (validityStr !== 'none') {
     const days = parseInt(validityStr, 10);
-    expire_at = Date.now() + (days * 24 * 60 * 60 * 1000);
+    const now = (server && server.expire_at && server.expire_at > Date.now()) ? server.expire_at : Date.now();
+    expire_at = now + (days * 24 * 60 * 60 * 1000);
   }
   
   let targetExpireAt = expire_at !== undefined ? expire_at : (server ? server.expire_at : null);
