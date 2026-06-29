@@ -203,12 +203,25 @@ async function loadServer() {
     if (vc) {
       vc.style.display = 'flex';
       vc.style.flexDirection = 'column';
-      const diffDays = Math.ceil((serverData.expire_at - Date.now()) / (1000 * 60 * 60 * 24));
+      const diffMs = serverData.expire_at - Date.now();
       const metVal = document.getElementById('metValidity');
-      metVal.textContent = diffDays > 0 ? `${diffDays} Days` : 'Expired';
-      if (diffDays <= 0) metVal.style.color = 'var(--red)';
-      else if (diffDays <= 3) metVal.style.color = 'var(--yellow)';
-      else metVal.style.color = 'var(--green)';
+      
+      if (diffMs <= 0) {
+        metVal.textContent = 'Expired';
+        metVal.style.color = 'var(--red)';
+      } else {
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        if (hours < 24) {
+          const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+          metVal.textContent = `${hours}h ${mins}m`;
+          metVal.style.color = 'var(--red)';
+        } else {
+          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+          metVal.textContent = `${diffDays} Days`;
+          if (diffDays <= 3) metVal.style.color = 'var(--yellow)';
+          else metVal.style.color = 'var(--green)';
+        }
+      }
 
       if (serverData.delete_after !== null && serverData.delete_after !== undefined) {
         document.getElementById('metDeletionWarning').textContent = `Auto-deletes ${serverData.delete_after} day(s) after expiration`;
