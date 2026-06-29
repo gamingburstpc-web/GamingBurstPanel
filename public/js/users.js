@@ -19,11 +19,82 @@ async function fetchServers() {
     const r = await fetch('/api/servers');
     availableServers = await r.json();
     const select = document.getElementById('serverSelect');
+    const filterSelect = document.getElementById('userFilterSelect');
+    
     select.innerHTML = '<option value="">-- Select a Server --</option>';
+    let filterHtml = '<option value="all">All Users</option>';
+    
     availableServers.forEach(s => {
       select.innerHTML += `<option value="${s.id}">${s.name} (Port ${s.port})</option>`;
+      filterHtml += `<option value="${s.id}">${s.name}</option>`;
     });
+    
+    if (filterSelect) filterSelect.innerHTML = filterHtml;
   } catch {}
+}
+
+function filterUsers() {
+  const tbody = document.getElementById('usersList');
+  const filterSelect = document.getElementById('userFilterSelect');
+  const filterId = filterSelect ? filterSelect.value : 'all';
+  
+  if (loadedUsers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">No users found.</td></tr>';
+    return;
+  }
+
+  let html = '';
+  let count = 0;
+  for (const u of loadedUsers) {
+    // Check if user matches filter
+    if (filterId !== 'all') {
+      if (u.is_admin !== 1) {
+        let hasAccess = false;
+        if (u.permissions) {
+          if (u.permissions.global && u.permissions.global.length > 0) hasAccess = true;
+          if (u.permissions.servers && u.permissions.servers[filterId]) hasAccess = true;
+        }
+        if (!hasAccess) continue;
+      }
+    }
+    
+    count++;
+    const isMe = u.id === myId;
+    const roleBadge = u.is_admin === 1 
+      ? `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">Admin</span>`
+      : `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">User</span>`;
+    
+    let permsText = 'No extra perms';
+    if (u.is_admin === 1) {
+      permsText = 'All Permissions';
+    } else if (u.permissions) {
+      const p = u.permissions;
+      const globalCount = p.global ? p.global.length : 0;
+      const serverCount = p.servers ? Object.keys(p.servers).length : 0;
+      if (globalCount > 0 || serverCount > 0) {
+        permsText = `${globalCount} Global, ${serverCount} Server(s)`;
+      }
+    }
+
+    html += `
+      <tr>
+        <td>#${u.id}</td>
+        <td><strong style="color:var(--text-primary)">${u.username}</strong> ${isMe ? '<span style="font-size:11px;color:var(--text-muted)">(You)</span>' : ''}</td>
+        <td>${roleBadge}<br><span class="text-muted text-sm">${permsText}</span></td>
+        <td class="text-muted text-sm">${new Date(u.created_at).toLocaleDateString()}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button class="btn btn-sm btn-ghost" style="margin-right:6px;" onclick="startEditUser(${u.id})">⚙️ Edit</button>
+          ${!isMe ? `<button class="btn btn-sm" style="background:rgba(248,81,73,0.1);color:#f85149;border-color:transparent;" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }
+  
+  if (count === 0) {
+    html = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">No users found matching this filter.</td></tr>';
+  }
+  
+  tbody.innerHTML = html;
 }
 
 async function loadUsers() {
@@ -32,45 +103,7 @@ async function loadUsers() {
     const res = await fetch('/api/users');
     if (!res.ok) throw new Error('Failed to fetch users');
     loadedUsers = await res.json();
-    
-    if (loadedUsers.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted)">No users found.</td></tr>';
-      return;
-    }
-
-    let html = '';
-    for (const u of loadedUsers) {
-      const isMe = u.id === myId;
-      const roleBadge = u.is_admin === 1 
-        ? `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">Admin</span>`
-        : `<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">User</span>`;
-      
-      let permsText = 'No extra perms';
-      if (u.is_admin === 1) {
-        permsText = 'All Permissions';
-      } else if (u.permissions) {
-        const p = u.permissions;
-        const globalCount = p.global ? p.global.length : 0;
-        const serverCount = p.servers ? Object.keys(p.servers).length : 0;
-        if (globalCount > 0 || serverCount > 0) {
-          permsText = `${globalCount} Global, ${serverCount} Server(s)`;
-        }
-      }
-
-      html += `
-        <tr>
-          <td>#${u.id}</td>
-          <td><strong style="color:var(--text-primary)">${u.username}</strong> ${isMe ? '<span style="font-size:11px;color:var(--text-muted)">(You)</span>' : ''}</td>
-          <td>${roleBadge}<br><span class="text-muted text-sm">${permsText}</span></td>
-          <td class="text-muted text-sm">${new Date(u.created_at).toLocaleDateString()}</td>
-          <td style="text-align:right; white-space:nowrap;">
-            <button class="btn btn-sm btn-ghost" style="margin-right:6px;" onclick="startEditUser(${u.id})">⚙️ Edit</button>
-            ${!isMe ? `<button class="btn btn-sm" style="background:rgba(248,81,73,0.1);color:#f85149;border-color:transparent;" onclick="deleteUser(${u.id}, '${u.username}')">Delete</button>` : ''}
-          </td>
-        </tr>
-      `;
-    }
-    tbody.innerHTML = html;
+    filterUsers();
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:#f85149">Error: ${err.message}</td></tr>`;
   }

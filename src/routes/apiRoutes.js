@@ -288,22 +288,28 @@ router.get('/servers/:id', (req, res) => {
   const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found.' });
   const disk_usage = getDirSizeSync(server.server_dir);
-  const vpsDisk = getVpsDiskInfo();
   const isLive = pm.isRunning(server.id);
-  res.json({ 
+  
+  let responseData = { 
     ...server, 
     is_live: isLive, 
     status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
-    disk_usage,
-    vps_disk_total: vpsDisk.total,
-    vps_disk_used: vpsDisk.used,
-    vps_ram_total: require('os').totalmem(),
-    vps_ram_used: require('os').totalmem() - require('os').freemem()
-  });
+    disk_usage
+  };
+  
+  if (req.session.isAdmin) {
+    const vpsDisk = getVpsDiskInfo();
+    responseData.vps_disk_total = vpsDisk.total;
+    responseData.vps_disk_used = vpsDisk.used;
+    responseData.vps_ram_total = require('os').totalmem();
+    responseData.vps_ram_used = require('os').totalmem() - require('os').freemem();
+  }
+  
+  res.json(responseData);
 });
 
-// ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
-router.post('/servers', requireAdmin, async (req, res) => {
+// ── POST /api/servers ────────────────────────────────────────────────────────
+router.post('/servers', requirePermission('create_server'), async (req, res) => {
   try {
     const {
       name, mode = 'basic',
@@ -380,6 +386,23 @@ router.post('/servers', requireAdmin, async (req, res) => {
         INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
         VALUES (?,?,?,?,?,?,?,?,?)
       `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
+      
+      if (!req.session.isAdmin) {
+        try {
+          const u = db.prepare('SELECT permissions FROM users WHERE id = ?').get(req.session.userId);
+          let p = { global: [], servers: {} };
+          try { p = JSON.parse(u.permissions || '[]'); } catch {}
+          if (Array.isArray(p)) p = { global: p, servers: {} };
+          
+          p.servers[info.lastInsertRowid] = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+          
+          db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), req.session.userId);
+          updateUserSessions(req.session.userId, { permissions: p });
+        } catch (e) {
+          console.error('[API] Failed to auto-assign server permissions:', e);
+        }
+      }
+      
       send({ msg: `Server "${safeName}" ready on port ${finalPort}!` });
       res.write(`data: ${JSON.stringify({ done: true, id: info.lastInsertRowid })}\n\n`);
       return res.end();
@@ -393,6 +416,21 @@ router.post('/servers', requireAdmin, async (req, res) => {
       INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
       VALUES (?,?,?,?,?,?,?,?,?)
     `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
+    
+    if (!req.session.isAdmin) {
+      try {
+        const u = db.prepare('SELECT permissions FROM users WHERE id = ?').get(req.session.userId);
+        let p = { global: [], servers: {} };
+        try { p = JSON.parse(u.permissions || '[]'); } catch {}
+        if (Array.isArray(p)) p = { global: p, servers: {} };
+        
+        p.servers[info.lastInsertRowid] = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+        
+        db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), req.session.userId);
+        updateUserSessions(req.session.userId, { permissions: p });
+      } catch (e) {}
+    }
+    
     res.json({ id: info.lastInsertRowid, name: safeName, port: finalPort });
 
   } catch (err) {

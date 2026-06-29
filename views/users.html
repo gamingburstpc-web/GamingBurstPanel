@@ -71,7 +71,12 @@
       
       <!-- Users List -->
       <div class="card">
-        <div class="card-header"><div class="card-title">👥 Registered Users</div></div>
+        <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div class="card-title">👥 Registered Users</div>
+          <select id="userFilterSelect" class="form-select" style="max-width: 200px;" onchange="filterUsers()">
+            <option value="all">All Users</option>
+          </select>
+        </div>
         <div class="table-responsive">
           <table class="table">
             <thead>
@@ -115,6 +120,7 @@
               <label class="form-label">Global Permissions</label>
               <div class="form-hint" style="margin-bottom:8px;">Permissions granted here apply to ALL servers.</div>
               <div class="perm-grid" id="globalPerms">
+                <label class="perm-item"><input type="checkbox" class="perm-cb" value="create_server"> Create Servers</label>
                 <label class="perm-item"><input type="checkbox" class="perm-cb" value="start"> Start Server</label>
                 <label class="perm-item"><input type="checkbox" class="perm-cb" value="stop"> Stop Server</label>
                 <label class="perm-item"><input type="checkbox" class="perm-cb" value="restart"> Restart Server</label>

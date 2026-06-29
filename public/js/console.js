@@ -101,13 +101,24 @@ async function loadMe() {
       ? '<span class="role-badge-admin">Admin</span>'
       : '<span class="role-badge-user">User</span>';
     if (!currentUser.isAdmin) {
-      document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
+      const p = currentUser.permissions || {};
+      const globalPerms = Array.isArray(p) ? p : (p.global || []);
+      const canCreate = globalPerms.includes('create_server');
+      if (!canCreate) {
+        document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
+      }
       document.getElementById('navUsers')?.style && (document.getElementById('navUsers').style.display = 'none');
       
-      const perms = currentUser.permissions || [];
+      const hasPerm = (perm) => {
+        if (Array.isArray(p)) return p.includes(perm);
+        return globalPerms.includes(perm) || (p.servers && p.servers[serverId] && p.servers[serverId].includes(perm));
+      };
+      
+      document.querySelectorAll('.admin-only, .admin-only-block').forEach(el => el.style.display = 'none');
+
       const toggleTab = (id, perm) => {
         const btn = document.getElementById(id);
-        if (btn) btn.classList.toggle('hidden', !perms.includes(perm));
+        if (btn) btn.classList.toggle('hidden', !hasPerm(perm));
       };
       toggleTab('tabBtnConsole', 'console');
       toggleTab('tabBtnFiles', 'files');
@@ -155,22 +166,34 @@ async function loadServer() {
   document.getElementById('metDisk').textContent = svrDiskVal;
   document.getElementById('metDiskUnit').textContent = svrDiskUnit;
 
-  const [vpsDiskUsedVal, vpsDiskUsedUnit] = formatBytes(serverData.vps_disk_used || 0);
-  const [vpsDiskTotalVal, vpsDiskTotalUnit] = formatBytes(serverData.vps_disk_total || 0);
-  document.getElementById('metVpsDisk').textContent = `VPS: ${vpsDiskUsedVal} ${vpsDiskUsedUnit} / ${vpsDiskTotalVal} ${vpsDiskTotalUnit}`;
-  
-  const vpsDiskPct = serverData.vps_disk_total ? Math.min(Math.round((serverData.vps_disk_used / serverData.vps_disk_total) * 100), 100) : 0;
-  const db = document.getElementById('diskBar');
-  if (db) { db.style.width = vpsDiskPct + '%'; db.className = 'progress-fill' + (vpsDiskPct > 90 ? ' crit' : ''); }
+  if (currentUser?.isAdmin) {
+    const [vpsDiskUsedVal, vpsDiskUsedUnit] = formatBytes(serverData.vps_disk_used || 0);
+    const [vpsDiskTotalVal, vpsDiskTotalUnit] = formatBytes(serverData.vps_disk_total || 0);
+    document.getElementById('metVpsDisk').textContent = `VPS: ${vpsDiskUsedVal} ${vpsDiskUsedUnit} / ${vpsDiskTotalVal} ${vpsDiskTotalUnit}`;
+    
+    const vpsDiskPct = serverData.vps_disk_total ? Math.min(Math.round((serverData.vps_disk_used / serverData.vps_disk_total) * 100), 100) : 0;
+    const db = document.getElementById('diskBar');
+    if (db) { db.style.width = vpsDiskPct + '%'; db.className = 'progress-fill' + (vpsDiskPct > 90 ? ' crit' : ''); }
 
-  const [vpsRamUsedVal, vpsRamUsedUnit] = formatBytes(serverData.vps_ram_used || 0);
-  const [vpsRamTotalVal, vpsRamTotalUnit] = formatBytes(serverData.vps_ram_total || 0);
-  document.getElementById('metVpsRam').textContent = `VPS: ${vpsRamUsedVal} ${vpsRamUsedUnit} / ${vpsRamTotalVal} ${vpsRamTotalUnit}`;
+    const [vpsRamUsedVal, vpsRamUsedUnit] = formatBytes(serverData.vps_ram_used || 0);
+    const [vpsRamTotalVal, vpsRamTotalUnit] = formatBytes(serverData.vps_ram_total || 0);
+    document.getElementById('metVpsRam').textContent = `VPS: ${vpsRamUsedVal} ${vpsRamUsedUnit} / ${vpsRamTotalVal} ${vpsRamTotalUnit}`;
+  } else {
+    document.getElementById('metVpsDisk').style.display = 'none';
+    const db = document.getElementById('diskBar');
+    if (db && db.parentElement) db.parentElement.style.display = 'none';
+    document.getElementById('metVpsRam').style.display = 'none';
+  }
 
   updateStatusUI(serverData.status);
 
   // Role-based UI adjustments
-  const hasConsole = currentUser?.isAdmin || currentUser?.permissions?.includes('console');
+  const hasConsole = currentUser?.isAdmin || (() => {
+    const p = currentUser?.permissions;
+    if (!p) return false;
+    if (Array.isArray(p)) return p.includes('console');
+    return (p.global && p.global.includes('console')) || (p.servers && p.servers[serverId] && p.servers[serverId].includes('console'));
+  })();
   if (!hasConsole) {
     // Hide console, show restricted message
     document.getElementById('consoleWrapper')?.classList.add('hidden');
@@ -211,7 +234,13 @@ function updateStatusUI(status) {
   if (badge) { badge.className = `badge badge-${status}`; badge.innerHTML = `<span class="badge-dot"></span> ${status}`; }
   const isRunning = status === 'running' || status === 'starting';
   
-  const hasPerm = (p) => currentUser?.isAdmin || currentUser?.permissions?.includes(p);
+  const hasPerm = (perm) => {
+    if (currentUser?.isAdmin) return true;
+    const p = currentUser?.permissions;
+    if (!p) return false;
+    if (Array.isArray(p)) return p.includes(perm);
+    return (p.global && p.global.includes(perm)) || (p.servers && p.servers[serverId] && p.servers[serverId].includes(perm));
+  };
   
   if (hasPerm('start')) {
     document.getElementById('btnStart')?.classList.toggle('hidden', isRunning);
@@ -256,7 +285,13 @@ async function deleteServer() {
 
 // ── Console WS ────────────────────────────────────────────────────────────────
 function connectConsole() {
-  if (!currentUser?.isAdmin && !currentUser?.permissions?.includes('console')) return; // skip if no access
+  const canAccessConsole = currentUser?.isAdmin || (() => {
+    const p = currentUser?.permissions;
+    if (!p) return false;
+    if (Array.isArray(p)) return p.includes('console');
+    return (p.global && p.global.includes('console')) || (p.servers && p.servers[serverId] && p.servers[serverId].includes('console'));
+  })();
+  if (!canAccessConsole) return; // skip if no access
   const proto = location.protocol === 'https:' ? 'wss' : 'ws';
   consoleWs   = new WebSocket(`${proto}://${location.host}/ws/console/${serverId}`);
 

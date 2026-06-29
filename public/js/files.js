@@ -11,7 +11,13 @@ window.addEventListener('click', (e) => {
 });
 
 // Check access
-const canAccessFiles = () => currentUser?.isAdmin || currentUser?.permissions?.includes('files');
+const canAccessFiles = () => {
+  if (currentUser?.isAdmin) return true;
+  const p = currentUser?.permissions;
+  if (!p) return false;
+  if (Array.isArray(p)) return p.includes('files');
+  return (p.global && p.global.includes('files')) || (p.servers && p.servers[serverId] && p.servers[serverId].includes('files'));
+};
 
 function switchServerTab(tab) {
   // Hide all tabs

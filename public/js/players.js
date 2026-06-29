@@ -53,7 +53,13 @@ async function loadOnlinePlayers() {
       name.textContent = player;
       name.style.fontWeight = '600';
       
-      const hasPerm = (p) => window.currentUser?.isAdmin || window.currentUser?.permissions?.includes(p);
+      const hasPerm = (p) => {
+        if (window.currentUser?.isAdmin) return true;
+        const perms = window.currentUser?.permissions;
+        if (!perms) return false;
+        if (Array.isArray(perms)) return perms.includes(p);
+        return (perms.global && perms.global.includes(p)) || (perms.servers && perms.servers[serverId] && perms.servers[serverId].includes(p));
+      };
       
       const coordsBtn = document.createElement('button');
       coordsBtn.className = 'btn btn-ghost btn-sm';

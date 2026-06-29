@@ -356,7 +356,7 @@
           <hr style="border:0; border-top:1px solid var(--border); margin: 0 0 20px 0;">
 
           <!-- Version -->
-          <div class="form-group">
+          <div class="form-group admin-only-block" id="adminVersionGroup">
             <label>Change Server Version</label>
             <p style="font-size:12px;color:var(--yellow);margin-bottom:8px;"><b>WARNING:</b> Entering the wrong version could corrupt your world. Avoid downgrading. Downgrade at your own risk. Upgrading to a newer version does not corrupt the world or delete plugins; only the version changes.</p>
             <div style="display:flex; gap:10px; align-items:center; flex-wrap: wrap;">
@@ -373,7 +373,7 @@
           <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
 
           <!-- RAM -->
-          <div class="form-group">
+          <div class="form-group admin-only-block" id="adminRamGroup">
             <label>Server RAM (MB)</label>
             <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Changes to RAM will take effect the next time the server is started.</p>
             <div style="display:flex; gap:10px; align-items:center;">
