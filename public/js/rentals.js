@@ -75,7 +75,7 @@ function renderServers() {
       <td>${ownerText}</td>
       <td>${expText}</td>
       <td style="text-align:right">
-        <button class="btn btn-sm" onclick="openManageForm(${s.id})">Manage Assignment</button>
+        <button class="btn btn-sm btn-primary" onclick="openManageForm(${s.id})">Manage Assignment</button>
       </td>
     `;
     tbody.appendChild(tr);

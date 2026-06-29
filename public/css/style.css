@@ -431,3 +431,13 @@ button,input,select,textarea{font-family:inherit;}
 .table-responsive {
   overflow-x: auto;
 }
+
+/* Grid Layouts */
+.grid {
+  display: grid;
+}
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr !important;
+  }
+}
