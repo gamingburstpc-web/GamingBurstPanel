@@ -572,11 +572,37 @@ router.delete('/servers/:id', requirePermission('delete'), (req, res) => {
 router.post('/servers/:id/start', requirePermission('start'), (req, res) => {
   try {
     const db = getDb();
-    const server = db.prepare('SELECT expire_at FROM servers WHERE id = ?').get(req.params.id);
-    if (server && server.expire_at && Date.now() > server.expire_at) {
+    const id = parseInt(req.params.id, 10);
+    const server = db.prepare('SELECT name, server_dir, port, expire_at FROM servers WHERE id = ?').get(id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    
+    if (server.expire_at && Date.now() > server.expire_at) {
       return res.status(403).json({ error: 'Subscription ended. Cannot start server.' });
     }
-    const result = pm.startServer(parseInt(req.params.id, 10));
+
+    // Geyser Port Collision Check
+    const geyserConfigPath = path.join(server.server_dir, 'plugins', 'Geyser-Spigot', 'config.yml');
+    if (fs.existsSync(geyserConfigPath)) {
+      const yamlContent = fs.readFileSync(geyserConfigPath, 'utf8');
+      const portMatch = yamlContent.match(/^ {0,4}port:\s*(\d+)/m);
+      if (portMatch && portMatch[1]) {
+        const bedrockPort = parseInt(portMatch[1], 10);
+        const collision = db.prepare('SELECT id, name FROM servers WHERE (port = ? OR bedrock_port = ?) AND id != ?').get(bedrockPort, bedrockPort, id);
+        if (collision) {
+          return res.status(409).json({ 
+            action: 'PORT_COLLISION',
+            type: 'geyser',
+            port: bedrockPort,
+            error: `Bedrock port ${bedrockPort} is currently in use by server '${collision.name}'. Please change your Geyser port in settings before starting.`
+          });
+        }
+        db.prepare('UPDATE servers SET bedrock_port = ? WHERE id = ?').run(bedrockPort, id);
+      }
+    } else {
+      db.prepare('UPDATE servers SET bedrock_port = NULL WHERE id = ?').run(id);
+    }
+
+    const result = pm.startServer(id);
     res.json({ ok: true, pid: result.pid });
   } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -1334,6 +1360,70 @@ router.post('/servers/:id/settings/version', requirePermission('settings'), expr
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
+});
+
+// ── POST /api/servers/:id/java-port ──────────────────────────────────────────
+router.post('/servers/:id/java-port', requirePermission('settings'), (req, res) => {
+  try {
+    const db = getDb();
+    const id = parseInt(req.params.id, 10);
+    const { port } = req.body;
+    if (!port) return res.status(400).json({ error: 'Port required' });
+    const parsedPort = parseInt(port, 10);
+    
+    const collision = db.prepare('SELECT id, name FROM servers WHERE (port = ? OR bedrock_port = ?) AND id != ?').get(parsedPort, parsedPort, id);
+    if (collision) {
+      return res.status(409).json({ error: `Port ${parsedPort} is already in use by server '${collision.name}'.` });
+    }
+    
+    const server = db.prepare('SELECT server_dir FROM servers WHERE id = ?').get(id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    
+    const propsPath = path.join(server.server_dir, 'server.properties');
+    if (fs.existsSync(propsPath)) {
+      let content = fs.readFileSync(propsPath, 'utf8');
+      if (/^server-port=/m.test(content)) {
+        content = content.replace(/^server-port=.*$/m, `server-port=${parsedPort}`);
+      } else {
+        content += `\nserver-port=${parsedPort}\n`;
+      }
+      fs.writeFileSync(propsPath, content);
+    }
+    
+    db.prepare('UPDATE servers SET port = ? WHERE id = ?').run(parsedPort, id);
+    res.json({ ok: true, port: parsedPort });
+  } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+// ── POST /api/servers/:id/geyser-port ────────────────────────────────────────
+router.post('/servers/:id/geyser-port', requirePermission('settings'), (req, res) => {
+  try {
+    const db = getDb();
+    const id = parseInt(req.params.id, 10);
+    const { port } = req.body;
+    if (!port) return res.status(400).json({ error: 'Port required' });
+    const parsedPort = parseInt(port, 10);
+    
+    const collision = db.prepare('SELECT id, name FROM servers WHERE (port = ? OR bedrock_port = ?) AND id != ?').get(parsedPort, parsedPort, id);
+    if (collision) {
+      return res.status(409).json({ error: `Bedrock port ${parsedPort} is already in use by server '${collision.name}'.` });
+    }
+    
+    const server = db.prepare('SELECT server_dir FROM servers WHERE id = ?').get(id);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    
+    const geyserPath = path.join(server.server_dir, 'plugins', 'Geyser-Spigot', 'config.yml');
+    if (!fs.existsSync(geyserPath)) {
+      return res.status(400).json({ error: 'Geyser is not installed on this server.' });
+    }
+    
+    let content = fs.readFileSync(geyserPath, 'utf8');
+    content = content.replace(/^(\s*)port:\s*\d+/m, `$1port: ${parsedPort}`);
+    fs.writeFileSync(geyserPath, content);
+    
+    db.prepare('UPDATE servers SET bedrock_port = ? WHERE id = ?').run(parsedPort, id);
+    res.json({ ok: true, port: parsedPort });
+  } catch (err) { res.status(400).json({ error: err.message }); }
 });
 
 module.exports = router;

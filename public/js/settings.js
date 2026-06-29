@@ -58,6 +58,17 @@ async function loadSettings() {
           antiXrayEngineDiv.style.display = 'none';
         }
       }
+
+      if (document.getElementById('settingsJavaPort')) {
+        document.getElementById('settingsJavaPort').value = serverData.port || '';
+      }
+      if (serverData.bedrock_port) {
+        const bedrockGroup = document.getElementById('settingsGeyserPortGroup');
+        if (bedrockGroup) bedrockGroup.style.display = 'block';
+        const bedrockInput = document.getElementById('settingsGeyserPort');
+        if (bedrockInput) bedrockInput.value = serverData.bedrock_port || '';
+      }
+
     }
   } catch (e) {
     console.error('Failed to load settings', e);
@@ -276,3 +287,48 @@ async function updateServerRam() {
   }
 }
 
+async function randomizeSettingsPort(inputId) {
+  try {
+    const res = await fetch('/api/servers/next-port');
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById(inputId).value = data.port;
+    }
+  } catch (e) {}
+}
+
+async function saveSettingsPort(type) {
+  const inputId = type === 'java' ? 'settingsJavaPort' : 'settingsGeyserPort';
+  const btnId = type === 'java' ? 'btnSaveJavaPort' : 'btnSaveGeyserPort';
+  const port = document.getElementById(inputId).value;
+  if (!port) return;
+  
+  const btn = document.getElementById(btnId);
+  const originalText = btn.innerText;
+  btn.disabled = true;
+  btn.innerText = 'Saving...';
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/${type}-port`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    
+    if (type === 'java') serverData.port = data.port;
+    else serverData.bedrock_port = data.port;
+    
+    if (type === 'java' && document.getElementById('serverPort')) {
+      document.getElementById('serverPort').textContent = `:${data.port}`;
+    }
+    
+    showAlert('success', `${type === 'java' ? 'Java' : 'Geyser Bedrock'} Port updated successfully! Restart the server to apply.`);
+  } catch (e) {
+    showAlert('error', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerText = originalText;
+  }
+}

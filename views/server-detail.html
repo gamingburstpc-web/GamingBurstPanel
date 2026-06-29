@@ -288,7 +288,7 @@
               <p class="text-muted text-sm mt-4 mb-2"><strong style="color:var(--text-primary)">⚠️ IMPORTANT:</strong> After claiming, make sure to add this port in your server's Playit tunnel settings!</p>
               <ul class="text-muted text-sm" style="margin-left:20px;">
                 <li>For Java Server: Select <strong>Java Minecraft</strong> and enter port <strong id="playitJavaPort">25565</strong>.</li>
-                <li>For Bedrock Server: Select <strong>Bedrock Minecraft</strong> and enter port <strong>19132</strong>.</li>
+                <li>For Bedrock Server: Select <strong>Bedrock Minecraft</strong> and enter port <strong id="playitBedrockPortSpan">19132</strong>.</li>
                 <li>If using Geyser (Java + Bedrock): Add TWO tunnels (one for each).</li>
               </ul>
             </div>
@@ -442,6 +442,31 @@
               <span style="font-size:0.85em; color:var(--text-muted);">If enabled, players can join without a premium Minecraft account (online-mode=false).</span>
             </div>
             <button class="btn btn-secondary" id="btnToggleCracked" onclick="toggleCracked()">Toggle</button>
+          </div>
+
+          <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">
+
+          <!-- Ports -->
+          <div style="margin-bottom: 20px;">
+            <label style="display:block; margin-bottom:8px; font-weight:600;">Server Ports</label>
+            
+            <div style="margin-bottom: 12px;">
+              <label style="color:var(--text-secondary); font-size:0.9em; display:block; margin-bottom:4px;">Java (PC) Port</label>
+              <div style="display:flex; gap:8px;">
+                <input type="number" id="settingsJavaPort" class="form-input" style="max-width:150px;">
+                <button class="btn btn-secondary" onclick="randomizeSettingsPort('settingsJavaPort')">🎲 Random</button>
+                <button class="btn btn-primary" onclick="saveSettingsPort('java')" id="btnSaveJavaPort">Save</button>
+              </div>
+            </div>
+
+            <div id="settingsGeyserPortGroup" style="display:none;">
+              <label style="color:var(--text-secondary); font-size:0.9em; display:block; margin-bottom:4px;">Geyser (Bedrock) Port</label>
+              <div style="display:flex; gap:8px;">
+                <input type="number" id="settingsGeyserPort" class="form-input" style="max-width:150px;">
+                <button class="btn btn-secondary" onclick="randomizeSettingsPort('settingsGeyserPort')">🎲 Random</button>
+                <button class="btn btn-primary" onclick="saveSettingsPort('geyser')" id="btnSaveGeyserPort">Save</button>
+              </div>
+            </div>
           </div>
 
           <hr style="border:0; border-top:1px solid var(--border); margin: 20px 0;">

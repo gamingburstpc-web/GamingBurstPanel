@@ -88,7 +88,11 @@ function showPlayitSecret() {
   document.getElementById('playitSetupClaim').classList.add('hidden');
   document.getElementById('playitSetupSecret').classList.remove('hidden');
   if (serverData && serverData.port) {
-    document.getElementById('playitSecretPort').innerText = serverData.port;
+    let portText = serverData.port.toString();
+    if (serverData.bedrock_port) {
+      portText += ` and Bedrock port ${serverData.bedrock_port}`;
+    }
+    document.getElementById('playitSecretPort').innerText = portText;
   }
 }
 
@@ -102,6 +106,11 @@ async function showPlayitClaim() {
     document.getElementById('playitJavaPort').innerText = serverData.port;
   }
   
+  // Show Geyser Bedrock port dynamically if we want
+  const bedrockEl = document.getElementById('playitBedrockPortSpan');
+  if (bedrockEl && serverData && serverData.bedrock_port) {
+    bedrockEl.innerText = serverData.bedrock_port;
+  }
   try {
     const res = await fetch(`/api/servers/${serverId}/playit/claim`, { method: 'POST' });
     const data = await res.json();

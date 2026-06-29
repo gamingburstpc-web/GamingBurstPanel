@@ -310,9 +310,16 @@ async function serverAction(action) {
   try {
     const res  = await fetch(`/api/servers/${serverId}/${action}`, { method: 'POST' });
     const data = await res.json();
-    if (!res.ok) alert(data.error);
-    else loadServer();
-  } catch (e) { alert(e.message); }
+    if (!res.ok) {
+      if (data.action === 'PORT_COLLISION') {
+        showCollisionModal(data);
+      } else {
+        showAlert('error', data.error);
+      }
+    } else {
+      loadServer();
+    }
+  } catch (e) { showAlert('error', e.message); }
   finally { if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; } }
 }
 
@@ -321,6 +328,53 @@ async function deleteServer() {
   const res = await fetch(`/api/servers/${serverId}`, { method: 'DELETE' });
   if (res.ok) location.href = '/dashboard';
   else { const d = await res.json(); alert(d.error); }
+}
+
+// ── Collision Modal ───────────────────────────────────────────────────────────
+function showCollisionModal(data) {
+  const modal = document.getElementById('collisionModal');
+  if (modal) {
+    document.getElementById('collisionMessage').innerText = data.error;
+    document.getElementById('collisionPortInput').value = '';
+    modal.style.display = 'flex';
+  } else {
+    alert(data.error);
+  }
+}
+function closeCollisionModal() {
+  document.getElementById('collisionModal').style.display = 'none';
+}
+async function collisionRandomPort() {
+  try {
+    const res = await fetch('/api/servers/next-port');
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById('collisionPortInput').value = data.port;
+    }
+  } catch (e) {}
+}
+async function collisionSavePort() {
+  const port = document.getElementById('collisionPortInput').value;
+  if (!port) return;
+  const btn = document.getElementById('collisionSaveBtn');
+  btn.disabled = true;
+  btn.innerText = 'Saving...';
+  try {
+    const res = await fetch(`/api/servers/${serverId}/geyser-port`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ port })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error);
+    } else {
+      closeCollisionModal();
+      showAlert('success', 'Port updated! Starting server...');
+      serverAction('start');
+    }
+  } catch (e) { alert(e.message); }
+  finally { btn.disabled = false; btn.innerText = 'Save & Start'; }
 }
 
 // ── Console WS ────────────────────────────────────────────────────────────────

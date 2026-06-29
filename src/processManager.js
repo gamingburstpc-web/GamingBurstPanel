@@ -245,7 +245,7 @@ function getNextAvailablePort() {
   const db = getDb();
   let port = 25565;
   while (true) {
-    const row = db.prepare('SELECT id FROM servers WHERE port = ?').get(port);
+    const row = db.prepare('SELECT id FROM servers WHERE port = ? OR bedrock_port = ?').get(port, port);
     if (!row) return port;
     port++;
   }
