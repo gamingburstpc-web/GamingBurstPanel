@@ -51,14 +51,21 @@ async function loadMe() {
         : '<span class="role-badge-user">User</span>';
     }
 
-    // Hide admin-only nav items for non-admins
-    if (!currentUser.isAdmin) {
+    // Show admin-only nav items for admins
+    if (currentUser.isAdmin) {
       const navNew = document.getElementById('navNewServer');
-      if (navNew) navNew.style.display = 'none';
+      if (navNew) navNew.style.display = 'flex';
       const navUsers = document.getElementById('navUsers');
-      if (navUsers) navUsers.style.display = 'none';
+      if (navUsers) navUsers.style.display = 'flex';
       const btnNew = document.getElementById('btnNewServer');
-      if (btnNew) btnNew.style.display = 'none';
+      if (btnNew) btnNew.style.display = 'inline-block';
+    }
+    
+    // Show rentals for admin or manage_rentals permission
+    const hasRentalsPerm = currentUser.isAdmin || (currentUser.permissions && currentUser.permissions.global && currentUser.permissions.global.includes('manage_rentals'));
+    if (hasRentalsPerm) {
+      const navRentals = document.getElementById('navRentals');
+      if (navRentals) navRentals.style.display = 'flex';
     }
   } catch {}
 }
