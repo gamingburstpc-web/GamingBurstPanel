@@ -116,7 +116,7 @@ function requireAuth(req, res, next) {
   const sessionId = req.cookies?.session || parseCookieFromReq(req);
   const sess      = getSession(sessionId);
   if (!sess) {
-    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+    if (req.originalUrl.includes('/api') || req.headers.accept?.includes('application/json')) {
       return res.status(401).json({ error: 'Unauthenticated' });
     }
     return res.redirect('/login');
@@ -152,8 +152,8 @@ function requirePermission(perm) {
       if (serverId && p.servers && p.servers[serverId]?.includes(perm)) return next();
     }
     
-    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
-      return res.status(403).json({ error: `Permission denied. Requires: ${perm}` });
+    if (req.originalUrl.includes('/api') || req.headers.accept?.includes('application/json')) {
+      return res.status(403).json({ error: `Permission denied (${perm}). ID: ${serverId}, Perms: ${JSON.stringify(p)}` });
     }
     return res.redirect('/dashboard?error=forbidden');
   };
