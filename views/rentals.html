@@ -30,31 +30,49 @@
   </style>
 </head>
 <body>
-  <div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-      <div class="logo-icon">GB</div>
-      <div class="logo-text">GamingBurst</div>
-    </div>
-    
-    <div class="sidebar-user">
-      <div class="avatar"><span id="avatarInitial">A</span></div>
-      <div class="user-info">
-        <div class="username" id="sidebarUsername">Admin</div>
-        <div class="role" id="sidebarRole"><span class="role-badge-admin">Admin</span></div>
+<div class="layout">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🎮</div>
+      <div>
+        <div class="logo-text">GamingBurst</div>
+        <div class="logo-sub">Server Panel</div>
       </div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
     </div>
-    
     <nav class="sidebar-nav">
-      <div class="nav-label">Management</div>
+      <div class="nav-label">Navigation</div>
       <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
-      <a href="/servers/new" class="nav-item admin-only" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
-      <a href="/users" class="nav-item admin-only" id="navUsers"><span class="nav-icon">👥</span> Users</a>
-      <a href="/rentals" class="nav-item active admin-only" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item" id="navUsers"><span class="nav-icon">👥</span> Users</a>
+      <a href="/rentals" class="nav-item active" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
       <div class="nav-label" style="margin-top:16px">Account</div>
       <a href="/change-password" class="nav-item"><span class="nav-icon">🔑</span> Change Password</a>
       <a href="/logout" class="nav-item"><span class="nav-icon">🚪</span> Logout</a>
+      <div class="nav-label" style="margin-top:16px">Theme</div>
+      <div style="padding: 0 16px;">
+        <select id="themeSelector" class="form-select" style="width: 100%; font-size: 13px;">
+          <option value="default">Dark (Default)</option>
+          <option value="black">Black</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+          <option value="red">Red</option>
+          <option value="purple">Purple</option>
+          <option value="orange">Orange</option>
+        </select>
+      </div>
     </nav>
-  </div>
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="avatar" id="avatarInitial">A</div>
+        <div>
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)" id="sidebarUsername">admin</div>
+          <div id="sidebarRole" style="font-size:11px">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <main class="main-content">
     <div class="topbar">
@@ -179,6 +197,7 @@
     </div>
   </main>
 
+</div>
   <script src="/public/js/sidebar.js"></script>
   <script src="/public/js/rentals.js"></script>
 </body>
