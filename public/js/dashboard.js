@@ -67,21 +67,20 @@ async function loadMe() {
         : '<span class="role-badge-user">User</span>';
     }
 
-    // Show admin-only nav items for admins
-    if (currentUser.isAdmin) {
-      const navNew = document.getElementById('navNewServer');
-      if (navNew) navNew.style.display = 'flex';
-      const navUsers = document.getElementById('navUsers');
-      if (navUsers) navUsers.style.display = 'flex';
-      const btnNew = document.getElementById('btnNewServer');
-      if (btnNew) btnNew.style.display = 'inline-block';
+    // Hide admin-only nav items for non-admin users
+    if (!currentUser.isAdmin) {
+      ['navNewServer','navUsers'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
     }
-
-    // Show rentals for admin or manage_rentals permission
-    const hasRentalsPerm = currentUser.isAdmin || (currentUser.permissions && currentUser.permissions.global && currentUser.permissions.global.includes('manage_rentals'));
-    if (hasRentalsPerm) {
+    // Hide rentals for users without the permission
+    const hasRentalsPerm = currentUser.isAdmin ||
+      (currentUser.permissions?.global?.includes('manage_rentals')) ||
+      (currentUser.permissions?.servers && Object.keys(currentUser.permissions.servers).length > 0);
+    if (!hasRentalsPerm) {
       const navRentals = document.getElementById('navRentals');
-      if (navRentals) navRentals.style.display = 'flex';
+      if (navRentals) navRentals.style.display = 'none';
     }
   } catch {}
 }

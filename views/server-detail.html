@@ -19,9 +19,9 @@
     <nav class="sidebar-nav">
       <div class="nav-label">Navigation</div>
       <a href="/dashboard" class="nav-item" id="navDashboard"><span class="nav-icon">📊</span> Dashboard</a>
-      <a href="/servers/new" class="nav-item" id="navNewServer" style="display:none"><span class="nav-icon">➕</span> New Server</a>
-      <a href="/users" class="nav-item" id="navUsers" style="display:none"><span class="nav-icon">👥</span> Users</a>
-      <a href="/rentals" class="nav-item" id="navRentals" style="display:none"><span class="nav-icon">📅</span> Assigned Servers</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item" id="navUsers"><span class="nav-icon">👥</span> Users</a>
+      <a href="/rentals" class="nav-item" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
       <a href="#" class="nav-item" id="navUpdatePanel" style="display:none; color: var(--accent);" onclick="showUpdatePanelModal()">
         <span class="nav-icon">🔄</span> Update Panel
       </a>
@@ -159,7 +159,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileUpload').click()">📤 Upload</button>
-            <input type="file" id="fileUpload" style="display:none" onchange="uploadFile(this.files[0])">
+            <input type="file" id="fileUpload" onchange="uploadFile(this.files[0])">
             <button class="btn btn-primary btn-sm" onclick="newFile()">➕ New File</button>
             <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
           </div>
@@ -210,7 +210,7 @@
           <div class="card-title">Plugin Manager</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm admin-only" onclick="document.getElementById('pluginUploadInput').click()">📤 Upload File</button>
-            <input type="file" id="pluginUploadInput" style="display:none" accept=".jar" onchange="uploadPluginFile(event)">
+            <input type="file" id="pluginUploadInput" accept=".jar" onchange="uploadPluginFile(event)">
             <button class="btn btn-secondary btn-sm admin-only" onclick="showDirectLinkUpload()">🔗 Direct URL</button>
           </div>
         </div>
@@ -576,5 +576,7 @@ fetch('/api/me').then(r=>r.json()).then(u=>{
 }).catch(()=>{});
 </script>
 <script src="/public/js/settings.js?v=111"></script>
-</body>
+<script src="/public/js/nav.js?v=10"></script></body>
 </html>
+
+
