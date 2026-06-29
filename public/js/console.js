@@ -101,12 +101,8 @@ async function loadMe() {
       ? '<span class="role-badge-admin">Admin</span>'
       : '<span class="role-badge-user">User</span>';
     if (!currentUser.isAdmin) {
-      const p = currentUser.permissions || {};
-      const globalPerms = Array.isArray(p) ? p : (p.global || []);
-      const canCreate = globalPerms.includes('create_server');
-      if (!canCreate) {
-        document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
-      }
+      const navNew = document.getElementById('navNewServer');
+      if (navNew) navNew.style.display = 'none';
       document.getElementById('navUsers')?.style && (document.getElementById('navUsers').style.display = 'none');
       
       const hasPerm = (perm) => {
@@ -142,6 +138,18 @@ async function loadServer() {
   document.getElementById('pageTitle').textContent  = serverData.name;
   document.getElementById('serverName').textContent = serverData.name;
   document.getElementById('serverPort').textContent = `:${serverData.port}`;
+  
+  if (serverData.is_expired && !currentUser?.isAdmin) {
+    const overlay = document.getElementById('subscriptionOverlay');
+    if (overlay) {
+      overlay.style.display = 'flex';
+      overlay.classList.remove('hidden');
+    }
+    // Disable all actions
+    document.getElementById('topbarActions').style.display = 'none';
+    return;
+  }
+  
   document.getElementById('serverTz').textContent   = `🌏 ${serverData.env_tz}`;
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
 

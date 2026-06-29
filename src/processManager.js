@@ -31,13 +31,16 @@ function getNextAvailablePort() {
 
 // ── Spawn a Minecraft server ─────────────────────────────────────────────────
 function startServer(serverId) {
-  if (registry.has(serverId)) {
-    throw new Error(`Server ${serverId} is already running.`);
-  }
+  if (isRunning(serverId)) return { pid: getPid(serverId) };
 
   const db     = getDb();
   const server = db.prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
   if (!server) throw new Error(`Server ${serverId} not found.`);
+
+  if (server.expire_at && Date.now() > server.expire_at) {
+    db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('expired', serverId);
+    throw new Error('Subscription ended. Cannot start server.');
+  }
 
   const serversDir = path.resolve(process.env.SERVERS_DIR || './servers');
   fs.mkdirSync(server.server_dir, { recursive: true });
@@ -237,6 +240,26 @@ function getPid(serverId) {
 function isRunning(serverId) {
   return registry.has(serverId);
 }
+
+// Background loop for checking expired subscriptions
+setInterval(() => {
+  try {
+    const db = getDb();
+    const runningServers = db.prepare("SELECT id, expire_at FROM servers WHERE status IN ('starting', 'running') AND expire_at IS NOT NULL").all();
+    
+    for (const s of runningServers) {
+      if (Date.now() > s.expire_at) {
+        console.log(`[ProcessManager] Server ${s.id} subscription expired! Stopping automatically.`);
+        try {
+          stopServer(s.id);
+          db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('expired', s.id);
+        } catch (e) {
+          console.error(`Failed to stop expired server ${s.id}:`, e);
+        }
+      }
+    }
+  } catch (err) {}
+}, 60000);
 
 module.exports = {
   startServer,

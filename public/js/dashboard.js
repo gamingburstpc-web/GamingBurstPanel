@@ -53,16 +53,12 @@ async function loadMe() {
 
     // Hide admin-only nav items for non-admins
     if (!currentUser.isAdmin) {
-      const p = currentUser.permissions || {};
-      const globalPerms = Array.isArray(p) ? p : (p.global || []);
-      const canCreate = globalPerms.includes('create_server');
-      
       const navNew = document.getElementById('navNewServer');
-      if (navNew && !canCreate) navNew.style.display = 'none';
+      if (navNew) navNew.style.display = 'none';
       const navUsers = document.getElementById('navUsers');
       if (navUsers) navUsers.style.display = 'none';
       const btnNew = document.getElementById('btnNewServer');
-      if (btnNew && !canCreate) btnNew.style.display = 'none';
+      if (btnNew) btnNew.style.display = 'none';
     }
   } catch {}
 }
@@ -84,7 +80,7 @@ async function loadServers() {
         <div class="empty-icon">🎮</div>
         <h3>No servers yet</h3>
         <p>Create your first Minecraft server to get started.</p>
-        ${(currentUser?.isAdmin || (currentUser?.permissions?.global?.includes('create_server')) || (Array.isArray(currentUser?.permissions) && currentUser?.permissions.includes('create_server'))) ? '<a href="/servers/new" class="btn btn-primary">➕ Create Server</a>' : '<p class="text-muted text-sm">Ask your admin to create a server.</p>'}
+        ${currentUser?.isAdmin ? '<a href="/servers/new" class="btn btn-primary">➕ Create Server</a>' : '<p class="text-muted text-sm">Ask your admin to create a server.</p>'}
       </div>`;
       return;
     }

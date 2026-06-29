@@ -253,11 +253,16 @@ router.get('/servers', (req, res) => {
   
   res.json(servers.map(s => {
     const isLive = pm.isRunning(s.id);
-    return {
+    let out = {
       ...s,
       is_live: isLive,
       status: isLive ? (s.status === 'starting' ? 'starting' : 'running') : s.status
     };
+    if (req.session.isAdmin) {
+      out.owner_id = s.owner_id;
+      out.expire_at = s.expire_at;
+    }
+    return out;
   }));
 });
 
@@ -294,7 +299,8 @@ router.get('/servers/:id', (req, res) => {
     ...server, 
     is_live: isLive, 
     status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
-    disk_usage
+    disk_usage,
+    is_expired: server.expire_at ? Date.now() > server.expire_at : false
   };
   
   if (req.session.isAdmin) {
@@ -308,8 +314,64 @@ router.get('/servers/:id', (req, res) => {
   res.json(responseData);
 });
 
-// ── POST /api/servers ────────────────────────────────────────────────────────
-router.post('/servers', requirePermission('create_server'), async (req, res) => {
+// ── POST /api/rentals/:id — ADMIN ONLY ───────────────────────────────────────
+router.post('/rentals/:id', requireAdmin, (req, res) => {
+  const serverId = parseInt(req.params.id, 10);
+  const { owner_id, expire_at, perms } = req.body;
+  
+  try {
+    const db = getDb();
+    
+    // 1. Update server
+    const server = db.prepare('SELECT owner_id FROM servers WHERE id = ?').get(serverId);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    
+    const targetOwner = owner_id ? parseInt(owner_id, 10) : null;
+    
+    // If expire_at is undefined, don't update it. If null, set it to null.
+    if (expire_at !== undefined) {
+      db.prepare('UPDATE servers SET owner_id = ?, expire_at = ? WHERE id = ?').run(targetOwner, expire_at, serverId);
+    } else {
+      db.prepare('UPDATE servers SET owner_id = ? WHERE id = ?').run(targetOwner, serverId);
+    }
+    
+    // 2. Clear old owner's permissions for this server if owner changed
+    if (server.owner_id && server.owner_id !== targetOwner) {
+      const oldUser = db.prepare('SELECT permissions FROM users WHERE id = ?').get(server.owner_id);
+      if (oldUser) {
+        let p = { global: [], servers: {} };
+        try { p = JSON.parse(oldUser.permissions || '[]'); } catch {}
+        if (Array.isArray(p)) p = { global: p, servers: {} };
+        if (p.servers && p.servers[serverId]) {
+          delete p.servers[serverId];
+          db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), server.owner_id);
+          updateUserSessions(server.owner_id, { permissions: p });
+        }
+      }
+    }
+    
+    // 3. Set new owner's permissions
+    if (targetOwner) {
+      const newUser = db.prepare('SELECT permissions FROM users WHERE id = ?').get(targetOwner);
+      if (newUser) {
+        let p = { global: [], servers: {} };
+        try { p = JSON.parse(newUser.permissions || '[]'); } catch {}
+        if (Array.isArray(p)) p = { global: p, servers: {} };
+        
+        p.servers[serverId] = Array.isArray(perms) ? perms : [];
+        db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), targetOwner);
+        updateUserSessions(targetOwner, { permissions: p });
+      }
+    }
+    
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
+router.post('/servers', requireAdmin, async (req, res) => {
   try {
     const {
       name, mode = 'basic',
@@ -387,22 +449,6 @@ router.post('/servers', requirePermission('create_server'), async (req, res) => 
         VALUES (?,?,?,?,?,?,?,?,?)
       `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
       
-      if (!req.session.isAdmin) {
-        try {
-          const u = db.prepare('SELECT permissions FROM users WHERE id = ?').get(req.session.userId);
-          let p = { global: [], servers: {} };
-          try { p = JSON.parse(u.permissions || '[]'); } catch {}
-          if (Array.isArray(p)) p = { global: p, servers: {} };
-          
-          p.servers[info.lastInsertRowid] = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
-          
-          db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), req.session.userId);
-          updateUserSessions(req.session.userId, { permissions: p });
-        } catch (e) {
-          console.error('[API] Failed to auto-assign server permissions:', e);
-        }
-      }
-      
       send({ msg: `Server "${safeName}" ready on port ${finalPort}!` });
       res.write(`data: ${JSON.stringify({ done: true, id: info.lastInsertRowid })}\n\n`);
       return res.end();
@@ -416,20 +462,6 @@ router.post('/servers', requirePermission('create_server'), async (req, res) => 
       INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
       VALUES (?,?,?,?,?,?,?,?,?)
     `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
-    
-    if (!req.session.isAdmin) {
-      try {
-        const u = db.prepare('SELECT permissions FROM users WHERE id = ?').get(req.session.userId);
-        let p = { global: [], servers: {} };
-        try { p = JSON.parse(u.permissions || '[]'); } catch {}
-        if (Array.isArray(p)) p = { global: p, servers: {} };
-        
-        p.servers[info.lastInsertRowid] = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
-        
-        db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), req.session.userId);
-        updateUserSessions(req.session.userId, { permissions: p });
-      } catch (e) {}
-    }
     
     res.json({ id: info.lastInsertRowid, name: safeName, port: finalPort });
 
@@ -463,6 +495,11 @@ router.delete('/servers/:id', requirePermission('delete'), (req, res) => {
 // ── POST /api/servers/:id/start ──────────────────────────────────────────────
 router.post('/servers/:id/start', requirePermission('start'), (req, res) => {
   try {
+    const db = getDb();
+    const server = db.prepare('SELECT expire_at FROM servers WHERE id = ?').get(req.params.id);
+    if (server && server.expire_at && Date.now() > server.expire_at) {
+      return res.status(403).json({ error: 'Subscription ended. Cannot start server.' });
+    }
     const result = pm.startServer(parseInt(req.params.id, 10));
     res.json({ ok: true, pid: result.pid });
   } catch (err) { res.status(400).json({ error: err.message }); }
@@ -480,6 +517,11 @@ router.post('/servers/:id/stop', requirePermission('stop'), (req, res) => {
 router.post('/servers/:id/restart', requirePermission('restart'), (req, res) => {
   const id = parseInt(req.params.id, 10);
   try {
+    const db = getDb();
+    const server = db.prepare('SELECT expire_at FROM servers WHERE id = ?').get(id);
+    if (server && server.expire_at && Date.now() > server.expire_at) {
+      return res.status(403).json({ error: 'Subscription ended. Cannot restart server.' });
+    }
     if (pm.isRunning(id)) pm.stopServer(id);
     setTimeout(() => {
       try { pm.startServer(id); } catch {}

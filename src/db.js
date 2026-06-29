@@ -71,7 +71,9 @@ const SCHEMA = `
     pid          INTEGER,
     server_dir   TEXT    NOT NULL,
     created_at   TEXT    DEFAULT (datetime('now')),
-    last_started TEXT
+    last_started TEXT,
+    owner_id     INTEGER DEFAULT NULL,
+    expire_at    INTEGER DEFAULT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_servers_status ON servers(status);
   CREATE INDEX IF NOT EXISTS idx_servers_port   ON servers(port);
@@ -91,6 +93,8 @@ function runMigrations(db) {
   // Add is_admin column if upgrading from earlier schema
   try { db.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER DEFAULT 0'); } catch {}
   try { db.exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '[]'"); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN owner_id INTEGER DEFAULT NULL'); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN expire_at INTEGER DEFAULT NULL'); } catch {}
 }
 
 // ── Seed admin/admin for dev/testing ─────────────────────────────────────────

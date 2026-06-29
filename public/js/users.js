@@ -14,24 +14,7 @@ async function fetchMe() {
   } catch {}
 }
 
-async function fetchServers() {
-  try {
-    const r = await fetch('/api/servers');
-    availableServers = await r.json();
-    const select = document.getElementById('serverSelect');
-    const filterSelect = document.getElementById('userFilterSelect');
-    
-    select.innerHTML = '<option value="">-- Select a Server --</option>';
-    let filterHtml = '<option value="all">All Users</option>';
-    
-    availableServers.forEach(s => {
-      select.innerHTML += `<option value="${s.id}">${s.name} (Port ${s.port})</option>`;
-      filterHtml += `<option value="${s.id}">${s.name}</option>`;
-    });
-    
-    if (filterSelect) filterSelect.innerHTML = filterHtml;
-  } catch {}
-}
+// Removed fetchServers since server-specific perms are handled in Rentals.
 
 function filterUsers() {
   const tbody = document.getElementById('usersList');
@@ -131,111 +114,47 @@ function togglePerms() {
 
 function addServerPermBlock(existingServerId = null, existingPerms = []) {
   let serverIdStr = existingServerId;
-  if (!serverIdStr) {
-    const select = document.getElementById('serverSelect');
-    serverIdStr = select.value;
-    if (!serverIdStr) return alert('Please select a server first.');
-  }
-
-  const serverId = parseInt(serverIdStr, 10);
-  const container = document.getElementById('serverPermsContainer');
-  
-  if (container.querySelector(`[data-server-id="${serverId}"]`)) {
-    return alert('Permissions for this server are already added above.');
-  }
-
-  const server = availableServers.find(s => s.id === serverId);
-  const serverName = server ? server.name : `Server #${serverId}`;
-
-  const template = document.getElementById('serverPermTemplate');
-  const clone = template.content.cloneNode(true);
-  
-  const card = clone.querySelector('.server-perm-card');
-  card.setAttribute('data-server-id', serverId);
-  
-  const title = clone.querySelector('.server-perm-title');
-  title.textContent = serverName;
-  
-  const checkboxes = clone.querySelectorAll('.s-perm-cb');
-  checkboxes.forEach(cb => {
-    if (existingPerms.includes(cb.value)) {
-      cb.checked = true;
-    }
-  });
-
-  container.appendChild(clone);
-  
-  if (document.getElementById('addIsAdmin').checked) {
-    togglePerms(); // disable if admin is checked
   }
 }
 
 function startEditUser(id) {
   const user = loadedUsers.find(u => u.id === id);
   if (!user) return;
-
-  editMode = true;
   editUserId = id;
-
-  document.getElementById('formCardTitle').textContent = '✏️ Edit User';
-  document.getElementById('addBtn').textContent = 'Save Changes';
-  document.getElementById('cancelEditBtn').classList.remove('hidden');
-
+  document.getElementById('formCardTitle').textContent = `✏️ Edit User #${id}`;
   document.getElementById('addUsername').value = user.username;
-  
-  const passwordField = document.getElementById('addPassword');
-  passwordField.required = false;
-  passwordField.value = '';
-  document.getElementById('passwordLabel').textContent = 'Password (optional)';
+  document.getElementById('addPassword').required = false;
+  document.getElementById('addBtn').textContent = 'Update User';
+  document.getElementById('cancelEditBtn').classList.remove('hidden');
 
   const isAdminCheckbox = document.getElementById('addIsAdmin');
   isAdminCheckbox.checked = user.is_admin === 1;
 
-  // Reset UI
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
-  document.getElementById('serverPermsContainer').innerHTML = '';
-  document.getElementById('serverSelect').value = '';
 
-  // Set user perms
   if (user.permissions) {
-    if (user.permissions.global) {
-      user.permissions.global.forEach(perm => {
-        const cb = document.querySelector(`#globalPerms .perm-cb[value="${perm}"]`);
-        if (cb) cb.checked = true;
+    let p = user.permissions;
+    if (Array.isArray(p)) p = { global: p, servers: {} };
+    if (p.global) {
+      document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => {
+        if (p.global.includes(cb.value)) cb.checked = true;
       });
     }
-    if (user.permissions.servers) {
-      for (const [sId, sPerms] of Object.entries(user.permissions.servers)) {
-        addServerPermBlock(sId, sPerms);
-      }
-    }
   }
-
+  
   togglePerms();
 }
 
 function cancelEditMode() {
-  editMode = false;
   editUserId = null;
-
   document.getElementById('formCardTitle').textContent = '➕ Add New User';
+  document.getElementById('addUsername').value = '';
+  document.getElementById('addPassword').value = '';
+  document.getElementById('addPassword').required = true;
   document.getElementById('addBtn').textContent = 'Create User';
   document.getElementById('cancelEditBtn').classList.add('hidden');
-
-  document.getElementById('addUsername').value = '';
-  
-  const passwordField = document.getElementById('addPassword');
-  passwordField.required = true;
-  passwordField.value = '';
-  document.getElementById('passwordLabel').textContent = 'Password';
-
   document.getElementById('addIsAdmin').checked = false;
-  
-  // Reset UI
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
-  document.getElementById('serverPermsContainer').innerHTML = '';
-  document.getElementById('serverSelect').value = '';
-
   togglePerms();
 }
 
@@ -253,19 +172,21 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
   const is_admin = document.getElementById('addIsAdmin').checked;
   
   // Collect Global Permissions
-  const globalPerms = Array.from(document.querySelectorAll('#globalPerms .perm-cb:checked')).map(cb => cb.value);
-  
-  // Collect Server Permissions
-  const serverPerms = {};
-  document.querySelectorAll('.server-perm-card').forEach(card => {
-    const sId = card.getAttribute('data-server-id');
-    const checked = Array.from(card.querySelectorAll('.s-perm-cb:checked')).map(cb => cb.value);
-    if (sId) serverPerms[sId] = checked;
+  const p = { global: [], servers: {} };
+  document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => {
+    if (cb.checked) p.global.push(cb.value);
   });
   
-  const permissions = { global: globalPerms, servers: serverPerms };
+  // Preserve existing server permissions if editing
+  if (editUserId !== null) {
+    const u = loadedUsers.find(x => x.id === editUserId);
+    if (u && u.permissions && u.permissions.servers) {
+      p.servers = u.permissions.servers;
+    }
+  }
+  const permissions = p;
 
-  if (editMode) {
+  if (editUserId !== null) {
     btn.textContent = 'Saving...';
     try {
       const res = await fetch(`/api/users/${editUserId}`, {

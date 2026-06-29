@@ -30,6 +30,11 @@ router.get('/users', requireAuth, requireAdmin, (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/users.html'));
 });
 
+// ── Rentals (Assigned Servers) ────────────────────────────────────────────────
+router.get('/rentals', requireAuth, requireAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../views/rentals.html'));
+});
+
 // ── GET /servers/:id ──────────────────────────────────────────────────────────
 router.get('/servers/:id', requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/server-detail.html'));
