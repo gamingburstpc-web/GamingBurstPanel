@@ -18,12 +18,16 @@ async function fetchInitialData() {
     servers = await sRes.json();
     users = await uRes.json();
     
-    // Populate User Dropdown
+    // Populate User Dropdowns
     const userSelect = document.getElementById('userSelect');
+    const subUserSelect = document.getElementById('subUserSelect');
     userSelect.innerHTML = '<option value="">-- No User (Unassigned) --</option>';
+    if (subUserSelect) subUserSelect.innerHTML = '<option value="">-- Select a User --</option>';
+    
     users.forEach(u => {
       if (!u.is_admin) {
         userSelect.innerHTML += `<option value="${u.id}">${u.username}</option>`;
+        if (subUserSelect) subUserSelect.innerHTML += `<option value="${u.id}">${u.username}</option>`;
       }
     });
 
@@ -152,6 +156,72 @@ function openManageForm(id) {
       if (defaults.includes(cb.value)) cb.checked = true;
     });
   }
+  
+  // Load Sub-Users
+  document.getElementById('subUsersContainer').innerHTML = '';
+  users.forEach(u => {
+    if (u.id !== s.owner_id && u.permissions && u.permissions.servers && u.permissions.servers[id]) {
+      addSubUserBlock(u.id, u.permissions.servers[id]);
+    }
+  });
+}
+
+function addSubUserBlock(existingUserId = null, existingPerms = []) {
+  const container = document.getElementById('subUsersContainer');
+  let userIdStr = existingUserId;
+  
+  if (!userIdStr) {
+    const sel = document.getElementById('subUserSelect');
+    if (!sel.value) return;
+    userIdStr = sel.value;
+    sel.value = '';
+  }
+  
+  // Check if block already exists
+  if (document.getElementById(`subUserBlock_${userIdStr}`)) return;
+  
+  const user = users.find(u => u.id == userIdStr);
+  const username = user ? user.username : `User #${userIdStr}`;
+  
+  const div = document.createElement('div');
+  div.className = 'sub-user-block';
+  div.id = `subUserBlock_${userIdStr}`;
+  div.dataset.userId = userIdStr;
+  div.style.background = 'rgba(255,255,255,0.02)';
+  div.style.padding = '12px';
+  div.style.borderRadius = '8px';
+  div.style.marginBottom = '12px';
+  div.style.border = '1px solid var(--border-color)';
+  
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  header.style.marginBottom = '8px';
+  header.innerHTML = `<strong style="font-size:14px;">${username}</strong>
+    <button type="button" class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="this.parentElement.parentElement.remove()">Remove</button>`;
+  
+  const grid = document.createElement('div');
+  grid.className = 'perm-grid';
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(130px, 1fr))';
+  grid.style.gap = '12px';
+  
+  const perms = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+  perms.forEach(p => {
+    const lbl = document.createElement('label');
+    lbl.style.display = 'flex';
+    lbl.style.alignItems = 'center';
+    lbl.style.gap = '8px';
+    lbl.style.fontSize = '14px';
+    const checked = existingPerms.includes(p) ? 'checked' : '';
+    lbl.innerHTML = `<input type="checkbox" class="sub-perm-cb" value="${p}" ${checked}> ${p.charAt(0).toUpperCase() + p.slice(1)}`;
+    grid.appendChild(lbl);
+  });
+  
+  div.appendChild(header);
+  div.appendChild(grid);
+  container.appendChild(div);
 }
 
 function closeForm() {
@@ -217,11 +287,19 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
     if (cb.checked) perms.push(cb.value);
   });
   
+  const subUsers = {};
+  document.querySelectorAll('.sub-user-block').forEach(blk => {
+    const uId = blk.dataset.userId;
+    const uPerms = [];
+    blk.querySelectorAll('.sub-perm-cb:checked').forEach(cb => uPerms.push(cb.value));
+    subUsers[uId] = uPerms;
+  });
+  
   try {
     const res = await fetch(`/api/rentals/${serverId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ owner_id: userId || null, expire_at, delete_after, perms })
+      body: JSON.stringify({ owner_id: userId || null, expire_at, delete_after, perms, subUsers })
     });
     
     if (!res.ok) {

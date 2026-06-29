@@ -376,6 +376,35 @@ router.post('/rentals/:id', requireAdmin, (req, res) => {
       }
     }
     
+    // 4. Handle Sub-Users
+    const subUsers = req.body.subUsers || {};
+    // First, find all users that currently have permissions for this server (excluding the new owner)
+    const allUsers = db.prepare('SELECT id, permissions FROM users').all();
+    for (const u of allUsers) {
+      if (u.id === targetOwner) continue; // Owner is handled above
+      
+      let p = { global: [], servers: {} };
+      try { p = JSON.parse(u.permissions || '[]'); } catch {}
+      if (Array.isArray(p)) p = { global: p, servers: {} };
+      
+      let changed = false;
+      
+      if (subUsers[u.id.toString()]) {
+        // User is in the submitted subUsers list, update their perms
+        p.servers[serverId] = subUsers[u.id.toString()];
+        changed = true;
+      } else if (p.servers && p.servers[serverId]) {
+        // User is NOT in the submitted subUsers list but currently has perms, remove them
+        delete p.servers[serverId];
+        changed = true;
+      }
+      
+      if (changed) {
+        db.prepare('UPDATE users SET permissions = ? WHERE id = ?').run(JSON.stringify(p), u.id);
+        updateUserSessions(u.id, { permissions: p });
+      }
+    }
+    
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

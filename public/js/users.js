@@ -127,72 +127,14 @@ function togglePerms() {
   const isAdmin = document.getElementById('addIsAdmin').checked;
   const permsGroup = document.getElementById('permsGroup');
   const checkboxes = document.querySelectorAll('#permsGroup input[type="checkbox"]');
-  const serverSelect = document.getElementById('serverSelect');
-  const addServerBtn = document.querySelector('button[onclick="addServerPermBlock()"]');
   
   if (isAdmin) {
     permsGroup.style.opacity = '0.5';
     checkboxes.forEach(cb => cb.disabled = true);
-    serverSelect.disabled = true;
-    addServerBtn.disabled = true;
   } else {
     permsGroup.style.opacity = '1';
     checkboxes.forEach(cb => cb.disabled = false);
-    serverSelect.disabled = false;
-    addServerBtn.disabled = false;
   }
-}
-
-function addServerPermBlock(existingServerId = null, existingPerms = []) {
-  const container = document.getElementById('serverPermsContainer');
-  let serverIdStr = existingServerId;
-  
-  if (!serverIdStr) {
-    const sel = document.getElementById('addServerSelect');
-    if (!sel.value) return;
-    serverIdStr = sel.value;
-    sel.value = '';
-  }
-  
-  // Check if block already exists
-  if (document.getElementById(`sBlock_${serverIdStr}`)) return;
-  
-  const server = availableServers.find(s => s.id == serverIdStr);
-  const serverName = server ? server.name : `Server #${serverIdStr}`;
-  
-  const div = document.createElement('div');
-  div.className = 's-perm-block';
-  div.id = `sBlock_${serverIdStr}`;
-  div.dataset.serverId = serverIdStr;
-  div.style.background = 'rgba(255,255,255,0.02)';
-  div.style.padding = '12px';
-  div.style.borderRadius = '8px';
-  div.style.marginBottom = '12px';
-  div.style.border = '1px solid var(--border-color)';
-  
-  const header = document.createElement('div');
-  header.style.display = 'flex';
-  header.style.justifyContent = 'space-between';
-  header.style.alignItems = 'center';
-  header.style.marginBottom = '8px';
-  header.innerHTML = `<strong style="font-size:14px;">${serverName}</strong>
-    <button type="button" class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="this.parentElement.parentElement.remove()">Remove</button>`;
-  
-  const grid = document.createElement('div');
-  grid.className = 'perm-grid';
-  
-  const perms = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
-  perms.forEach(p => {
-    const lbl = document.createElement('label');
-    lbl.className = 'perm-item';
-    const checked = existingPerms.includes(p) ? 'checked' : '';
-    lbl.innerHTML = `<input type="checkbox" class="s-perm-cb" value="${p}" ${checked}> ${p.charAt(0).toUpperCase() + p.slice(1)}`;
-    grid.appendChild(lbl);
-  });
-  
-  div.appendChild(header);
-  div.appendChild(grid);
-  container.appendChild(div);
 }
 
 function startEditUser(id) {
@@ -210,8 +152,6 @@ function startEditUser(id) {
 
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
 
-  document.getElementById('serverPermsContainer').innerHTML = '';
-
   if (user.permissions) {
     let p = user.permissions;
     if (Array.isArray(p)) p = { global: p, servers: {} };
@@ -219,11 +159,6 @@ function startEditUser(id) {
       document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => {
         if (p.global.includes(cb.value)) cb.checked = true;
       });
-    }
-    if (p.servers) {
-      for (const [sId, sPerms] of Object.entries(p.servers)) {
-        addServerPermBlock(sId, sPerms);
-      }
     }
   }
   
@@ -240,7 +175,6 @@ function cancelEditMode() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
   document.getElementById('addIsAdmin').checked = false;
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
-  document.getElementById('serverPermsContainer').innerHTML = '';
   togglePerms();
 }
 
@@ -263,14 +197,13 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
     if (cb.checked) p.global.push(cb.value);
   });
   
-  // Collect Server Permissions
-  const blocks = document.querySelectorAll('.s-perm-block');
-  blocks.forEach(blk => {
-    const sId = blk.dataset.serverId;
-    const perms = [];
-    blk.querySelectorAll('.s-perm-cb:checked').forEach(cb => perms.push(cb.value));
-    p.servers[sId] = perms;
-  });
+  // Preserve existing server permissions if editing
+  if (editUserId !== null) {
+    const u = loadedUsers.find(x => x.id === editUserId);
+    if (u && u.permissions && u.permissions.servers) {
+      p.servers = u.permissions.servers;
+    }
+  }
   
   const permissions = p;
 

@@ -138,18 +138,6 @@
                 <label class="perm-item"><input type="checkbox" class="perm-cb" value="delete"> Delete Server</label>
               </div>
             </div>
-            
-            <div id="serverPermsBlock" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-color);">
-              <label class="form-label">Server-Specific Permissions</label>
-              <div class="form-hint" style="margin-bottom:8px;">Grant access to individual servers. (Note: The Primary Owner of a server is managed via the Assigned Servers tab.)</div>
-              <div style="display:flex; gap:12px; margin-bottom:12px;">
-                <select id="addServerSelect" class="form-select" style="flex:1">
-                  <option value="">-- Select a Server --</option>
-                </select>
-                <button type="button" class="btn btn-secondary" onclick="addServerPermBlock()">Add Server</button>
-              </div>
-              <div id="serverPermsContainer"></div>
-            </div>
 
           <div style="margin-top:24px; display:flex; gap:12px; align-items:center;">
             <button type="submit" id="addBtn" class="btn btn-primary" style="flex:1">Create User</button>
