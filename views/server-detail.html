@@ -18,7 +18,7 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-label">Navigation</div>
-      <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+      <a href="/dashboard" class="nav-item" id="navDashboard"><span class="nav-icon">📊</span> Dashboard</a>
       <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
       <a href="/users" class="nav-item" id="navUsers"><span class="nav-icon">👥</span> Users</a>
       <a href="/rentals" class="nav-item" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
@@ -71,7 +71,7 @@
         <button id="btnStop"    class="btn btn-danger  hidden" onclick="serverAction('stop')">⏹ Stop</button>
         <button id="btnRestart" class="btn btn-warning hidden" onclick="serverAction('restart')">↺ Restart</button>
         <button id="btnDelete"  class="btn btn-ghost btn-sm admin-only hidden" onclick="deleteServer()">🗑 Delete</button>
-        <a href="/dashboard" class="btn btn-ghost btn-sm">← Back</a>
+        <a href="/dashboard" class="btn btn-ghost btn-sm" id="btnBack">← Back</a>
       </div>
     </div>
 

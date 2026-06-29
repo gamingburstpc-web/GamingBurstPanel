@@ -294,8 +294,34 @@ function getVpsDiskInfo() {
 router.get('/servers/:id', (req, res) => {
   const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(req.params.id);
   if (!server) return res.status(404).json({ error: 'Server not found.' });
+  
+  // Non-admin users can only see servers they have permissions for
+  if (!req.session.isAdmin) {
+    const p = req.session.permissions || { global: [], servers: {} };
+    const perms = Array.isArray(p) ? { global: p, servers: {} } : p;
+    const hasGlobal = perms.global && perms.global.length > 0;
+    const hasServerPerms = perms.servers && perms.servers[String(server.id)] && perms.servers[String(server.id)].length > 0;
+    if (!hasGlobal && !hasServerPerms) {
+      return res.status(403).json({ error: 'Access denied.' });
+    }
+  }
+  
   const disk_usage = getDirSizeSync(server.server_dir);
   const isLive = pm.isRunning(server.id);
+  
+  // Detect Geyser presence by checking for config file
+  const geyserConfigPath = path.join(server.server_dir, 'plugins', 'Geyser-Spigot', 'config.yml');
+  const geyserInstalled = fs.existsSync(geyserConfigPath);
+  
+  // If Geyser is installed but bedrock_port not in DB yet, read it from config
+  let bedrockPort = server.bedrock_port;
+  if (geyserInstalled && !bedrockPort) {
+    try {
+      const yamlContent = fs.readFileSync(geyserConfigPath, 'utf8');
+      const portMatch = yamlContent.match(/^ {0,4}port:\s*(\d+)/m);
+      if (portMatch) bedrockPort = parseInt(portMatch[1], 10);
+    } catch(e) {}
+  }
   
   let responseData = { 
     ...server, 
@@ -303,7 +329,9 @@ router.get('/servers/:id', (req, res) => {
     status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
     disk_usage,
     is_expired: server.expire_at ? Date.now() > server.expire_at : false,
-    delete_after: server.delete_after
+    delete_after: server.delete_after,
+    bedrock_port: bedrockPort,
+    geyser_installed: geyserInstalled,
   };
   
   if (req.session.isAdmin) {

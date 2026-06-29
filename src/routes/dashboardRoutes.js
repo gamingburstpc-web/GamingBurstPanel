@@ -17,6 +17,20 @@ router.use((req, res, next) => {
 
 // ── GET /dashboard ────────────────────────────────────────────────────────────
 router.get('/dashboard', requireAuth, (req, res) => {
+  // If user has NO global permissions and NO admin flag, but HAS server-specific permissions,
+  // they are a "server-assigned user" — redirect them straight to their server.
+  if (!req.session.isAdmin) {
+    const p = req.session.permissions || { global: [], servers: {} };
+    const perms = Array.isArray(p) ? { global: p, servers: {} } : p;
+    const hasGlobal = perms.global && perms.global.length > 0;
+    const serverIds = perms.servers
+      ? Object.keys(perms.servers).filter(sid => perms.servers[sid] && perms.servers[sid].length > 0)
+      : [];
+
+    if (!hasGlobal && serverIds.length > 0) {
+      return res.redirect(`/servers/${serverIds[0]}`);
+    }
+  }
   res.sendFile(path.join(__dirname, '../../views/dashboard.html'));
 });
 

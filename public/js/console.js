@@ -101,16 +101,28 @@ async function loadMe() {
       ? '<span class="role-badge-admin">Admin</span>'
       : '<span class="role-badge-user">User</span>';
     if (!currentUser.isAdmin) {
-      const navNew = document.getElementById('navNewServer');
-      if (navNew) navNew.style.display = 'none';
+      const p = currentUser.permissions || { global: [], servers: {} };
+      const perms = Array.isArray(p) ? { global: p, servers: {} } : p;
+      const globalPerms = perms.global || [];
+      const serverPerms = (perms.servers && perms.servers[String(serverId)]) || [];
+      const isAssignedOnly = globalPerms.length === 0 && serverPerms.length > 0;
+
+      // Always hide admin-only stuff
+      document.getElementById('navNewServer')?.style && (document.getElementById('navNewServer').style.display = 'none');
       document.getElementById('navUsers')?.style && (document.getElementById('navUsers').style.display = 'none');
-      
-      const hasPerm = (perm) => {
-        if (Array.isArray(p)) return p.includes(perm);
-        return globalPerms.includes(perm) || (p.servers && p.servers[serverId] && p.servers[serverId].includes(perm));
-      };
-      
+      document.getElementById('navUpdatePanel')?.style && (document.getElementById('navUpdatePanel').style.display = 'none');
       document.querySelectorAll('.admin-only, .admin-only-block').forEach(el => el.style.display = 'none');
+
+      if (isAssignedOnly) {
+        // Hide Dashboard and Assigned Servers links — they can only see their server
+        document.getElementById('navDashboard')?.style && (document.getElementById('navDashboard').style.display = 'none');
+        document.getElementById('navRentals')?.style && (document.getElementById('navRentals').style.display = 'none');
+        // Also hide the Back button
+        const backBtn = document.getElementById('btnBack');
+        if (backBtn) backBtn.style.display = 'none';
+      }
+
+      const hasPerm = (perm) => globalPerms.includes(perm) || serverPerms.includes(perm);
 
       const toggleTab = (id, perm) => {
         const btn = document.getElementById(id);

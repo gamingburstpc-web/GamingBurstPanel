@@ -145,7 +145,8 @@ function requirePermission(perm) {
       if (p.includes(perm)) return next();
     } else {
       if (p.global?.includes(perm)) return next();
-      const serverId = req.params.id || req.body.serverId || req.query.serverId;
+      // Strict: only use the URL :id param, parsed as integer string, to prevent body/query injection
+      const serverId = req.params.id ? String(parseInt(req.params.id, 10)) : null;
       if (serverId && p.servers && p.servers[serverId]?.includes(perm)) return next();
     }
     
@@ -168,7 +169,7 @@ function requireAnyPermission(permsList) {
         if (p.includes(perm)) { hasOne = true; break; }
       } else {
         if (p.global?.includes(perm)) { hasOne = true; break; }
-        const serverId = req.params.id || req.body.serverId || req.query.serverId;
+        const serverId = req.params.id ? String(parseInt(req.params.id, 10)) : null;
         if (serverId && p.servers && p.servers[serverId]?.includes(perm)) { hasOne = true; break; }
       }
     }
