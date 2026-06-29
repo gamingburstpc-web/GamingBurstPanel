@@ -523,5 +523,5 @@ button,input,select,textarea{font-family:inherit;}
 }
 
 /* Auth visibility defaults */
-.admin-only, .admin-only-block { display: none; }
+
 
