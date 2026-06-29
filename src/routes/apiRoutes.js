@@ -460,9 +460,8 @@ router.post('/rentals/:id/end', requirePermission('manage_rentals'), (req, res) 
   }
 });
 
-// ── GET /api/servers/next-port — ADMIN ONLY ──────────────────────────────────
-router.get('/servers/next-port', requireAnyPermission(['create_users', 'delete_users', 'manage_rentals']), (req, res) => {
-  // We use requireAnyPermission as a loose check for "is an admin/manager"
+// ── GET /api/servers/next-port ───────────────────────────────────────────────
+router.get('/servers/next-port', requireAuth, (req, res) => {
   res.json({ port: pm.getNextAvailablePort() });
 });
 

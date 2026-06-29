@@ -116,7 +116,9 @@ function requireAuth(req, res, next) {
   const sessionId = req.cookies?.session || parseCookieFromReq(req);
   const sess      = getSession(sessionId);
   if (!sess) {
-    if (req.path.startsWith('/api/')) return res.status(401).json({ error: 'Unauthenticated' });
+    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+      return res.status(401).json({ error: 'Unauthenticated' });
+    }
     return res.redirect('/login');
   }
   req.session   = sess;
@@ -127,7 +129,7 @@ function requireAuth(req, res, next) {
 // ── Middleware: require admin role ────────────────────────────────────────────
 function requireAdmin(req, res, next) {
   if (!req.session?.isAdmin) {
-    if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
       return res.status(403).json({ error: 'Admin access required.' });
     }
     return res.redirect('/dashboard?error=forbidden');
@@ -150,7 +152,7 @@ function requirePermission(perm) {
       if (serverId && p.servers && p.servers[serverId]?.includes(perm)) return next();
     }
     
-    if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
       return res.status(403).json({ error: `Permission denied. Requires: ${perm}` });
     }
     return res.redirect('/dashboard?error=forbidden');
@@ -176,7 +178,7 @@ function requireAnyPermission(permsList) {
     
     if (hasOne) return next();
     
-    if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+    if (req.originalUrl.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
       return res.status(403).json({ error: `Permission denied. Requires one of: ${permsList.join(', ')}` });
     }
     return res.redirect('/dashboard?error=forbidden');

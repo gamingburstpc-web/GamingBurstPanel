@@ -441,3 +441,7 @@ button,input,select,textarea{font-family:inherit;}
     grid-template-columns: 1fr !important;
   }
 }
+
+/* Auth visibility defaults */
+.admin-only, .admin-only-block { display: none; }
+
