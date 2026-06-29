@@ -2,7 +2,7 @@
 
 const express  = require('express');
 const path     = require('path');
-const { requireAuth, requireAdmin, cookieMiddleware } = require('../auth');
+const { requireAuth, requireAdmin, requireAnyPermission, cookieMiddleware } = require('../auth');
 
 const router = express.Router();
 router.use(cookieMiddleware);
@@ -26,12 +26,12 @@ router.get('/servers/new', requireAuth, requireAdmin, (req, res) => {
 });
 
 // ── GET /users — admin only ───────────────────────────────────────────────────
-router.get('/users', requireAuth, requireAdmin, (req, res) => {
+router.get('/users', requireAuth, requireAnyPermission(['create_users', 'delete_users']), (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/users.html'));
 });
 
 // ── Rentals (Assigned Servers) ────────────────────────────────────────────────
-router.get('/rentals', requireAuth, requireAdmin, (req, res) => {
+router.get('/rentals', requireAuth, requireAnyPermission(['manage_rentals']), (req, res) => {
   res.sendFile(path.join(__dirname, '../../views/rentals.html'));
 });
 

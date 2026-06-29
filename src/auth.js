@@ -156,6 +156,32 @@ function requirePermission(perm) {
   };
 }
 
+// ── Middleware: require any of the specified permissions ──────────────────────
+function requireAnyPermission(permsList) {
+  return (req, res, next) => {
+    if (req.session?.isAdmin) return next();
+    const p = req.session?.permissions || { global: [], servers: {} };
+    
+    let hasOne = false;
+    for (const perm of permsList) {
+      if (Array.isArray(p)) {
+        if (p.includes(perm)) { hasOne = true; break; }
+      } else {
+        if (p.global?.includes(perm)) { hasOne = true; break; }
+        const serverId = req.params.id || req.body.serverId || req.query.serverId;
+        if (serverId && p.servers && p.servers[serverId]?.includes(perm)) { hasOne = true; break; }
+      }
+    }
+    
+    if (hasOne) return next();
+    
+    if (req.path.startsWith('/api/') || req.headers.accept?.includes('application/json')) {
+      return res.status(403).json({ error: `Permission denied. Requires one of: ${permsList.join(', ')}` });
+    }
+    return res.redirect('/dashboard?error=forbidden');
+  };
+}
+
 function updateUserSessions(userId, updates) {
   for (const [id, s] of sessions) {
     if (s.userId === userId) {
@@ -185,6 +211,7 @@ module.exports = {
   requireAuth,
   requireAdmin,
   requirePermission,
+  requireAnyPermission,
   cookieMiddleware,
   checkRateLimit,
   recordFailedAttempt,

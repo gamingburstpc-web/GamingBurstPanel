@@ -6,7 +6,7 @@ const fs       = require('fs');
 const https    = require('https');
 const crypto   = require('crypto');
 const AdmZip   = require('adm-zip');
-const { requireAuth, requireAdmin, requirePermission, cookieMiddleware, hashPassword, updateUserSessions, destroyUserSessions } = require('../auth');
+const { requireAuth, requireAdmin, requirePermission, requireAnyPermission, cookieMiddleware, hashPassword, updateUserSessions, destroyUserSessions } = require('../auth');
 const { getDb } = require('../db');
 const pm = require('../processManager');
 
@@ -47,7 +47,7 @@ router.get('/me', (req, res) => {
 });
 
 // ── GET /api/users — ADMIN ONLY ──────────────────────────────────────────────
-router.get('/users', requireAdmin, (req, res) => {
+router.get('/users', requireAnyPermission(['create_users', 'delete_users']), (req, res) => {
   const users = getDb().prepare('SELECT id, username, is_admin, permissions, created_at FROM users').all();
   res.json(users.map(u => {
     let p = [];
@@ -58,7 +58,7 @@ router.get('/users', requireAdmin, (req, res) => {
 });
 
 // ── POST /api/users — ADMIN ONLY ─────────────────────────────────────────────
-router.post('/users', requireAdmin, (req, res) => {
+router.post('/users', requirePermission('create_users'), (req, res) => {
   const { username, password, is_admin, permissions } = req.body;
   if (!username || !password) return res.status(400).json({ error: 'Username and password required.' });
 
@@ -86,7 +86,7 @@ router.post('/users', requireAdmin, (req, res) => {
 });
 
 // ── DELETE /api/users/:id — ADMIN ONLY ───────────────────────────────────────
-router.delete('/users/:id', requireAdmin, (req, res) => {
+router.delete('/users/:id', requirePermission('delete_users'), (req, res) => {
   const id = parseInt(req.params.id, 10);
   if (id === 1) return res.status(403).json({ error: 'The primary owner (User #1) cannot be deleted.' });
   if (id === req.session.userId) return res.status(400).json({ error: 'Cannot delete yourself.' });
@@ -100,7 +100,7 @@ router.delete('/users/:id', requireAdmin, (req, res) => {
 });
 
 // ── PUT /api/users/:id — ADMIN ONLY ──────────────────────────────────────────
-router.put('/users/:id', requireAdmin, (req, res) => {
+router.put('/users/:id', requirePermission('create_users'), (req, res) => {
   const id = parseInt(req.params.id, 10);
   const { username, password, is_admin, permissions } = req.body;
   if (!username?.trim()) return res.status(400).json({ error: 'Username is required.' });
@@ -317,7 +317,7 @@ router.get('/servers/:id', (req, res) => {
 });
 
 // ── POST /api/rentals/:id — ADMIN ONLY ───────────────────────────────────────
-router.post('/rentals/:id', requireAdmin, (req, res) => {
+router.post('/rentals/:id', requirePermission('manage_rentals'), (req, res) => {
   const serverId = parseInt(req.params.id, 10);
   const { owner_id, expire_at, delete_after, perms } = req.body;
   
@@ -412,7 +412,7 @@ router.post('/rentals/:id', requireAdmin, (req, res) => {
 });
 
 // ── POST /api/rentals/:id/end — ADMIN ONLY ──────────────────────────────────
-router.post('/rentals/:id/end', requireAdmin, (req, res) => {
+router.post('/rentals/:id/end', requirePermission('manage_rentals'), (req, res) => {
   const serverId = parseInt(req.params.id, 10);
   try {
     const db = getDb();
