@@ -56,7 +56,8 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
       mode: 'basic',
       platform: document.getElementById('basicPlatform').value,
       software: document.getElementById('basicSoftware').value,
-      version:  document.getElementById('basicVersion').value.trim() || 'latest'
+      version:  document.getElementById('basicVersion').value.trim() || 'latest',
+      port:     document.getElementById('basicPort').value || undefined
     };
   } else {
     const name = document.getElementById('advName').value.trim();
@@ -221,5 +222,17 @@ async function submitServerForm(payload) {
     showError('Error: ' + err.message);
     btn.disabled = false;
     btn.innerHTML = '🚀 Create Server';
+  }
+}
+
+async function assignRandomPort(inputId) {
+  try {
+    const res = await fetch('/api/servers/next-port');
+    if (res.ok) {
+      const data = await res.json();
+      document.getElementById(inputId).value = data.port;
+    }
+  } catch (e) {
+    console.error('Failed to fetch next port', e);
   }
 }

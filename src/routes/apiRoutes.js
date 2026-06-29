@@ -431,6 +431,12 @@ router.post('/rentals/:id/end', requirePermission('manage_rentals'), (req, res) 
   }
 });
 
+// ── GET /api/servers/next-port — ADMIN ONLY ──────────────────────────────────
+router.get('/servers/next-port', requireAnyPermission(['create_users', 'delete_users', 'manage_rentals']), (req, res) => {
+  // We use requireAnyPermission as a loose check for "is an admin/manager"
+  res.json({ port: pm.getNextAvailablePort() });
+});
+
 // ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
 router.post('/servers', requireAdmin, async (req, res) => {
   try {
@@ -445,13 +451,22 @@ router.post('/servers', requireAdmin, async (req, res) => {
     if (!name?.trim()) return res.status(400).json({ error: 'Server name is required.' });
 
     const db        = getDb();
+    
+    if (port) {
+      const parsedPort = parseInt(port, 10);
+      const existing = db.prepare('SELECT id FROM servers WHERE port = ?').get(parsedPort);
+      if (existing) {
+        return res.status(400).json({ error: `Port ${parsedPort} is already in use by another server. Please choose a different port.` });
+      }
+    }
+
     const safeName  = name.trim().replace(/[^a-zA-Z0-9_\-]/g, '_');
     const serverDir = path.join(SERVERS_DIR, safeName);
     fs.mkdirSync(serverDir, { recursive: true });
 
     let finalPort      = port        ? parseInt(port, 10)        : pm.getNextAvailablePort();
     let finalMemMin    = memory_min  ? parseInt(memory_min, 10)  : 1024;
-    let finalMemMax    = memory_max  ? parseInt(memory_max, 10)  : 2048;
+    let finalMemMax    = memory_max  ? parseInt(memory_max, 10)  : (mode === 'basic' ? 4096 : 2048);
     let finalJar       = jar_path?.trim() || null;
     let finalJvmFlags  = jvm_flags?.trim() || '';
     let finalTz        = env_tz?.trim()    || (process.env.DEFAULT_TZ || 'Asia/Kolkata');

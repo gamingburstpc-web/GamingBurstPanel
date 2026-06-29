@@ -285,6 +285,7 @@
             <div id="playitLogBox" class="terminal mt-4 hidden" style="height:120px;overflow-y:auto;font-size:11px;padding:8px;white-space:pre-wrap;color:#a8a8a8;background:#000;"></div>
             <div class="mt-4 p-3" style="background:rgba(255,255,255,0.05);border-radius:8px;">
               <p><strong>Port Settings:</strong></p>
+              <p class="text-muted text-sm mt-4 mb-2"><strong style="color:var(--text-primary)">⚠️ IMPORTANT:</strong> After claiming, make sure to add this port in your server's Playit tunnel settings!</p>
               <ul class="text-muted text-sm" style="margin-left:20px;">
                 <li>For Java Server: Select <strong>Java Minecraft</strong> and enter port <strong id="playitJavaPort">25565</strong>.</li>
                 <li>For Bedrock Server: Select <strong>Bedrock Minecraft</strong> and enter port <strong>19132</strong>.</li>
@@ -294,7 +295,12 @@
           </div>
           
           <div id="playitSetupSecret" class="hidden" style="background:var(--bg-elevated);padding:16px;border-radius:8px;">
-            <p class="text-muted text-sm mb-3">1. Go to your <a href="https://playit.gg/dashboard" target="_blank" style="color:var(--accent)">Playit.gg Dashboard</a>.<br>2. Go to Accounts ➔ New Account Wizard ➔ Select "Docker".<br>3. Copy the long secret key and paste it below:</p>
+            <p class="text-muted text-sm mb-3">
+              1. Go to your <a href="https://playit.gg/dashboard" target="_blank" style="color:var(--accent)">Playit.gg Dashboard</a>.<br>
+              2. Go to Accounts ➔ New Account Wizard ➔ Select "Docker".<br>
+              3. Copy the long secret key and paste it below:<br><br>
+              <strong style="color:var(--text-primary)">⚠️ IMPORTANT:</strong> Make sure to add this server's port (<strong id="playitSecretPort">...</strong>) when creating your tunnel in the Playit Dashboard!
+            </p>
             <input type="text" id="playitSecretInput" class="form-input mb-3" placeholder="Paste Secret Key here...">
             <button class="btn btn-primary" onclick="savePlayitSecret()">💾 Save Secret Key</button>
           </div>

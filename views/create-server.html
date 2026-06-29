@@ -65,7 +65,7 @@
       <div id="tabBasic" class="tab-panel active">
         <div class="card">
           <div class="card-header"><div class="card-title">⚡ Quick Setup</div></div>
-          <p class="text-sm text-muted mb-4">Downloads the selected server software, auto-assigns port, 2 GB RAM, and accepts EULA.</p>
+          <p class="text-sm text-muted mb-4">Downloads the selected server software, auto-assigns port, 4 GB RAM, and accepts EULA.</p>
           <div class="form-group">
             <label class="form-label" for="basicName">Server Name <span>*</span></label>
             <input id="basicName" type="text" class="form-input" placeholder="my-survival-server">
@@ -89,10 +89,19 @@
             </div>
           </div>
 
-          <div class="form-group" id="basicVersionGroup">
-            <label class="form-label" for="basicVersion">Version <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
-            <input type="text" id="basicVersion" class="form-input" placeholder="latest" autocomplete="off">
-            <div class="form-hint">Leave blank for the newest version, or type a specific version (e.g. 1.20.4).</div>
+          <div class="form-row">
+            <div class="form-group" id="basicVersionGroup">
+              <label class="form-label" for="basicVersion">Version <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+              <input type="text" id="basicVersion" class="form-input" placeholder="latest" autocomplete="off">
+              <div class="form-hint">Leave blank for the newest version, or type a specific version (e.g. 1.20.4).</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="basicPort">Port <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+              <div style="display:flex; gap:8px;">
+                <input id="basicPort" type="number" class="form-input" placeholder="Auto-assigns" min="1024" max="65535" style="flex:1;">
+                <button type="button" class="btn btn-secondary" onclick="assignRandomPort('basicPort')">🎲 Random</button>
+              </div>
+            </div>
           </div>
 
           <div id="downloadProgress" class="hidden" style="margin-top:16px">
@@ -137,7 +146,10 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label" for="advPort">Port <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
-              <input id="advPort" type="number" class="form-input" placeholder="25565" min="1024" max="65535">
+              <div style="display:flex; gap:8px;">
+                <input id="advPort" type="number" class="form-input" placeholder="25565" min="1024" max="65535" style="flex:1;">
+                <button type="button" class="btn btn-secondary" onclick="assignRandomPort('advPort')">🎲 Random</button>
+              </div>
               <div class="form-hint">Leave blank to auto-assign a free port.</div>
             </div>
             <div class="form-group">

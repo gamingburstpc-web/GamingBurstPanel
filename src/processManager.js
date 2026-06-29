@@ -241,6 +241,16 @@ function isRunning(serverId) {
   return registry.has(serverId);
 }
 
+function getNextAvailablePort() {
+  const db = getDb();
+  let port = 25565;
+  while (true) {
+    const row = db.prepare('SELECT id FROM servers WHERE port = ?').get(port);
+    if (!row) return port;
+    port++;
+  }
+}
+
 // Background loop for checking expired subscriptions and auto-deletions
 setInterval(() => {
   try {

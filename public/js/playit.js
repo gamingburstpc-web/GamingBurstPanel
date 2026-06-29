@@ -87,6 +87,9 @@ async function downloadPlayit() {
 function showPlayitSecret() {
   document.getElementById('playitSetupClaim').classList.add('hidden');
   document.getElementById('playitSetupSecret').classList.remove('hidden');
+  if (serverData && serverData.port) {
+    document.getElementById('playitSecretPort').innerText = serverData.port;
+  }
 }
 
 async function showPlayitClaim() {
