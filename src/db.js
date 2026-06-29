@@ -98,6 +98,7 @@ function runMigrations(db) {
   try { db.exec('ALTER TABLE servers ADD COLUMN owner_id INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN expire_at INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN delete_after INTEGER DEFAULT NULL'); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN bedrock_port INTEGER DEFAULT NULL'); } catch {}
 }
 
 // ── Seed admin/admin for dev/testing ─────────────────────────────────────────
