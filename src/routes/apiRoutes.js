@@ -261,7 +261,7 @@ router.get('/servers', (req, res) => {
     if (req.session.isAdmin) {
       out.owner_id = s.owner_id;
       out.expire_at = s.expire_at;
-      out.delete_at = s.delete_at;
+      out.delete_after = s.delete_after;
     }
     return out;
   }));
@@ -302,7 +302,7 @@ router.get('/servers/:id', (req, res) => {
     status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
     disk_usage,
     is_expired: server.expire_at ? Date.now() > server.expire_at : false,
-    delete_at: server.delete_at
+    delete_after: server.delete_after
   };
   
   if (req.session.isAdmin) {
@@ -319,7 +319,7 @@ router.get('/servers/:id', (req, res) => {
 // ── POST /api/rentals/:id — ADMIN ONLY ───────────────────────────────────────
 router.post('/rentals/:id', requireAdmin, (req, res) => {
   const serverId = parseInt(req.params.id, 10);
-  const { owner_id, expire_at, delete_at, perms } = req.body;
+  const { owner_id, expire_at, delete_after, perms } = req.body;
   
   try {
     const db = getDb();
@@ -338,9 +338,9 @@ router.post('/rentals/:id', requireAdmin, (req, res) => {
       updates.push('expire_at = ?');
       params.push(expire_at);
     }
-    if (delete_at !== undefined) {
-      updates.push('delete_at = ?');
-      params.push(delete_at);
+    if (delete_after !== undefined) {
+      updates.push('delete_after = ?');
+      params.push(delete_after);
     }
     
     params.push(serverId);

@@ -74,7 +74,7 @@ const SCHEMA = `
     last_started TEXT,
     owner_id     INTEGER DEFAULT NULL,
     expire_at    INTEGER DEFAULT NULL,
-    delete_at    INTEGER DEFAULT NULL
+    delete_after INTEGER DEFAULT NULL
   );
   CREATE INDEX IF NOT EXISTS idx_servers_status ON servers(status);
   CREATE INDEX IF NOT EXISTS idx_servers_port   ON servers(port);
@@ -96,7 +96,7 @@ function runMigrations(db) {
   try { db.exec("ALTER TABLE users ADD COLUMN permissions TEXT DEFAULT '[]'"); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN owner_id INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN expire_at INTEGER DEFAULT NULL'); } catch {}
-  try { db.exec('ALTER TABLE servers ADD COLUMN delete_at INTEGER DEFAULT NULL'); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN delete_after INTEGER DEFAULT NULL'); } catch {}
 }
 
 // ── Seed admin/admin for dev/testing ─────────────────────────────────────────

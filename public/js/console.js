@@ -147,8 +147,9 @@ async function loadServer() {
       
       const pText = overlay.querySelector('p');
       if (pText) {
-        if (serverData.delete_at) {
-          const diffDays = Math.ceil((serverData.delete_at - Date.now()) / (1000 * 60 * 60 * 24));
+        if (serverData.delete_after) {
+          const deleteAt = serverData.expire_at + (serverData.delete_after * 24 * 60 * 60 * 1000);
+          const diffDays = Math.ceil((deleteAt - Date.now()) / (1000 * 60 * 60 * 24));
           const timeStr = diffDays > 0 ? `within ${diffDays} day(s)` : 'immediately';
           pText.innerHTML = `Please contact your Provider to extend it ${timeStr} or else server data will be deleted.<br><br>Thank you for playing!`;
         } else {

@@ -261,9 +261,10 @@ setInterval(() => {
     }
     
     // Check automatic deletions
-    const pendingDeletions = db.prepare("SELECT id, server_dir FROM servers WHERE delete_at IS NOT NULL").all();
+    const pendingDeletions = db.prepare("SELECT id, server_dir, expire_at, delete_after FROM servers WHERE delete_after IS NOT NULL AND expire_at IS NOT NULL").all();
     for (const s of pendingDeletions) {
-      if (Date.now() > s.delete_at) {
+      const deleteAt = s.expire_at + (s.delete_after * 24 * 60 * 60 * 1000);
+      if (Date.now() > deleteAt) {
         console.log(`[ProcessManager] Server ${s.id} data deletion time reached! Deleting automatically.`);
         try {
           if (isRunning(s.id)) stopServer(s.id);

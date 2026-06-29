@@ -105,9 +105,13 @@ function openManageForm(id) {
   
   // Set deletion text
   const delText = document.getElementById('currentDeletionText');
-  if (s.delete_at) {
-    const d = new Date(s.delete_at);
-    delText.textContent = `Will automatically delete on: ${d.toLocaleString()}`;
+  if (s.delete_after) {
+    if (s.expire_at) {
+      const d = new Date(s.expire_at + (s.delete_after * 24 * 60 * 60 * 1000));
+      delText.textContent = `Will automatically delete on: ${d.toLocaleString()}`;
+    } else {
+      delText.textContent = `Currently set to delete ${s.delete_after} days after expiration.`;
+    }
   } else {
     delText.textContent = `Currently won't delete automatically.`;
   }
@@ -162,16 +166,11 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
   
   let targetExpireAt = expire_at !== undefined ? expire_at : (server ? server.expire_at : null);
   
-  let delete_at = undefined;
+  let delete_after = undefined;
   if (deleteStr === 'never') {
-    delete_at = null;
+    delete_after = null;
   } else if (deleteStr !== 'none') {
-    if (!targetExpireAt) {
-      delete_at = null; // Can't auto delete if it never expires
-    } else {
-      const days = parseInt(deleteStr, 10);
-      delete_at = targetExpireAt + (days * 24 * 60 * 60 * 1000);
-    }
+    delete_after = parseInt(deleteStr, 10);
   }
   
   const perms = [];
@@ -183,7 +182,7 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
     const res = await fetch(`/api/rentals/${serverId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ owner_id: userId || null, expire_at, delete_at, perms })
+      body: JSON.stringify({ owner_id: userId || null, expire_at, delete_after, perms })
     });
     
     if (!res.ok) {
