@@ -6,7 +6,7 @@ const {
   verifyPassword, createSession, destroySession,
   requireAuth, cookieMiddleware,
   checkRateLimit, recordFailedAttempt, clearAttempts,
-  hashPassword,
+  hashPassword, updateUserSessions,
 } = require('../auth');
 const { getDb, hasUsers } = require('../db');
 
@@ -88,6 +88,8 @@ router.post('/change-password', requireAuth, (req, res) => {
   const hash = hashPassword(newPassword);
   getDb().prepare('UPDATE users SET password = ?, must_change = 0 WHERE id = ?')
     .run(hash, req.session.userId);
+  // Update session data so mustChange is cleared without forcing re-login
+  updateUserSessions(req.session.userId, { mustChange: false });
   res.json({ redirect: '/dashboard' });
 });
 

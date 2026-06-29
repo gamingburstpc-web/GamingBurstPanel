@@ -88,6 +88,16 @@ const SCHEMA = `
     FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
   );
   CREATE INDEX IF NOT EXISTS idx_logs_server ON server_logs(server_id);
+
+  CREATE TABLE IF NOT EXISTS sessions (
+    id         TEXT    PRIMARY KEY,
+    user_id    INTEGER NOT NULL,
+    data       TEXT    NOT NULL,
+    expires_at INTEGER NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  );
+  CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_sessions_exp  ON sessions(expires_at);
 `;
 
 // ── Migrations (safe to re-run) ───────────────────────────────────────────────
