@@ -1,5 +1,21 @@
 'use strict';
 
+// ── Global 401 interceptor: redirect to /login if session expired ─────────────
+(function() {
+  const _fetch = window.fetch;
+  window.fetch = async function(...args) {
+    const res = await _fetch(...args);
+    if (res.status === 401) {
+      const url = typeof args[0] === 'string' ? args[0] : (args[0]?.url || '');
+      if (url.includes('/api/') && !location.pathname.includes('/login')) {
+        location.href = '/login';
+      }
+      return res.clone();
+    }
+    return res;
+  };
+})();
+
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function toggleSidebar() {
   const s = document.getElementById('sidebar');
@@ -35,7 +51,7 @@ let currentUser = null;
 
 async function loadMe() {
   try {
-    const res  = await fetch('/api/me');
+    const res = await fetch('/api/me');
     if (!res.ok) return;
     currentUser = await res.json();
 
@@ -60,7 +76,7 @@ async function loadMe() {
       const btnNew = document.getElementById('btnNewServer');
       if (btnNew) btnNew.style.display = 'inline-block';
     }
-    
+
     // Show rentals for admin or manage_rentals permission
     const hasRentalsPerm = currentUser.isAdmin || (currentUser.permissions && currentUser.permissions.global && currentUser.permissions.global.includes('manage_rentals'));
     if (hasRentalsPerm) {
@@ -74,8 +90,27 @@ async function loadMe() {
 async function loadServers() {
   const grid = document.getElementById('serverGrid');
   try {
-    const res     = await fetch('/api/servers');
+    const res = await fetch('/api/servers');
+
+    // 401 = session expired — the global interceptor above already redirects
+    if (res.status === 401) { location.href = '/login'; return; }
+
+    // Any other non-OK response
+    if (!res.ok) {
+      const ct = res.headers.get('content-type') || '';
+      let msg = `Server error (${res.status})`;
+      if (ct.includes('json')) { const d = await res.json(); msg = d.error || msg; }
+      throw new Error(msg);
+    }
+
     const servers = await res.json();
+
+    // Guard: if server returned something that's not an array (e.g. error object)
+    if (!Array.isArray(servers)) {
+      // Might be a stale HTML page redirect — force re-login
+      location.href = '/login';
+      return;
+    }
 
     document.getElementById('statTotal').textContent   = servers.length;
     document.getElementById('statRunning').textContent = servers.filter(s => s.status === 'running').length;
@@ -118,7 +153,12 @@ async function loadServers() {
       </div>
     `).join('');
   } catch (err) {
-    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Failed to load</h3><p>${err.message}</p></div>`;
+    // If the error is a JSON parse error (HTML returned instead of JSON), force re-login
+    if (err.message && (err.message.includes('token') || err.message.includes('JSON'))) {
+      location.href = '/login';
+      return;
+    }
+    if (grid) grid.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Failed to load</h3><p>${err.message}</p><button class="btn btn-ghost btn-sm" onclick="loadServers()" style="margin-top:12px">↺ Retry</button></div>`;
   }
 }
 
