@@ -261,6 +261,7 @@ router.get('/servers', (req, res) => {
     if (req.session.isAdmin) {
       out.owner_id = s.owner_id;
       out.expire_at = s.expire_at;
+      out.delete_at = s.delete_at;
     }
     return out;
   }));
@@ -300,7 +301,8 @@ router.get('/servers/:id', (req, res) => {
     is_live: isLive, 
     status: isLive ? (server.status === 'starting' ? 'starting' : 'running') : server.status,
     disk_usage,
-    is_expired: server.expire_at ? Date.now() > server.expire_at : false
+    is_expired: server.expire_at ? Date.now() > server.expire_at : false,
+    delete_at: server.delete_at
   };
   
   if (req.session.isAdmin) {
@@ -317,7 +319,7 @@ router.get('/servers/:id', (req, res) => {
 // ── POST /api/rentals/:id — ADMIN ONLY ───────────────────────────────────────
 router.post('/rentals/:id', requireAdmin, (req, res) => {
   const serverId = parseInt(req.params.id, 10);
-  const { owner_id, expire_at, perms } = req.body;
+  const { owner_id, expire_at, delete_at, perms } = req.body;
   
   try {
     const db = getDb();
@@ -328,12 +330,22 @@ router.post('/rentals/:id', requireAdmin, (req, res) => {
     
     const targetOwner = owner_id ? parseInt(owner_id, 10) : null;
     
-    // If expire_at is undefined, don't update it. If null, set it to null.
+    // Build update query dynamically
+    let updates = ['owner_id = ?'];
+    let params = [targetOwner];
+    
     if (expire_at !== undefined) {
-      db.prepare('UPDATE servers SET owner_id = ?, expire_at = ? WHERE id = ?').run(targetOwner, expire_at, serverId);
-    } else {
-      db.prepare('UPDATE servers SET owner_id = ? WHERE id = ?').run(targetOwner, serverId);
+      updates.push('expire_at = ?');
+      params.push(expire_at);
     }
+    if (delete_at !== undefined) {
+      updates.push('delete_at = ?');
+      params.push(delete_at);
+    }
+    
+    params.push(serverId);
+    
+    db.prepare(`UPDATE servers SET ${updates.join(', ')} WHERE id = ?`).run(...params);
     
     // 2. Clear old owner's permissions for this server if owner changed
     if (server.owner_id && server.owner_id !== targetOwner) {

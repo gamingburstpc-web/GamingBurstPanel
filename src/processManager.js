@@ -241,12 +241,13 @@ function isRunning(serverId) {
   return registry.has(serverId);
 }
 
-// Background loop for checking expired subscriptions
+// Background loop for checking expired subscriptions and auto-deletions
 setInterval(() => {
   try {
     const db = getDb();
-    const runningServers = db.prepare("SELECT id, expire_at FROM servers WHERE status IN ('starting', 'running') AND expire_at IS NOT NULL").all();
     
+    // Check expirations
+    const runningServers = db.prepare("SELECT id, expire_at FROM servers WHERE status IN ('starting', 'running') AND expire_at IS NOT NULL").all();
     for (const s of runningServers) {
       if (Date.now() > s.expire_at) {
         console.log(`[ProcessManager] Server ${s.id} subscription expired! Stopping automatically.`);
@@ -255,6 +256,23 @@ setInterval(() => {
           db.prepare('UPDATE servers SET status = ? WHERE id = ?').run('expired', s.id);
         } catch (e) {
           console.error(`Failed to stop expired server ${s.id}:`, e);
+        }
+      }
+    }
+    
+    // Check automatic deletions
+    const pendingDeletions = db.prepare("SELECT id, server_dir FROM servers WHERE delete_at IS NOT NULL").all();
+    for (const s of pendingDeletions) {
+      if (Date.now() > s.delete_at) {
+        console.log(`[ProcessManager] Server ${s.id} data deletion time reached! Deleting automatically.`);
+        try {
+          if (isRunning(s.id)) stopServer(s.id);
+          if (s.server_dir && fs.existsSync(s.server_dir)) {
+            fs.rmSync(s.server_dir, { recursive: true, force: true });
+          }
+          db.prepare('DELETE FROM servers WHERE id = ?').run(s.id);
+        } catch (e) {
+          console.error(`Failed to delete server ${s.id}:`, e);
         }
       }
     }

@@ -103,6 +103,16 @@ function openManageForm(id) {
   }
   document.getElementById('validitySelect').value = 'none'; // reset to none
   
+  // Set deletion text
+  const delText = document.getElementById('currentDeletionText');
+  if (s.delete_at) {
+    const d = new Date(s.delete_at);
+    delText.textContent = `Will automatically delete on: ${d.toLocaleString()}`;
+  } else {
+    delText.textContent = `Currently won't delete automatically.`;
+  }
+  document.getElementById('deleteSelect').value = 'none'; // reset
+  
   // Set Permissions
   document.querySelectorAll('.s-perm-cb').forEach(cb => cb.checked = false);
   if (s.owner_id) {
@@ -138,16 +148,30 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
   const serverId = document.getElementById('editServerId').value;
   const userId = document.getElementById('userSelect').value; // could be empty string
   const validityStr = document.getElementById('validitySelect').value;
+  const deleteStr = document.getElementById('deleteSelect').value;
+  
+  const server = servers.find(s => s.id == serverId);
   
   let expire_at = undefined;
   if (validityStr === 'permanent') {
     expire_at = null;
   } else if (validityStr !== 'none') {
     const days = parseInt(validityStr, 10);
-    // If server already has expiration and it's not expired yet, we extend it?
-    // Let's just set it from NOW to avoid confusion, or set it from existing?
-    // Better to just set it from NOW.
     expire_at = Date.now() + (days * 24 * 60 * 60 * 1000);
+  }
+  
+  let targetExpireAt = expire_at !== undefined ? expire_at : (server ? server.expire_at : null);
+  
+  let delete_at = undefined;
+  if (deleteStr === 'never') {
+    delete_at = null;
+  } else if (deleteStr !== 'none') {
+    if (!targetExpireAt) {
+      delete_at = null; // Can't auto delete if it never expires
+    } else {
+      const days = parseInt(deleteStr, 10);
+      delete_at = targetExpireAt + (days * 24 * 60 * 60 * 1000);
+    }
   }
   
   const perms = [];
@@ -159,7 +183,7 @@ document.getElementById('assignmentForm').addEventListener('submit', async (e) =
     const res = await fetch(`/api/rentals/${serverId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ owner_id: userId || null, expire_at, perms })
+      body: JSON.stringify({ owner_id: userId || null, expire_at, delete_at, perms })
     });
     
     if (!res.ok) {

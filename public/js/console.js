@@ -144,6 +144,17 @@ async function loadServer() {
     if (overlay) {
       overlay.style.display = 'flex';
       overlay.classList.remove('hidden');
+      
+      const pText = overlay.querySelector('p');
+      if (pText) {
+        if (serverData.delete_at) {
+          const diffDays = Math.ceil((serverData.delete_at - Date.now()) / (1000 * 60 * 60 * 24));
+          const timeStr = diffDays > 0 ? `within ${diffDays} day(s)` : 'immediately';
+          pText.innerHTML = `Please contact your Provider to extend it ${timeStr} or else server data will be deleted.<br><br>Thank you for playing!`;
+        } else {
+          pText.innerHTML = `Please contact your Provider to extend your subscription.<br><br>Thank you for playing!`;
+        }
+      }
     }
     // Disable all actions
     document.getElementById('topbarActions').style.display = 'none';

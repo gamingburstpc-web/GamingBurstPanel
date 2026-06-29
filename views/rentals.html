@@ -121,6 +121,19 @@
               <div class="form-hint" style="margin-top:6px;" id="currentExpirationText">Currently unassigned.</div>
             </div>
 
+            <div class="form-group">
+              <label class="form-label">Data Deletion Time (After Expiration)</label>
+              <select id="deleteSelect" class="form-input">
+                <option value="none">No Change</option>
+                <option value="never">Do Not Delete Automatically</option>
+                <option value="1">Delete 1 Day after Expiration</option>
+                <option value="3">Delete 3 Days after Expiration</option>
+                <option value="7">Delete 7 Days after Expiration</option>
+                <option value="30">Delete 30 Days after Expiration</option>
+              </select>
+              <div class="form-hint" style="margin-top:6px;" id="currentDeletionText">Currently won't delete automatically.</div>
+            </div>
+
             <div class="form-group" style="border-top: 1px solid var(--border-color); padding-top: 16px;">
               <label class="form-label">Server Permissions</label>
               <div class="form-hint">Permissions granted strictly for this server.</div>
