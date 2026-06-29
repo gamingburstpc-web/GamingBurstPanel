@@ -14,7 +14,21 @@ async function fetchMe() {
   } catch {}
 }
 
-// Removed fetchServers since server-specific perms are handled in Rentals.
+async function fetchServers() {
+  try {
+    const res = await fetch('/api/servers');
+    if (res.ok) {
+      availableServers = await res.json();
+      const s = document.getElementById('addServerSelect');
+      if (s) {
+        s.innerHTML = '<option value="">-- Select a Server --</option>';
+        availableServers.forEach(srv => {
+          s.innerHTML += `<option value="${srv.id}">${srv.name}</option>`;
+        });
+      }
+    }
+  } catch (err) { console.error('Failed to fetch servers'); }
+}
 
 function filterUsers() {
   const tbody = document.getElementById('usersList');
@@ -29,17 +43,36 @@ function filterUsers() {
   let html = '';
   let count = 0;
   for (const u of loadedUsers) {
-    // Check if user matches filter
-    if (filterId !== 'all') {
-      if (u.is_admin !== 1) {
-        let hasAccess = false;
-        if (u.permissions) {
-          if (u.permissions.global && u.permissions.global.length > 0) hasAccess = true;
-          if (u.permissions.servers && u.permissions.servers[filterId]) hasAccess = true;
+    let isOwner = false;
+    let isSubUser = false;
+    let serversHtml = [];
+    
+    // Check owned servers
+    availableServers.forEach(s => {
+      if (s.owner_id === u.id) {
+        isOwner = true;
+        serversHtml.push(`<span class="badge" style="background:rgba(35,134,54,0.1);color:#3fb950">${s.name} (Owner)</span>`);
+      }
+    });
+    
+    // Check server perms
+    if (u.permissions && u.permissions.servers) {
+      for (const sid of Object.keys(u.permissions.servers)) {
+        // Skip if already owner
+        const isAlreadyOwner = availableServers.find(s => s.id == sid && s.owner_id == u.id);
+        if (!isAlreadyOwner) {
+          isSubUser = true;
+          const sObj = availableServers.find(s => s.id == sid);
+          const sName = sObj ? sObj.name : `#${sid}`;
+          serversHtml.push(`<span class="badge" style="background:rgba(255,255,255,0.05);color:var(--text-secondary)">${sName} (Access)</span>`);
         }
-        if (!hasAccess) continue;
       }
     }
+    
+    // Filtering logic
+    if (filterId === 'admins' && u.is_admin !== 1) continue;
+    if (filterId === 'owners' && !isOwner) continue;
+    if (filterId === 'subusers' && !isSubUser) continue;
     
     count++;
     const isMe = u.id === myId;
@@ -53,10 +86,7 @@ function filterUsers() {
     } else if (u.permissions) {
       const p = u.permissions;
       const globalCount = p.global ? p.global.length : 0;
-      const serverCount = p.servers ? Object.keys(p.servers).length : 0;
-      if (globalCount > 0 || serverCount > 0) {
-        permsText = `${globalCount} Global, ${serverCount} Server(s)`;
-      }
+      if (globalCount > 0) permsText = `${globalCount} Global`;
     }
 
     html += `
@@ -64,6 +94,7 @@ function filterUsers() {
         <td>#${u.id}</td>
         <td><strong style="color:var(--text-primary)">${u.username}</strong> ${isMe ? '<span style="font-size:11px;color:var(--text-muted)">(You)</span>' : ''}</td>
         <td>${roleBadge}<br><span class="text-muted text-sm">${permsText}</span></td>
+        <td><div style="display:flex; flex-direction:column; gap:4px; align-items:flex-start;">${serversHtml.length > 0 ? serversHtml.join('') : '-'}</div></td>
         <td class="text-muted text-sm">${new Date(u.created_at).toLocaleDateString()}</td>
         <td style="text-align:right; white-space:nowrap;">
           <button class="btn btn-sm btn-ghost" style="margin-right:6px;" onclick="startEditUser(${u.id})">⚙️ Edit</button>
@@ -113,8 +144,55 @@ function togglePerms() {
 }
 
 function addServerPermBlock(existingServerId = null, existingPerms = []) {
+  const container = document.getElementById('serverPermsContainer');
   let serverIdStr = existingServerId;
+  
+  if (!serverIdStr) {
+    const sel = document.getElementById('addServerSelect');
+    if (!sel.value) return;
+    serverIdStr = sel.value;
+    sel.value = '';
   }
+  
+  // Check if block already exists
+  if (document.getElementById(`sBlock_${serverIdStr}`)) return;
+  
+  const server = availableServers.find(s => s.id == serverIdStr);
+  const serverName = server ? server.name : `Server #${serverIdStr}`;
+  
+  const div = document.createElement('div');
+  div.className = 's-perm-block';
+  div.id = `sBlock_${serverIdStr}`;
+  div.dataset.serverId = serverIdStr;
+  div.style.background = 'rgba(255,255,255,0.02)';
+  div.style.padding = '12px';
+  div.style.borderRadius = '8px';
+  div.style.marginBottom = '12px';
+  div.style.border = '1px solid var(--border-color)';
+  
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  header.style.marginBottom = '8px';
+  header.innerHTML = `<strong style="font-size:14px;">${serverName}</strong>
+    <button type="button" class="btn btn-sm btn-ghost" style="color:var(--red);" onclick="this.parentElement.parentElement.remove()">Remove</button>`;
+  
+  const grid = document.createElement('div');
+  grid.className = 'perm-grid';
+  
+  const perms = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+  perms.forEach(p => {
+    const lbl = document.createElement('label');
+    lbl.className = 'perm-item';
+    const checked = existingPerms.includes(p) ? 'checked' : '';
+    lbl.innerHTML = `<input type="checkbox" class="s-perm-cb" value="${p}" ${checked}> ${p.charAt(0).toUpperCase() + p.slice(1)}`;
+    grid.appendChild(lbl);
+  });
+  
+  div.appendChild(header);
+  div.appendChild(grid);
+  container.appendChild(div);
 }
 
 function startEditUser(id) {
@@ -132,6 +210,8 @@ function startEditUser(id) {
 
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
 
+  document.getElementById('serverPermsContainer').innerHTML = '';
+
   if (user.permissions) {
     let p = user.permissions;
     if (Array.isArray(p)) p = { global: p, servers: {} };
@@ -139,6 +219,11 @@ function startEditUser(id) {
       document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => {
         if (p.global.includes(cb.value)) cb.checked = true;
       });
+    }
+    if (p.servers) {
+      for (const [sId, sPerms] of Object.entries(p.servers)) {
+        addServerPermBlock(sId, sPerms);
+      }
     }
   }
   
@@ -155,6 +240,7 @@ function cancelEditMode() {
   document.getElementById('cancelEditBtn').classList.add('hidden');
   document.getElementById('addIsAdmin').checked = false;
   document.querySelectorAll('#globalPerms .perm-cb').forEach(cb => cb.checked = false);
+  document.getElementById('serverPermsContainer').innerHTML = '';
   togglePerms();
 }
 
@@ -177,13 +263,15 @@ document.getElementById('addUserForm').addEventListener('submit', async (e) => {
     if (cb.checked) p.global.push(cb.value);
   });
   
-  // Preserve existing server permissions if editing
-  if (editUserId !== null) {
-    const u = loadedUsers.find(x => x.id === editUserId);
-    if (u && u.permissions && u.permissions.servers) {
-      p.servers = u.permissions.servers;
-    }
-  }
+  // Collect Server Permissions
+  const blocks = document.querySelectorAll('.s-perm-block');
+  blocks.forEach(blk => {
+    const sId = blk.dataset.serverId;
+    const perms = [];
+    blk.querySelectorAll('.s-perm-cb:checked').forEach(cb => perms.push(cb.value));
+    p.servers[sId] = perms;
+  });
+  
   const permissions = p;
 
   if (editUserId !== null) {

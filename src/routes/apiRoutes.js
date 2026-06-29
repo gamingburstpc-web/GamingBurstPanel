@@ -382,6 +382,26 @@ router.post('/rentals/:id', requireAdmin, (req, res) => {
   }
 });
 
+// ── POST /api/rentals/:id/end — ADMIN ONLY ──────────────────────────────────
+router.post('/rentals/:id/end', requireAdmin, (req, res) => {
+  const serverId = parseInt(req.params.id, 10);
+  try {
+    const db = getDb();
+    const server = db.prepare('SELECT owner_id, expire_at FROM servers WHERE id = ?').get(serverId);
+    if (!server) return res.status(404).json({ error: 'Server not found' });
+    if (!server.owner_id || !server.expire_at) {
+      return res.status(400).json({ error: 'Server is not an active rental with an expiration' });
+    }
+    
+    // Set expire_at to now so it expires immediately
+    db.prepare('UPDATE servers SET expire_at = ? WHERE id = ?').run(Date.now() - 1000, serverId);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Error ending subscription:', err);
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
 router.post('/servers', requireAdmin, async (req, res) => {
   try {

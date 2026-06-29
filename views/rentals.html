@@ -110,7 +110,7 @@
             </div>
             
             <div class="form-group">
-              <label class="form-label">Extend Validity</label>
+              <label class="form-label" id="validityLabel">Extend Validity</label>
               <select id="validitySelect" class="form-input">
                 <option value="none">No Change</option>
                 <option value="permanent">Remove Expiration (Permanent)</option>
@@ -153,9 +153,10 @@
               </div>
             </div>
 
-            <div style="margin-top:12px; display:flex; gap:12px; align-items:center;">
+            <div style="margin-top:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
               <button type="submit" id="saveBtn" class="btn btn-primary" style="flex:1">Save Assignment</button>
               <button type="button" class="btn btn-ghost" onclick="closeForm()">Cancel</button>
+              <button type="button" id="endSubBtn" class="btn btn-danger" style="display:none; width:100%" onclick="endSubscription()">Stop Subscription</button>
             </div>
             
             <div id="alertSuccess" class="hidden" style="margin-top:16px; padding:12px; background:rgba(35,134,54,0.1); border:1px solid rgba(35,134,54,0.4); border-radius:8px; color:#3fb950; font-size:14px;">Saved successfully!</div>

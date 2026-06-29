@@ -90,6 +90,24 @@ function openManageForm(id) {
   document.getElementById('alertSuccess').classList.add('hidden');
   document.getElementById('alertError').classList.add('hidden');
   
+  const valLabel = document.getElementById('validityLabel');
+  const endSubBtn = document.getElementById('endSubBtn');
+  
+  if (s.owner_id) {
+    const owner = users.find(x => x.id === s.owner_id);
+    document.getElementById('formCardTitle').textContent = `Server Assigned to: ${owner ? owner.username : 'Unknown'} (${s.name})`;
+    valLabel.textContent = 'Extend Validity';
+    if (s.expire_at) {
+      endSubBtn.style.display = 'block';
+    } else {
+      endSubBtn.style.display = 'none';
+    }
+  } else {
+    document.getElementById('formCardTitle').textContent = `New Assignment (${s.name})`;
+    valLabel.textContent = 'Set Validity';
+    endSubBtn.style.display = 'none';
+  }
+  
   // Set User
   document.getElementById('userSelect').value = s.owner_id || '';
   
@@ -139,6 +157,27 @@ function openManageForm(id) {
 function closeForm() {
   document.getElementById('formCard').style.display = 'none';
   editServerId = null;
+}
+
+async function endSubscription() {
+  const serverId = document.getElementById('editServerId').value;
+  if (!serverId) return;
+  if (!confirm("Are you sure you want to end this subscription immediately? The user will be locked out and the auto-deletion countdown will begin.")) return;
+  
+  try {
+    const res = await fetch(`/api/rentals/${serverId}/end`, { method: 'POST' });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || 'Failed to end subscription');
+    }
+    document.getElementById('alertSuccess').textContent = 'Subscription ended successfully!';
+    document.getElementById('alertSuccess').classList.remove('hidden');
+    await fetchInitialData();
+    closeForm();
+  } catch (err) {
+    document.getElementById('alertError').textContent = err.message;
+    document.getElementById('alertError').classList.remove('hidden');
+  }
 }
 
 document.getElementById('assignmentForm').addEventListener('submit', async (e) => {
