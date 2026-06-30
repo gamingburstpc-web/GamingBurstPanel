@@ -8,32 +8,35 @@
   <script src="/public/js/theme.js?v=107"></script>
 </head>
 <body>
-<div class="layout">
-  <!-- Initial Loading Overlay -->
-  <div id="initialLoadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-default);z-index:9998;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s ease, visibility 0.4s ease;">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
-      <span class="spinner" style="width:32px;height:32px;border-width:3px;border-color:var(--accent) transparent var(--accent) transparent;"></span>
-      <div style="color:var(--text-secondary);font-weight:500;font-size:14px;letter-spacing:0.5px;">LOADING CONSOLE</div>
-    </div>
+<!-- Initial Loading Overlay -->
+<div id="initialLoadingOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg-default);z-index:9998;display:flex;align-items:center;justify-content:center;transition:opacity 0.4s ease, visibility 0.4s ease;">
+  <div style="display:flex;flex-direction:column;align-items:center;gap:16px;">
+    <span class="spinner" style="width:32px;height:32px;border-width:3px;border-color:var(--accent) transparent var(--accent) transparent;"></span>
+    <div style="color:var(--text-secondary);font-weight:500;font-size:14px;letter-spacing:0.5px;">LOADING CONSOLE</div>
   </div>
-  <!-- Subscription Expired Overlay -->
-  <div id="subscriptionOverlay" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(9, 11, 15, 0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
-    <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;padding:48px 32px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;">
-      <div style="font-size:56px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(255, 170, 0, 0.4));">⏳</div>
-      <h2 style="color:var(--text-primary);margin-bottom:16px;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Subscription Expired</h2>
-      <p style="color:var(--text-secondary);line-height:1.6;margin-bottom:24px;font-size:15px;">
-        Please contact your Provider to extend your subscription.<br>Thank you for playing!
-      </p>
-      
-      <p style="color:var(--text-muted);font-size:12px;max-width:320px;line-height:1.5;margin-bottom:32px;background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);">
-        Need your world data? Contact the administrator to download your files without extending your subscription.
-      </p>
+</div>
 
-      <a href="/logout" class="btn btn-secondary" style="width:100%;max-width:200px;justify-content:center;font-weight:600;">
-        <span style="margin-right:6px">🚪</span> Logout
-      </a>
-    </div>
+<!-- Subscription Expired Overlay -->
+<div id="subscriptionOverlay" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(9, 11, 15, 0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+  <div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;padding:48px 32px;max-width:480px;width:100%;box-shadow:0 24px 64px rgba(0,0,0,0.5);display:flex;flex-direction:column;align-items:center;">
+    <div style="font-size:56px;margin-bottom:20px;filter:drop-shadow(0 0 20px rgba(255, 170, 0, 0.4));">⏳</div>
+    <h2 style="color:var(--text-primary);margin-bottom:16px;font-size:28px;font-weight:700;letter-spacing:-0.5px;">Subscription Expired</h2>
+    <p style="color:var(--text-secondary);line-height:1.6;margin-bottom:24px;font-size:15px;">
+      Please contact your Provider to extend your subscription.<br>Thank you for playing!
+    </p>
+    
+    <p style="color:var(--text-muted);font-size:12px;max-width:320px;line-height:1.5;margin-bottom:32px;background:rgba(255,255,255,0.03);padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.05);">
+      Need your world data? Contact the administrator to download your files without extending your subscription.
+    </p>
+
+    <a href="/logout" class="btn btn-secondary" style="width:100%;max-width:200px;justify-content:center;font-weight:600;">
+      <span style="margin-right:6px">🚪</span> Logout
+    </a>
   </div>
+</div>
+
+<div class="layout">
+  <!-- Overlays moved out of layout -->
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
