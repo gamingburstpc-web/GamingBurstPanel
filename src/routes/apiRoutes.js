@@ -730,19 +730,37 @@ router.post('/system/update', requireAdmin, async (req, res) => {
 });
 
 // ── File Manager Helpers ──────────────────────────────────────────────────────
-function safePath(serverId, userPath) {
+function safePath(req, userPath) {
+  const serverId = req.params.id;
   const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(serverId);
   if (!server) throw new Error('Server not found');
   const baseDir = path.resolve(server.server_dir);
   const target  = path.resolve(baseDir, userPath || '');
   if (!target.startsWith(baseDir)) throw new Error('Invalid path: Directory traversal not allowed.');
+  
+  if (!req.session?.isAdmin) {
+    const p = req.session?.permissions || { global: [], servers: {} };
+    let hasPerm = (perm) => {
+      if (Array.isArray(p)) return p.includes(perm);
+      return p.global?.includes(perm) || (p.servers && p.servers[serverId]?.includes(perm));
+    };
+    if (!hasPerm('files') && hasPerm('plugins')) {
+      const pluginsDir = path.resolve(baseDir, 'plugins');
+      if (!target.startsWith(pluginsDir)) {
+        throw new Error('Access denied: You only have permission to access the plugins directory.');
+      }
+    } else if (!hasPerm('files') && !hasPerm('plugins')) {
+      throw new Error('Access denied: Missing files or plugins permission.');
+    }
+  }
+
   return { baseDir, target };
 }
 
 // ── GET /api/servers/:id/files ────────────────────────────────────────────────
-router.get('/servers/:id/files', requirePermission('files'), (req, res) => {
+router.get('/servers/:id/files', requireAnyPermission(['files', 'plugins']), (req, res) => {
   try {
-    const { target } = safePath(req.params.id, req.query.path);
+    const { target } = safePath(req, req.query.path);
     if (!fs.existsSync(target)) return res.json([]);
     const stat = fs.statSync(target);
     if (!stat.isDirectory()) return res.status(400).json({ error: 'Not a directory' });
@@ -763,9 +781,9 @@ router.get('/servers/:id/files', requirePermission('files'), (req, res) => {
 });
 
 // ── GET /api/servers/:id/files/content ────────────────────────────────────────
-router.get('/servers/:id/files/content', requirePermission('files'), (req, res) => {
+router.get('/servers/:id/files/content', requireAnyPermission(['files', 'plugins']), (req, res) => {
   try {
-    const { target } = safePath(req.params.id, req.query.path);
+    const { target } = safePath(req, req.query.path);
     if (!fs.existsSync(target)) return res.status(404).json({ error: 'File not found' });
     if (fs.statSync(target).isDirectory()) return res.status(400).json({ error: 'Cannot read directory content' });
     res.send(fs.readFileSync(target, 'utf8'));
@@ -773,18 +791,18 @@ router.get('/servers/:id/files/content', requirePermission('files'), (req, res) 
 });
 
 // ── PUT /api/servers/:id/files/content ────────────────────────────────────────
-router.put('/servers/:id/files/content', requirePermission('files'), express.text({ limit: '5mb' }), (req, res) => {
+router.put('/servers/:id/files/content', requireAnyPermission(['files', 'plugins']), express.text({ limit: '5mb' }), (req, res) => {
   try {
-    const { target } = safePath(req.params.id, req.query.path);
+    const { target } = safePath(req, req.query.path);
     fs.writeFileSync(target, req.body || '');
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
 // ── POST /api/servers/:id/files/upload ────────────────────────────────────────
-router.post('/servers/:id/files/upload', requirePermission('files'), express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
+router.post('/servers/:id/files/upload', requireAnyPermission(['files', 'plugins']), express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
   try {
-    const { target } = safePath(req.params.id, req.query.path);
+    const { target } = safePath(req, req.query.path);
     fs.writeFileSync(target, req.body);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -841,7 +859,7 @@ router.post('/servers/:id/plugins/download-url', requirePermission('plugins'), e
           }
         }
         
-        const { target } = safePath(req.params.id, 'plugins/' + finalFilename);
+        const { target } = safePath(req, 'plugins/' + finalFilename);
         finalTarget = target;
         
         if (!fs.existsSync(path.dirname(finalTarget))) {
@@ -897,14 +915,14 @@ router.post('/servers/:id/plugins/download-url', requirePermission('plugins'), e
 });
 
 // ── DELETE /api/servers/:id/files ─────────────────────────────────────────────
-router.delete('/servers/:id/files', requirePermission('files'), express.json(), (req, res) => {
+router.delete('/servers/:id/files', requireAnyPermission(['files', 'plugins']), express.json(), (req, res) => {
   try {
     let paths = req.body.paths;
     if (!paths && req.query.path) paths = [req.query.path];
     if (!paths || !Array.isArray(paths)) return res.status(400).json({ error: 'Paths array required' });
 
     for (const p of paths) {
-      const { baseDir, target } = safePath(req.params.id, p);
+      const { baseDir, target } = safePath(req, p);
       if (target === baseDir) continue; // Skip root
       if (fs.existsSync(target)) {
         fs.rmSync(target, { recursive: true, force: true });
@@ -915,12 +933,12 @@ router.delete('/servers/:id/files', requirePermission('files'), express.json(), 
 });
 
 // ── POST /api/servers/:id/files/rename ────────────────────────────────────────
-router.post('/servers/:id/files/rename', requirePermission('files'), express.json(), (req, res) => {
+router.post('/servers/:id/files/rename', requireAnyPermission(['files', 'plugins']), express.json(), (req, res) => {
   try {
     const { oldPath, newPath } = req.body;
     if (!oldPath || !newPath) return res.status(400).json({ error: 'Paths required' });
-    const oldTarget = safePath(req.params.id, oldPath).target;
-    const newTarget = safePath(req.params.id, newPath).target;
+    const oldTarget = safePath(req, oldPath).target;
+    const newTarget = safePath(req, newPath).target;
     if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
     fs.renameSync(oldTarget, newTarget);
     res.json({ ok: true });
@@ -928,14 +946,14 @@ router.post('/servers/:id/files/rename', requirePermission('files'), express.jso
 });
 
 // ── POST /api/servers/:id/files/move ──────────────────────────────────────────
-router.post('/servers/:id/files/move', requirePermission('files'), express.json(), (req, res) => {
+router.post('/servers/:id/files/move', requireAnyPermission(['files', 'plugins']), express.json(), (req, res) => {
   try {
     let { oldPath, newPath, paths, newDir } = req.body;
     
     // Legacy single move
     if (oldPath && newPath) {
-      const oldTarget = safePath(req.params.id, oldPath).target;
-      const newTarget = safePath(req.params.id, newPath).target;
+      const oldTarget = safePath(req, oldPath).target;
+      const newTarget = safePath(req, newPath).target;
       if (!fs.existsSync(oldTarget)) return res.status(404).json({ error: 'Source not found' });
       const destDir = path.dirname(newTarget);
       if (!fs.existsSync(destDir)) fs.mkdirSync(destDir, { recursive: true });
@@ -949,9 +967,9 @@ router.post('/servers/:id/files/move', requirePermission('files'), express.json(
     }
     
     for (const p of paths) {
-      const oldTarget = safePath(req.params.id, p).target;
+      const oldTarget = safePath(req, p).target;
       const filename = path.basename(oldTarget);
-      const newTarget = safePath(req.params.id, newDir ? `${newDir}/${filename}` : filename).target;
+      const newTarget = safePath(req, newDir ? `${newDir}/${filename}` : filename).target;
       
       if (fs.existsSync(oldTarget)) {
         const destDir = path.dirname(newTarget);
@@ -964,9 +982,9 @@ router.post('/servers/:id/files/move', requirePermission('files'), express.json(
 });
 
 // ── GET /api/servers/:id/files/download ───────────────────────────────────────
-router.get('/servers/:id/files/download', requirePermission('files'), (req, res) => {
+router.get('/servers/:id/files/download', requireAnyPermission(['files', 'plugins']), (req, res) => {
   try {
-    const { target } = safePath(req.params.id, req.query.path);
+    const { target } = safePath(req, req.query.path);
     if (!fs.existsSync(target)) return res.status(404).json({ error: 'File not found' });
     if (fs.statSync(target).isDirectory()) return res.status(400).json({ error: 'Cannot download directory' });
     res.download(target);
@@ -974,7 +992,7 @@ router.get('/servers/:id/files/download', requirePermission('files'), (req, res)
 });
 
 // ── POST /api/servers/:id/files/archive ───────────────────────────────────────
-router.post('/servers/:id/files/archive', requirePermission('files'), express.json(), (req, res) => {
+router.post('/servers/:id/files/archive', requireAnyPermission(['files', 'plugins']), express.json(), (req, res) => {
   const { execFile } = require('child_process');
   try {
     let { action, path: userPath, paths } = req.body;
@@ -984,9 +1002,9 @@ router.post('/servers/:id/files/archive', requirePermission('files'), express.js
     if (paths && Array.isArray(paths) && action === 'compress') {
       if (paths.length === 0) return res.status(400).json({ error: 'No paths provided' });
       
-      const { target } = safePath(req.params.id, paths[0]);
+      const { target } = safePath(req, paths[0]);
       const parentDir = path.dirname(target);
-      const baseNames = paths.map(p => path.basename(safePath(req.params.id, p).target));
+      const baseNames = paths.map(p => path.basename(safePath(req, p).target));
       const archiveName = `archive_${Date.now()}.tar.gz`;
       const archivePath = path.join(parentDir, archiveName);
       
@@ -999,7 +1017,7 @@ router.post('/servers/:id/files/archive', requirePermission('files'), express.js
 
     if (!userPath) return res.status(400).json({ error: 'Path required.' });
 
-    const { target } = safePath(req.params.id, userPath);
+    const { target } = safePath(req, userPath);
     const parentDir = path.dirname(target);
     const baseName  = path.basename(target);
 
@@ -1494,3 +1512,4 @@ router.post('/servers/:id/geyser-port', requirePermission('settings'), (req, res
 });
 
 module.exports = router;
+
