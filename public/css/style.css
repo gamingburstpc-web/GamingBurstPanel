@@ -101,6 +101,7 @@
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{max-width:100vw;overflow-x:hidden;}
 html{font-size:16px;scroll-behavior:smooth;}
 body{
   font-family:'Inter',system-ui,sans-serif;
@@ -146,7 +147,7 @@ button,input,select,textarea{font-family:inherit;}
   backdrop-filter:blur(2px);
 }
 
-.main-content{flex:1;margin-left:var(--sidebar-w);padding:32px;}
+.main-content{flex:1;margin-left:var(--sidebar-w);padding:32px;min-width:0;display:flex;flex-direction:column;max-width:100%;}
 
 /* ── Hamburger ──────────────────────────────────────────────────────────────── */
 .hamburger{
@@ -412,7 +413,7 @@ button,input,select,textarea{font-family:inherit;}
   .sidebar-close{display:block;}
 
   /* Main fills full width */
-  .main-content{margin-left:0;padding:16px;width:100%;max-width:100vw;overflow-x:hidden;box-sizing:border-box;}
+  .main-content{margin-left:0;padding:16px;width:100%;max-width:100vw;overflow-x:hidden;}
 
   /* Show hamburger */
   .hamburger{display:flex;}
@@ -506,6 +507,7 @@ button,input,select,textarea{font-family:inherit;}
 .table {
   width: 100%;
   border-collapse: collapse;
+  min-width: 500px;
 }
 
 .table th, .table td {
@@ -527,6 +529,9 @@ button,input,select,textarea{font-family:inherit;}
 
 .table-responsive {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: 100%;
 }
 
 /* Grid Layouts */
