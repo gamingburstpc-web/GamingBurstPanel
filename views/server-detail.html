@@ -159,7 +159,7 @@
           </div>
           <div style="display:flex;gap:8px;">
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileUpload').click()">📤 Upload</button>
-            <input type="file" id="fileUpload" onchange="uploadFile(this.files[0])">
+            <input type="file" id="fileUpload" style="display:none;" onchange="uploadFile(this.files[0])">
             <button class="btn btn-primary btn-sm" onclick="newFile()">➕ New File</button>
             <button class="btn btn-ghost btn-sm" onclick="loadFiles()">↻ Refresh</button>
           </div>
@@ -210,7 +210,7 @@
           <div class="card-title">Plugin Manager</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <button class="btn btn-primary btn-sm admin-only" onclick="document.getElementById('pluginUploadInput').click()">📤 Upload File</button>
-            <input type="file" id="pluginUploadInput" accept=".jar" onchange="uploadPluginFile(event)">
+            <input type="file" id="pluginUploadInput" accept=".jar" style="display:none;" onchange="uploadPluginFile(event)">
             <button class="btn btn-secondary btn-sm admin-only" onclick="showDirectLinkUpload()">🔗 Direct URL</button>
           </div>
         </div>
