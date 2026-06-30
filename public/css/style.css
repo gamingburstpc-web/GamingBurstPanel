@@ -40,6 +40,7 @@
   --bg-surface:    #10151f;
   --bg-elevated:   #161d2a;
   --bg-card:       #121924;
+  --glass-bg:      rgba(16, 21, 31, 0.85);
 }
 
 [data-theme="green"] {
@@ -50,6 +51,7 @@
   --bg-surface:    #0e1814;
   --bg-elevated:   #14231d;
   --bg-card:       #111e18;
+  --glass-bg:      rgba(14, 24, 20, 0.85);
 }
 
 [data-theme="red"] {
@@ -60,6 +62,7 @@
   --bg-surface:    #1e0e0e;
   --bg-elevated:   #2a1414;
   --bg-card:       #221111;
+  --glass-bg:      rgba(30, 14, 14, 0.85);
 }
 
 [data-theme="purple"] {
@@ -70,6 +73,7 @@
   --bg-surface:    #160e1e;
   --bg-elevated:   #1f142a;
   --bg-card:       #1a1122;
+  --glass-bg:      rgba(22, 14, 30, 0.85);
 }
 
 [data-theme="orange"] {
@@ -80,6 +84,7 @@
   --bg-surface:    #1e170e;
   --bg-elevated:   #2a2014;
   --bg-card:       #221a11;
+  --glass-bg:      rgba(30, 23, 14, 0.85);
 }
 
 [data-theme="black"] {
@@ -92,6 +97,7 @@
   --bg-surface: #0a0a0a;
   --bg-elevated: #111111;
   --bg-card: #0d0d0d;
+  --glass-bg:      rgba(10, 10, 10, 0.85);
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -159,10 +165,10 @@ button,input,select,textarea{font-family:inherit;}
 .sidebar-logo{padding:22px 20px;border-bottom:1px solid var(--glass-border);display:flex;align-items:center;gap:12px;}
 .sidebar-logo .logo-icon{
   width:38px;height:38px;border-radius:11px;
-  background:var(--accent);
+  background:linear-gradient(135deg,#5b6eff,#a855f7);
   display:flex;align-items:center;justify-content:center;
   font-size:18px;flex-shrink:0;
-  box-shadow:0 4px 16px var(--accent-glow);
+  box-shadow:0 4px 16px rgba(91,110,255,0.4);
 }
 .sidebar-logo .logo-text{font-size:15px;font-weight:800;line-height:1.2;letter-spacing:-0.02em;}
 .sidebar-logo .logo-sub{font-size:11px;color:var(--text-muted);}
@@ -348,10 +354,10 @@ button,input,select,textarea{font-family:inherit;}
 .login-logo{text-align:center;margin-bottom:36px;}
 .login-logo .icon-wrap{
   width:64px;height:64px;border-radius:18px;
-  background:var(--accent);
+  background:linear-gradient(135deg,#5b6eff,#a855f7);
   display:inline-flex;align-items:center;justify-content:center;
   font-size:28px;margin-bottom:16px;
-  box-shadow:0 8px 40px var(--accent-glow);
+  box-shadow:0 8px 40px rgba(91,110,255,0.45);
 }
 .login-logo h1{font-size:24px;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em;}
 .login-logo p{color:var(--text-muted);font-size:13px;}
