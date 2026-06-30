@@ -130,7 +130,11 @@ function getSession(sessionId) {
   if (row.expires_at < Date.now()) { dbDelete(sessionId); return null; }
   // Slide the expiry window
   try { getDb().prepare('UPDATE sessions SET expires_at = ? WHERE id = ?').run(Date.now() + SESSION_TTL_MS, sessionId); } catch {}
-  try { return JSON.parse(row.data); } catch { return null; }
+  try {
+    const data = JSON.parse(row.data);
+    ramSessions.set(sessionId, { ...data, expiresAt: Date.now() + SESSION_TTL_MS });
+    return data;
+  } catch { return null; }
 }
 
 function destroySession(sessionId) {

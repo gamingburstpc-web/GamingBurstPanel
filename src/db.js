@@ -37,6 +37,7 @@ function getDb() {
     const raw = new _Database(DB_PATH);
     _db = wrapDb(raw);
     _db.exec('PRAGMA journal_mode = WAL');
+    _db.exec('PRAGMA busy_timeout = 5000');
     _db.exec('PRAGMA foreign_keys = ON');
     _db.exec('PRAGMA temp_store = MEMORY');
     _db.exec('PRAGMA cache_size = -8000');
