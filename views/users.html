@@ -33,9 +33,9 @@
     <nav class="sidebar-nav">
       <div class="nav-label">Navigation</div>
       <a href="/dashboard" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
-      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
-      <a href="/users" class="nav-item active" id="navUsers"><span class="nav-icon">👥</span> Users</a>
-      <a href="/rentals" class="nav-item" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer" style="display:none"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item active" id="navUsers" style="display:none"><span class="nav-icon">👥</span> Users</a>
+      <a href="/rentals" class="nav-item" id="navRentals" style="display:none"><span class="nav-icon">📅</span> Assigned Servers</a>
       <a href="#" class="nav-item" id="navUpdatePanel" style="display:none; color: var(--accent);" onclick="showUpdatePanelModal()">
         <span class="nav-icon">🔄</span> Update Panel
       </a>
@@ -229,6 +229,7 @@ fetch('/api/me').then(r=>r.json()).then(u=>{
 <script src="/public/js/users.js"></script>
 <script src="/public/js/nav.js?v=10"></script></body>
 </html>
+
 
 
 

@@ -25,9 +25,9 @@
     <nav class="sidebar-nav">
       <div class="nav-label">Navigation</div>
       <a href="/dashboard" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
-      <a href="/servers/new" class="nav-item" id="navNewServer"><span class="nav-icon">➕</span> New Server</a>
-      <a href="/users" class="nav-item" id="navUsers"><span class="nav-icon">👥</span> Users</a>
-      <a href="/rentals" class="nav-item" id="navRentals"><span class="nav-icon">📅</span> Assigned Servers</a>
+      <a href="/servers/new" class="nav-item" id="navNewServer" style="display:none"><span class="nav-icon">➕</span> New Server</a>
+      <a href="/users" class="nav-item" id="navUsers" style="display:none"><span class="nav-icon">👥</span> Users</a>
+      <a href="/rentals" class="nav-item" id="navRentals" style="display:none"><span class="nav-icon">📅</span> Assigned Servers</a>
       <a href="#" class="nav-item" id="navUpdatePanel" style="display:none; color: var(--accent);" onclick="showUpdatePanelModal()">
         <span class="nav-icon">🔄</span> Update Panel
       </a>
@@ -49,9 +49,9 @@
     </nav>
     <div class="sidebar-footer">
       <div class="user-info">
-        <div class="avatar" id="avatarInitial">A</div>
+        <div class="avatar" id="avatarInitial">?</div>
         <div>
-          <div style="font-weight:600;font-size:13px;color:var(--text-primary)" id="sidebarUsername">admin</div>
+          <div style="font-weight:600;font-size:13px;color:var(--text-primary)" id="sidebarUsername">...</div>
           <div id="sidebarRole" style="font-size:11px">Loading...</div>
         </div>
       </div>
@@ -169,6 +169,7 @@ fetch('/api/me').then(r=>r.json()).then(u=>{
 <script src="/public/js/dashboard.js"></script>
 <script src="/public/js/nav.js?v=10"></script></body>
 </html>
+
 
 
 
