@@ -34,7 +34,15 @@ function setupWs(httpServer) {
     // ── /ws/console/:serverId ─────────────────────────────────────────────
     const consoleMatch = url.match(/^\/ws\/console\/(\d+)$/);
     if (consoleMatch) {
-      const hasConsolePerm = sess.isAdmin || sess.permissions?.includes('console');
+      const p = sess.permissions || { global: [], servers: {} };
+      let hasConsolePerm = sess.isAdmin;
+      if (!hasConsolePerm) {
+        if (Array.isArray(p)) {
+          hasConsolePerm = p.includes('console');
+        } else {
+          hasConsolePerm = p.global?.includes('console') || (p.servers && p.servers[consoleMatch[1]]?.includes('console'));
+        }
+      }
       if (!hasConsolePerm) {
         ws.close(4003, 'Console access required');
         return;
