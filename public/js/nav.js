@@ -13,9 +13,9 @@
           if (el) el.style.display = 'flex';
         });
       }
+      const p = u.permissions || {};
       const hasRentals = u.isAdmin ||
-        u.permissions?.global?.includes('manage_rentals') ||
-        (u.permissions?.servers && Object.keys(u.permissions.servers).length > 0);
+        (Array.isArray(p) ? p.includes('manage_rentals') : p.global?.includes('manage_rentals'));
       if (hasRentals) {
         const el = document.getElementById('navRentals');
         if (el) el.style.display = 'flex';
