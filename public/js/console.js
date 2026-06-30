@@ -199,36 +199,8 @@ async function loadServer() {
   document.getElementById('metRamMax').textContent  = `/ ${serverData.memory_max} MB`;
   
   if (serverData.expire_at) {
-    const vc = document.getElementById('validityCard');
-    if (vc) {
-      vc.style.display = 'flex';
-      vc.style.flexDirection = 'column';
-      const diffMs = serverData.expire_at - Date.now();
-      const metVal = document.getElementById('metValidity');
-      
-      if (diffMs <= 0) {
-        metVal.textContent = 'Expired';
-        metVal.style.color = 'var(--red)';
-      } else {
-        const hours = Math.floor(diffMs / (1000 * 60 * 60));
-        if (hours < 24) {
-          const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-          metVal.textContent = `${hours}h ${mins}m`;
-          metVal.style.color = 'var(--red)';
-        } else {
-          const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-          metVal.textContent = `${diffDays} Days`;
-          if (diffDays <= 3) metVal.style.color = 'var(--yellow)';
-          else metVal.style.color = 'var(--green)';
-        }
-      }
-
-      if (serverData.delete_after !== null && serverData.delete_after !== undefined) {
-        document.getElementById('metDeletionWarning').textContent = `Auto-deletes ${serverData.delete_after} day(s) after expiration`;
-      } else {
-        document.getElementById('metDeletionWarning').textContent = 'No auto-deletion set';
-      }
-    }
+    updateValidity();
+    setInterval(updateValidity, 1000);
   }
 
   if (serverData.jar_path && serverData.jar_path.toLowerCase().includes('vanilla')) {
@@ -377,6 +349,56 @@ async function deleteServer() {
 }
 
 // ── Collision Modal ───────────────────────────────────────────────────────────
+
+function updateValidity() {
+  if (!serverData || !serverData.expire_at) return;
+  const vc = document.getElementById('validityCard');
+  if (!vc) return;
+  
+  vc.style.display = 'flex';
+  vc.style.flexDirection = 'column';
+  
+  const diffMs = serverData.expire_at - Date.now();
+  const metVal = document.getElementById('metValidity');
+  const exactEl = document.getElementById('metExactExpiration');
+  
+  // Update exact expiration text
+  if (exactEl) {
+    const expDate = new Date(serverData.expire_at);
+    const dateStr = expDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const timeStr = expDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    exactEl.textContent = `Expires on: ${dateStr}, ${timeStr}`;
+  }
+  
+  if (diffMs <= 0) {
+    metVal.textContent = 'Expired';
+    metVal.style.color = 'var(--red)';
+    if (!currentUser?.isAdmin && !serverData.is_expired) {
+      serverData.is_expired = true;
+      location.reload(); // Force reload to show overlay if it expired while they were on the page
+    }
+  } else {
+    const hours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (hours < 24) {
+      const mins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const secs = Math.floor((diffMs % (1000 * 60)) / 1000);
+      metVal.textContent = `${hours}h ${mins}m ${secs}s`;
+      metVal.style.color = 'var(--red)';
+    } else {
+      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      metVal.textContent = `${diffDays} Days`;
+      if (diffDays <= 3) metVal.style.color = 'var(--yellow)';
+      else metVal.style.color = 'var(--green)';
+    }
+  }
+
+  if (serverData.delete_after !== null && serverData.delete_after !== undefined) {
+    document.getElementById('metDeletionWarning').textContent = `Auto-deletes ${serverData.delete_after} day(s) after expiration`;
+  } else {
+    document.getElementById('metDeletionWarning').textContent = 'No auto-deletion set';
+  }
+}
+
 function showCollisionModal(data) {
   const modal = document.getElementById('collisionModal');
   if (modal) {

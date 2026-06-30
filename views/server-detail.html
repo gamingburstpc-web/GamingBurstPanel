@@ -9,6 +9,14 @@
 </head>
 <body>
 <div class="layout">
+  <!-- Subscription Expired Overlay -->
+  <div id="subscriptionOverlay" class="hidden" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(13,17,23,0.95);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;">⏳</div>
+    <h2 style="color:var(--text-primary);margin-bottom:12px;font-size:24px;">Subscription Expired</h2>
+    <p style="color:var(--text-secondary);max-width:400px;line-height:1.6;">
+      Please contact your Provider to extend your subscription.<br><br>Thank you for playing!
+    </p>
+  </div>
   <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
   <aside class="sidebar" id="sidebar">
     <div class="sidebar-logo">
@@ -106,6 +114,7 @@
       <div class="metric-card" id="validityCard" style="display:none;">
         <div class="metric-label">Server Validity</div>
         <div><span class="metric-value" id="metValidity" style="font-size:1.5rem">--</span></div>
+        <div class="text-muted text-sm" style="margin-top:2px; font-weight: 500;" id="metExactExpiration"></div>
         <div class="text-muted text-sm" style="margin-top:6px" id="metDeletionWarning"></div>
       </div>
     </div>
