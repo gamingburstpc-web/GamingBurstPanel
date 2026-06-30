@@ -166,6 +166,13 @@ async function loadServer() {
   const res = await fetch(`/api/servers/${serverId}`);
   if (!res.ok) { location.href = '/dashboard'; return; }
   serverData = await res.json();
+  
+  const initialLoader = document.getElementById('initialLoadingOverlay');
+  if (initialLoader) {
+    initialLoader.style.opacity = '0';
+    initialLoader.style.visibility = 'hidden';
+    setTimeout(() => initialLoader.remove(), 400);
+  }
 
   document.title = `${serverData.name} — GamingBurst Panel`;
   document.getElementById('pageTitle').textContent  = serverData.name;
