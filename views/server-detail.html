@@ -209,9 +209,9 @@
         <div class="card-header">
           <div class="card-title">Plugin Manager</div>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-primary btn-sm admin-only" onclick="document.getElementById('pluginUploadInput').click()">📤 Upload File</button>
+            <button class="btn btn-primary btn-sm" onclick="document.getElementById('pluginUploadInput').click()">📤 Upload File</button>
             <input type="file" id="pluginUploadInput" accept=".jar" style="display:none;" onchange="uploadPluginFile(event)">
-            <button class="btn btn-secondary btn-sm admin-only" onclick="showDirectLinkUpload()">🔗 Direct URL</button>
+            <button class="btn btn-secondary btn-sm" onclick="showDirectLinkUpload()">🔗 Direct URL</button>
           </div>
         </div>
         
@@ -220,7 +220,7 @@
           <div class="progress-track"><div class="progress-fill" id="pluginProgressBar" style="width:0%"></div></div>
         </div>
         
-        <div class="form-group admin-only" style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="form-group" style="display:flex;gap:8px;flex-wrap:wrap">
           <input type="text" id="pluginSearchInput" class="form-input" placeholder="Search plugins..." style="flex:1;min-width:200px" onkeydown="if(event.key==='Enter') searchPlugins('modrinth')">
           <select id="pluginSortType" class="form-select" style="width:140px">
             <option value="">Any Type</option>
@@ -248,7 +248,7 @@
             Release Only
           </label>
           <button class="btn btn-primary" onclick="searchPlugins('modrinth')">Search Modrinth (Bukkit)</button>
-          <button class="btn btn-success" onclick="searchPlugins('hangar')">Search Hangar (Paper/Purpur)</button>
+          <button class="btn btn-success" onclick="searchPlugins('hangar')">Search Hangar (Paper)</button>
         </div>
         
         <div id="pluginProgressContainer" class="hidden mb-4 p-3" style="background:var(--bg-elevated);border-radius:8px;border:1px solid var(--border)">

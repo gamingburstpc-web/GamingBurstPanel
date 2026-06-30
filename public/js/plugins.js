@@ -45,7 +45,7 @@ async function loadInstalledPlugins() {
           <div style="font-weight:600;font-size:14px">${p.name}</div>
           <div style="font-size:12px;color:var(--text-muted)">${formatSize(p.size)}</div>
         </div>
-        <button class="btn btn-danger btn-sm admin-only" onclick="deletePlugin('${p.name}')">🗑 Delete</button>
+        <button class="btn btn-danger btn-sm" onclick="deletePlugin('${p.name}')">🗑 Delete</button>
       </div>
     `).join('');
   } catch(e) {
@@ -107,7 +107,7 @@ async function searchPlugins(provider = 'modrinth') {
               </div>
               <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${hit.description}</div>
             </div>
-            <button class="btn btn-primary btn-sm admin-only" onclick="installModrinthPlugin('${hit.project_id}')">⬇ Add to Server</button>
+            <button class="btn btn-primary btn-sm" onclick="installModrinthPlugin('${hit.project_id}')">⬇ Add to Server</button>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
             ${hit.categories.filter(c => ['spigot','paper','bukkit'].includes(c)).map(c => `<span class="badge" style="background:rgba(91,110,255,0.1);color:var(--accent)">${c}</span>`).join('')}
@@ -141,7 +141,7 @@ async function searchPlugins(provider = 'modrinth') {
               </div>
               <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${hit.description}</div>
             </div>
-            <button class="btn btn-success btn-sm admin-only" onclick="installHangarPlugin('${hit.namespace.owner}', '${hit.namespace.slug}')">⬇ Add to Server</button>
+            <button class="btn btn-success btn-sm" onclick="installHangarPlugin('${hit.namespace.owner}', '${hit.namespace.slug}')">⬇ Add to Server</button>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
             <span class="badge" style="background:rgba(34,197,94,0.1);color:var(--green)">${hit.category}</span>
