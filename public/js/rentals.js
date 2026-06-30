@@ -4,10 +4,11 @@ let editServerId = null;
 
 async function fetchInitialData() {
   try {
+    const ts = Date.now();
     const [meRes, sRes, uRes] = await Promise.all([
-      fetch('/api/me'),
-      fetch('/api/servers'),
-      fetch('/api/users')
+      fetch(`/api/me?_t=${ts}`),
+      fetch(`/api/servers?_t=${ts}`),
+      fetch(`/api/users?_t=${ts}`)
     ]);
     const me = await meRes.json();
     if (me.username) {
@@ -153,7 +154,7 @@ function openManageForm(id) {
     }
   } else {
     // Default perms for new assignment
-    const defaults = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+    const defaults = ['start', 'stop', 'restart', 'console', 'files', 'plugins', 'playit', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
     document.querySelectorAll('.s-perm-cb').forEach(cb => {
       if (defaults.includes(cb.value)) cb.checked = true;
     });
@@ -209,7 +210,7 @@ function addSubUserBlock(existingUserId = null, existingPerms = []) {
   grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(130px, 1fr))';
   grid.style.gap = '12px';
   
-  const perms = ['start', 'stop', 'restart', 'console', 'files', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
+  const perms = ['start', 'stop', 'restart', 'console', 'files', 'plugins', 'playit', 'settings', 'players', 'kick', 'ban', 'coordinates', 'delete'];
   perms.forEach(p => {
     const lbl = document.createElement('label');
     lbl.style.display = 'flex';
