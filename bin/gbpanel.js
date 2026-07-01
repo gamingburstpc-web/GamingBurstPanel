@@ -499,6 +499,11 @@ async function main() {
   } else if (cmd === 'server') {
     if (sub === 'list')  return await cmdServerList();
     if (sub === 'path')  return await cmdServerPath(rest[0]);
+  } else if (cmd === 'timezone') {
+    if (sub === 'config') {
+      const { cmdTimezoneConfig } = require('./timezoneMenu');
+      return await cmdTimezoneConfig(ask, print, C, success, error);
+    }
   }
 
   // Help
