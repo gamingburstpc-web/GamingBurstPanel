@@ -603,11 +603,20 @@ router.post('/servers/:id/start', requirePermission('start'), (req, res) => {
   try {
     const db = getDb();
     const id = parseInt(req.params.id, 10);
-    const server = db.prepare('SELECT name, server_dir, port, expire_at FROM servers WHERE id = ?').get(id);
+    const server = db.prepare('SELECT name, server_dir, port, expire_at, disk_limit FROM servers WHERE id = ?').get(id);
     if (!server) return res.status(404).json({ error: 'Server not found' });
     
     if (server.expire_at && Date.now() > server.expire_at) {
       return res.status(403).json({ error: 'Subscription ended. Cannot start server.' });
+    }
+
+    if (server.disk_limit && server.disk_limit > 0) {
+      const diskUsage = getDirSizeSync(server.server_dir);
+      const limitBytes = server.disk_limit * 1024 * 1024;
+      // Stop start if within 5 MB of limit
+      if (diskUsage >= limitBytes - (5 * 1024 * 1024)) {
+        return res.status(403).json({ error: 'Server Disk Almost Full Delete Some Useless files to free' });
+      }
     }
 
     // Geyser Port Collision Check
@@ -1542,4 +1551,35 @@ router.post('/servers/:id/geyser-port', requirePermission('settings'), (req, res
 });
 
 module.exports = router;
+
+// ── Disk Space Monitor (Safety Mechanism) ────────────────────────────────────
+setInterval(() => {
+  try {
+    const db = getDb();
+    const serversWithLimit = db.prepare('SELECT id, server_dir, disk_limit, name FROM servers WHERE disk_limit > 0').all();
+    for (const server of serversWithLimit) {
+      if (pm.isRunning(server.id)) {
+        try {
+          const diskUsage = getDirSizeSync(server.server_dir);
+          const limitBytes = server.disk_limit * 1024 * 1024;
+          // Stop server if within 5 MB of limit
+          if (diskUsage >= limitBytes - (5 * 1024 * 1024)) {
+            console.warn(`[Safety] Server '${server.name}' (ID: ${server.id}) is about to hit its disk limit. Auto-stopping...`);
+            pm.stopServer(server.id);
+            // Optionally broadcast a message to the console
+            const emitter = pm.getEmitter(server.id);
+            if (emitter) {
+              emitter.emit('line', `\n[Safety System] Server Disk Almost Full. Auto-stopping to prevent corruption. Delete Some Useless files to free space.`);
+            }
+          }
+        } catch (e) {
+          console.error(`[Safety] Failed to check disk limit for server ${server.id}:`, e.message);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Safety] Disk monitor error:', err.message);
+  }
+}, 30000); // Check every 30 seconds
+
 
