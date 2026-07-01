@@ -7,6 +7,9 @@
     .then(r => r.ok ? r.json() : null)
     .then(u => {
       if (!u) return;
+      if (document.getElementById('sidebarUsername')) document.getElementById('sidebarUsername').textContent = u.username;
+      if (document.getElementById('avatarInitial')) document.getElementById('avatarInitial').textContent = u.username[0].toUpperCase();
+      if (document.getElementById('sidebarRole')) document.getElementById('sidebarRole').textContent = u.isAdmin ? 'Administrator' : 'User';
       if (u.isAdmin) {
         ['navNewServer', 'navUsers', 'navUpdatePanel'].forEach(id => {
           const el = document.getElementById(id);
