@@ -4,6 +4,13 @@ An ultra-lightweight, high-performance monolithic control panel for managing Min
 
 ---
 
+## 📜 License & Promotion
+
+This project is licensed under the **GNU General Public License v3.0**. 
+You are completely free to make YouTube videos, tutorials, or promote this panel/project! However, if you do, **you must give credit to the original developer (GamingBurst007)** and link back to this repository. You may not claim this work as your own or sell it as a closed-source product.
+
+---
+
 ## 🚀 One-Line Installation
 
 Run this command on your fresh Ubuntu 22.04 or Debian 12 VPS to automatically install Node.js, Java 21, configure the panel daemon, setup global commands, and open the firewall ports:
