@@ -76,7 +76,8 @@ const SCHEMA = `
     owner_id     INTEGER DEFAULT NULL,
     expire_at    INTEGER DEFAULT NULL,
     delete_after INTEGER DEFAULT NULL,
-    bedrock_port INTEGER DEFAULT NULL
+    bedrock_port INTEGER DEFAULT NULL,
+    disk_limit   INTEGER DEFAULT 0
   );
   CREATE INDEX IF NOT EXISTS idx_servers_status ON servers(status);
   CREATE INDEX IF NOT EXISTS idx_servers_port   ON servers(port);
@@ -100,6 +101,7 @@ function runMigrations(db) {
   try { db.exec('ALTER TABLE servers ADD COLUMN expire_at INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN delete_after INTEGER DEFAULT NULL'); } catch {}
   try { db.exec('ALTER TABLE servers ADD COLUMN bedrock_port INTEGER DEFAULT NULL'); } catch {}
+  try { db.exec('ALTER TABLE servers ADD COLUMN disk_limit INTEGER DEFAULT 0'); } catch {}
   // Sessions table — created here so it works on existing databases that predate the SCHEMA addition
   try {
     db.exec(`
