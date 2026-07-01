@@ -287,6 +287,34 @@ async function updateServerRam() {
   }
 }
 
+async function updateServerDisk() {
+  const diskVal = document.getElementById('settingsDiskInput').value;
+  const disk_limit = diskVal ? parseInt(diskVal, 10) : 0;
+  
+  const btn = document.getElementById('btnSaveDisk');
+  const originalText = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Saving...';
+  
+  try {
+    const res = await fetch(`/api/servers/${serverId}/settings/disk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ disk_limit })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      window.showAlert('Disk limit updated successfully.');
+      if (typeof loadServer === 'function') loadServer(); // Refresh UI
+    } else {
+      window.showAlert(data.error || 'Failed to update Disk Limit.');
+    }
+  } catch (err) {
+    window.showAlert(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = originalText;
+  }
+}
+
 async function randomizeSettingsPort(inputId) {
   try {
     const res = await fetch('/api/servers/next-port');

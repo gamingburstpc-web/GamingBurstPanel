@@ -473,7 +473,8 @@ router.post('/servers', requireAdmin, async (req, res) => {
       platform = 'java', software = 'paper', version = 'latest',
       port, memory_min, memory_max,
       jar_path, jvm_flags, env_tz, env_custom,
-      download_url // Custom fallback URL
+      download_url, // Custom fallback URL
+      disk_limit
     } = req.body;
 
     if (!name?.trim()) return res.status(400).json({ error: 'Server name is required.' });
@@ -495,6 +496,7 @@ router.post('/servers', requireAdmin, async (req, res) => {
     let finalPort      = port        ? parseInt(port, 10)        : pm.getNextAvailablePort();
     let finalMemMin    = memory_min  ? parseInt(memory_min, 10)  : 1024;
     let finalMemMax    = memory_max  ? parseInt(memory_max, 10)  : (mode === 'basic' ? 4096 : 2048);
+    let finalDiskLimit = disk_limit  ? parseInt(disk_limit, 10)  : 0;
     let finalJar       = jar_path?.trim() || null;
     let finalJvmFlags  = jvm_flags?.trim() || '';
     let finalTz        = env_tz?.trim()    || (process.env.DEFAULT_TZ || 'Asia/Kolkata');
@@ -549,9 +551,9 @@ router.post('/servers', requireAdmin, async (req, res) => {
 
       send({ msg: 'Download complete. Creating server...' });
       const info = db.prepare(`
-        INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
-        VALUES (?,?,?,?,?,?,?,?,?)
-      `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
+        INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir,disk_limit)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+      `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir, finalDiskLimit);
       
       send({ msg: `Server "${safeName}" ready on port ${finalPort}!` });
       res.write(`data: ${JSON.stringify({ done: true, id: info.lastInsertRowid })}\n\n`);
@@ -563,9 +565,9 @@ router.post('/servers', requireAdmin, async (req, res) => {
       return res.status(400).json({ error: `Executable not found at: ${finalJar}` });
     }
     const info = db.prepare(`
-      INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir)
-      VALUES (?,?,?,?,?,?,?,?,?)
-    `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir);
+      INSERT INTO servers (name,port,memory_min,memory_max,jar_path,jvm_flags,env_tz,env_custom,server_dir,disk_limit)
+      VALUES (?,?,?,?,?,?,?,?,?,?)
+    `).run(safeName, finalPort, finalMemMin, finalMemMax, finalJar, finalJvmFlags, finalTz, finalEnvCustom, serverDir, finalDiskLimit);
     
     res.json({ id: info.lastInsertRowid, name: safeName, port: finalPort });
 
@@ -732,7 +734,7 @@ router.post('/system/update', requireAdmin, async (req, res) => {
 // ── File Manager Helpers ──────────────────────────────────────────────────────
 function safePath(req, userPath) {
   const serverId = req.params.id;
-  const server = getDb().prepare('SELECT server_dir FROM servers WHERE id = ?').get(serverId);
+  const server = getDb().prepare('SELECT * FROM servers WHERE id = ?').get(serverId);
   if (!server) throw new Error('Server not found');
   const baseDir = path.resolve(server.server_dir);
   const target  = path.resolve(baseDir, userPath || '');
@@ -754,7 +756,7 @@ function safePath(req, userPath) {
     }
   }
 
-  return { baseDir, target };
+  return { baseDir, target, server };
 }
 
 // ── GET /api/servers/:id/files ────────────────────────────────────────────────
@@ -802,7 +804,15 @@ router.put('/servers/:id/files/content', requireAnyPermission(['files', 'plugins
 // ── POST /api/servers/:id/files/upload ────────────────────────────────────────
 router.post('/servers/:id/files/upload', requireAnyPermission(['files', 'plugins']), express.raw({ type: '*/*', limit: '500mb' }), (req, res) => {
   try {
-    const { target } = safePath(req, req.query.path);
+    const { target, server } = safePath(req, req.query.path);
+    
+    if (server.disk_limit > 0) {
+      const usage = getDirSizeSync(server.server_dir);
+      if (usage + req.body.length > server.disk_limit * 1024 * 1024) {
+        return res.status(400).json({ error: 'Upload blocked: Server disk quota exceeded.' });
+      }
+    }
+    
     fs.writeFileSync(target, req.body);
     res.json({ ok: true });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -1412,6 +1422,26 @@ router.post('/servers/:id/settings/ram', requirePermission('settings'), express.
   
   try {
     getDb().prepare('UPDATE servers SET memory_max = ?, memory_min = ? WHERE id = ?').run(ram, ram, serverId);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/servers/:id/settings/disk', requirePermission('settings'), express.json(), (req, res) => {
+  const serverId = parseInt(req.params.id, 10);
+  const { disk_limit } = req.body;
+  
+  let finalLimit = 0;
+  if (disk_limit !== undefined && disk_limit !== null && disk_limit !== '') {
+    finalLimit = parseInt(disk_limit, 10);
+    if (isNaN(finalLimit) || finalLimit < 0) {
+      return res.status(400).json({ error: 'Disk Limit must be a valid positive number or 0 for unlimited.' });
+    }
+  }
+
+  try {
+    getDb().prepare('UPDATE servers SET disk_limit = ? WHERE id = ?').run(finalLimit, serverId);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

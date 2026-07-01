@@ -76,6 +76,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
       port:       document.getElementById('advPort').value     || undefined,
       memory_min: document.getElementById('advMemMax').value  || 2048,
       memory_max: document.getElementById('advMemMax').value  || 2048,
+      disk_limit: document.getElementById('advDiskLimit').value || undefined,
       jar_path:   jar || undefined,
       jvm_flags:  document.getElementById('advJvmFlags').value.trim(),
       env_tz:     document.getElementById('advTz').value.trim() || 'Asia/Kolkata',

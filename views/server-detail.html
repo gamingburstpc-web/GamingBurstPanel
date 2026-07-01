@@ -122,7 +122,7 @@
           <span>Disk Space</span>
           <span class="text-muted text-sm" style="font-weight:normal">Server</span>
         </div>
-        <div><span class="metric-value" id="metDisk">0</span><span class="metric-unit" id="metDiskUnit">MB</span></div>
+        <div><span class="metric-value" id="metDisk">0</span><span class="metric-unit" id="metDiskUnit">MB</span><span class="metric-unit" id="metDiskMax" style="margin-left:4px; opacity:0.8;"></span></div>
         <div class="text-muted text-sm" style="margin-top:6px" id="metVpsDisk">VPS: --</div>
         <div class="progress-track mt-2"><div class="progress-fill" id="diskBar" style="width:0%"></div></div>
       </div>
@@ -422,6 +422,16 @@
             <div style="display:flex; gap:10px; align-items:center;">
               <input type="number" id="settingsRamInput" class="form-input" style="flex:1; max-width:200px;" placeholder="e.g. 2048">
               <button class="btn btn-primary" onclick="updateServerRam()" id="btnSaveRam" style="flex:0 0 auto;">Save RAM</button>
+            </div>
+          </div>
+
+          <!-- Disk Space -->
+          <div class="form-group admin-only-block" id="adminDiskGroup" style="margin-top:24px;">
+            <label>Disk Space Limit (MB)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Maximum disk space this server can use. Leave blank or 0 for unlimited.</p>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="number" id="settingsDiskInput" class="form-input" style="flex:1; max-width:200px;" placeholder="Unlimited" min="0">
+              <button class="btn btn-primary" onclick="updateServerDisk()" id="btnSaveDisk" style="flex:0 0 auto;">Save Limit</button>
             </div>
           </div>
 

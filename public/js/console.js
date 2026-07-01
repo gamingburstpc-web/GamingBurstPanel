@@ -231,22 +231,51 @@ async function loadServer() {
   document.getElementById('metDisk').textContent = svrDiskVal;
   document.getElementById('metDiskUnit').textContent = svrDiskUnit;
 
+  let maxDiskText = '/ Unlimited';
+  let diskPct = 0;
+  if (serverData.disk_limit > 0) {
+    const [limitVal, limitUnit] = formatBytes(serverData.disk_limit * 1024 * 1024);
+    maxDiskText = `/ ${limitVal} ${limitUnit}`;
+    diskPct = Math.min(Math.round((serverData.disk_usage / (serverData.disk_limit * 1024 * 1024)) * 100), 100);
+  }
+  const metDiskMax = document.getElementById('metDiskMax');
+  if (metDiskMax) metDiskMax.textContent = maxDiskText;
+
+  if (document.getElementById('settingsDiskInput')) {
+    document.getElementById('settingsDiskInput').value = serverData.disk_limit > 0 ? serverData.disk_limit : '';
+  }
+
+  // Update progress bar
+  const db = document.getElementById('diskBar');
+  if (db && db.parentElement) {
+    if (serverData.disk_limit > 0) {
+      db.parentElement.style.display = 'block';
+      db.style.width = diskPct + '%';
+      db.className = 'progress-fill' + (diskPct > 90 ? ' crit' : '');
+    } else if (!currentUser?.isAdmin) {
+      // If unlimited and not admin, hide the bar
+      db.parentElement.style.display = 'none';
+    }
+  }
+
   if (currentUser?.isAdmin) {
     const [vpsDiskUsedVal, vpsDiskUsedUnit] = formatBytes(serverData.vps_disk_used || 0);
     const [vpsDiskTotalVal, vpsDiskTotalUnit] = formatBytes(serverData.vps_disk_total || 0);
     document.getElementById('metVpsDisk').textContent = `VPS: ${vpsDiskUsedVal} ${vpsDiskUsedUnit} / ${vpsDiskTotalVal} ${vpsDiskTotalUnit}`;
     
-    const vpsDiskPct = serverData.vps_disk_total ? Math.min(Math.round((serverData.vps_disk_used / serverData.vps_disk_total) * 100), 100) : 0;
-    const db = document.getElementById('diskBar');
-    if (db) { db.style.width = vpsDiskPct + '%'; db.className = 'progress-fill' + (vpsDiskPct > 90 ? ' crit' : ''); }
+    // Only use VPS stats for the bar if there is no server limit
+    if (db && (!serverData.disk_limit || serverData.disk_limit === 0)) {
+      const vpsDiskPct = serverData.vps_disk_total ? Math.min(Math.round((serverData.vps_disk_used / serverData.vps_disk_total) * 100), 100) : 0;
+      db.parentElement.style.display = 'block';
+      db.style.width = vpsDiskPct + '%';
+      db.className = 'progress-fill' + (vpsDiskPct > 90 ? ' crit' : '');
+    }
 
     const [vpsRamUsedVal, vpsRamUsedUnit] = formatBytes(serverData.vps_ram_used || 0);
     const [vpsRamTotalVal, vpsRamTotalUnit] = formatBytes(serverData.vps_ram_total || 0);
     document.getElementById('metVpsRam').textContent = `VPS: ${vpsRamUsedVal} ${vpsRamUsedUnit} / ${vpsRamTotalVal} ${vpsRamTotalUnit}`;
   } else {
     document.getElementById('metVpsDisk').style.display = 'none';
-    const db = document.getElementById('diskBar');
-    if (db && db.parentElement) db.parentElement.style.display = 'none';
     document.getElementById('metVpsRam').style.display = 'none';
   }
 
