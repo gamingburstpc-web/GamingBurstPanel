@@ -35,6 +35,10 @@ while true; do
     echo -e "\033[1;31m14)\033[0m Uninstall Panel & Delete All Data"
     echo -e "\033[1;31m0)\033[0m Exit"
     echo -e "\033[1;34m==========================================\033[0m"
+    echo -e "\033[1;36mDeveloped & Maintained by GamingBurst007\033[0m"
+    echo -e "\033[0;36mYouTube: https://youtube.com/@gamingburst007\033[0m"
+    echo -e "\033[0;36mDiscord: https://discord.gg/JZ7nwxTaNs\033[0m"
+    echo -e "\033[1;34m==========================================\033[0m"
     read -p "Select an option [0-14]: " option
 
     echo ""

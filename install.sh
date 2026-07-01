@@ -197,3 +197,15 @@ echo -e "  3. You can manage the panel service using standard commands:"
 echo -e "     ${C_BOLD}systemctl status gbpanel${C_RESET}"
 echo -e "     ${C_BOLD}systemctl restart gbpanel${C_RESET}"
 echo -e ""
+echo -e "${C_CYAN}========================================================================${C_RESET}"
+echo -e "${C_BOLD}Designed, developed, and fully maintained by GamingBurst007.${C_RESET}"
+echo -e "I'm a beginner solo coder, so please show your support for more amazing projects like this!"
+echo -e "YouTube: ${C_BLUE}https://www.youtube.com/@gamingburst007${C_RESET}"
+echo -e "Discord: ${C_BLUE}https://discord.gg/JZ7nwxTaNs${C_RESET}"
+echo -e "${C_CYAN}========================================================================${C_RESET}"
+
+if command -v python3 &> /dev/null; then
+    python3 -m webbrowser "https://www.youtube.com/@gamingburst007" 2>/dev/null &
+elif command -v xdg-open &> /dev/null; then
+    xdg-open "https://www.youtube.com/@gamingburst007" 2>/dev/null &
+fi
