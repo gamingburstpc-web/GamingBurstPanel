@@ -62,11 +62,15 @@ async function loadSettings() {
       if (document.getElementById('settingsJavaPort')) {
         document.getElementById('settingsJavaPort').value = serverData.port || '';
       }
-      if (serverData.geyser_installed || serverData.bedrock_port) {
-        const bedrockGroup = document.getElementById('settingsGeyserPortGroup');
-        if (bedrockGroup) bedrockGroup.style.display = 'block';
-        const bedrockInput = document.getElementById('settingsGeyserPort');
-        if (bedrockInput) bedrockInput.value = serverData.bedrock_port || '';
+      const bedrockGroup = document.getElementById('settingsGeyserPortGroup');
+      if (bedrockGroup) {
+        if (serverData.geyser_installed) {
+          bedrockGroup.style.display = 'block';
+          const bedrockInput = document.getElementById('settingsGeyserPort');
+          if (bedrockInput) bedrockInput.value = serverData.bedrock_port || '';
+        } else {
+          bedrockGroup.style.display = 'none';
+        }
       }
 
     }
