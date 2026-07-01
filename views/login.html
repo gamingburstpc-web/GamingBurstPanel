@@ -58,73 +58,113 @@
 </div>
 
 <!-- Update Panel Modal -->
-<div id="updatePanelModal" class="sidebar-overlay" style="display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);">
-  <div class="card" style="width:90%;max-width:400px;border:1px solid rgba(255,255,255,0.1);position:relative;">
-    <button class="sidebar-close" style="position:absolute;top:16px;right:16px" onclick="closeUpdatePanelModal()" id="updatePanelCloseBtn">✕</button>
-    <div class="card-header" style="border-bottom:none;padding-bottom:0;"><div class="card-title">Update Panel</div></div>
-    
-    <div style="margin-top:16px;font-size:14px;line-height:1.5;">
-      <span style="font-size:24px;display:block;margin-bottom:8px;">⚠️</span>
-      <span id="updatePanelMessage">It will update the panel. Running servers will be safely stopped and need to be started again once updated. Are you sure you want to proceed?</span>
-    </div>
-    
-    <div style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:10px;">
-      <button class="btn btn-secondary" style="flex:1;" onclick="closeUpdatePanelModal()" id="updatePanelCancelBtn">Cancel</button>
-      <button class="btn btn-primary" style="flex:1;background:var(--accent);" onclick="confirmUpdatePanel()" id="updatePanelConfirmBtn">Confirm Update</button>
+  <div id="updatePanelModal" class="sidebar-overlay" style="display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);">
+    <div class="card" style="width:90%;max-width:400px;border:1px solid rgba(255,255,255,0.1);position:relative;">
+      <button class="sidebar-close" style="position:absolute;top:16px;right:16px" onclick="closeUpdatePanelModal()" id="updatePanelCloseBtn">✕</button>
+      <div class="card-header" style="border-bottom:none;padding-bottom:0;"><div class="card-title" id="updatePanelTitle">Check for Update</div></div>
+      
+      <div style="margin-top:16px;font-size:14px;line-height:1.5;">
+        <span id="updatePanelIcon" style="font-size:24px;display:block;margin-bottom:8px;">🔍</span>
+        <span id="updatePanelMessage">Checking if a new version of GamingBurst Panel is available...</span>
+      </div>
+      
+      <div id="updatePanelActions" style="margin-top:24px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.1);display:flex;gap:10px;">
+        <button class="btn btn-secondary" style="flex:1;" onclick="closeUpdatePanelModal()" id="updatePanelCancelBtn" style="display:none;">Close</button>
+        <button class="btn btn-primary" style="flex:1;background:var(--accent);display:none;" onclick="confirmUpdatePanel()" id="updatePanelConfirmBtn">Update Now</button>
+      </div>
     </div>
   </div>
-</div>
-
-<script>
-function showUpdatePanelModal() { document.getElementById('updatePanelModal').style.display = 'flex'; }
-function closeUpdatePanelModal() { document.getElementById('updatePanelModal').style.display = 'none'; }
-
-async function confirmUpdatePanel() {
-  const btn = document.getElementById('updatePanelConfirmBtn');
-  const cancelBtn = document.getElementById('updatePanelCancelBtn');
-  const closeBtn = document.getElementById('updatePanelCloseBtn');
-  const msg = document.getElementById('updatePanelMessage');
-  
-  btn.disabled = true; 
-  cancelBtn.disabled = true; 
-  closeBtn.style.display = 'none';
-  
-  msg.innerHTML = 'Initiating update...<br><br><span style="color:var(--text-muted)">Please wait while servers are safely stopped and panel restarts. Do not close this page.</span>';
-  btn.innerText = 'Updating...';
-  
-  try {
-    const res = await fetch('/api/system/update', { method: 'POST' });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to update');
+  <script>
+async function showUpdatePanelModal() { 
+    document.getElementById('updatePanelModal').style.display = 'flex'; 
+    const title = document.getElementById('updatePanelTitle');
+    const msg = document.getElementById('updatePanelMessage');
+    const icon = document.getElementById('updatePanelIcon');
+    const cancelBtn = document.getElementById('updatePanelCancelBtn');
+    const confirmBtn = document.getElementById('updatePanelConfirmBtn');
     
-    // Start polling ping
-    msg.innerHTML = 'Servers are stopping safely. Panel is updating...<br><br><span style="color:var(--text-muted)">Waiting for panel to come back online...</span>';
+    title.innerText = 'Check for Update';
+    icon.innerText = '🔍';
+    msg.innerHTML = 'Checking if a new version of GamingBurst Panel is available...<br><br><span style="color:var(--text-muted)">Please wait...</span>';
+    cancelBtn.style.display = 'none';
+    confirmBtn.style.display = 'none';
+    cancelBtn.innerText = 'Close';
     
-    const poll = setInterval(async () => {
-      try {
-        const ping = await fetch('/api/ping');
-        if (ping.ok) {
-          clearInterval(poll);
-          msg.innerHTML = 'Update complete! Reloading...';
-          setTimeout(() => location.reload(true), 1000);
-        }
-      } catch (e) {} // ignore connection refused during restart
-    }, 3000);
-    
-  } catch (err) {
-    msg.innerText = 'Error: ' + err.message;
-    btn.innerText = 'Error';
-    cancelBtn.disabled = false;
-    closeBtn.style.display = 'block';
+    try {
+      const res = await fetch('/api/system/check-update');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to check for updates');
+      
+      cancelBtn.style.display = 'block';
+      
+      if (data.updateAvailable) {
+        title.innerText = 'Update Found!';
+        icon.innerText = '🚀';
+        msg.innerHTML = data.msg + '<br><br><span style="color:var(--text-muted)">It will update the panel. Running servers will be safely stopped and need to be started again once updated. Update now?</span>';
+        cancelBtn.innerText = 'Not Now';
+        confirmBtn.style.display = 'block';
+      } else {
+        title.innerText = 'Up to Date';
+        icon.innerText = '✅';
+        msg.innerText = data.msg;
+      }
+    } catch (err) {
+      title.innerText = 'Error';
+      icon.innerText = '❌';
+      msg.innerText = err.message;
+      cancelBtn.style.display = 'block';
+    }
   }
-}
-
-fetch('/api/me').then(r=>r.json()).then(u=>{
-  if (u.isAdmin) {
-    const btn = document.getElementById('navUpdatePanel');
-    if (btn) btn.style.display = 'flex';
+  
+  function closeUpdatePanelModal() { document.getElementById('updatePanelModal').style.display = 'none'; }
+  
+  async function confirmUpdatePanel() {
+    const btn = document.getElementById('updatePanelConfirmBtn');
+    const cancelBtn = document.getElementById('updatePanelCancelBtn');
+    const closeBtn = document.getElementById('updatePanelCloseBtn');
+    const msg = document.getElementById('updatePanelMessage');
+    const title = document.getElementById('updatePanelTitle');
+    
+    btn.disabled = true; 
+    cancelBtn.disabled = true; 
+    closeBtn.style.display = 'none';
+    title.innerText = 'Updating Panel...';
+    
+    msg.innerHTML = 'Initiating update...<br><br><span style="color:var(--text-muted)">Please wait while servers are safely stopped and panel restarts. Do not close this page.</span>';
+    btn.innerText = 'Updating...';
+    
+    try {
+      const res = await fetch('/api/system/update', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      
+      msg.innerHTML = 'Servers are stopping safely. Panel is updating...<br><br><span style="color:var(--text-muted)">Waiting for panel to come back online...</span>';
+      
+      const poll = setInterval(async () => {
+        try {
+          const ping = await fetch('/api/ping');
+          if (ping.ok) {
+            clearInterval(poll);
+            msg.innerHTML = 'Update complete! Reloading...';
+            setTimeout(() => location.reload(true), 1000);
+          }
+        } catch (e) {}
+      }, 3000);
+      
+    } catch (err) {
+      msg.innerText = 'Error: ' + err.message;
+      btn.innerText = 'Error';
+      cancelBtn.disabled = false;
+      closeBtn.style.display = 'block';
+    }
   }
-}).catch(()=>{});
+  
+  fetch('/api/me').then(r=>r.json()).then(u=>{
+    if (u.isAdmin) {
+      const btn = document.getElementById('navUpdatePanel');
+      if (btn) btn.style.display = 'flex';
+    }
+  }).catch(()=>{});
 </script>
 <script>
   document.getElementById('yr').textContent = new Date().getFullYear();

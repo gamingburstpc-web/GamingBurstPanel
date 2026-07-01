@@ -701,18 +701,29 @@ router.get('/status', (req, res) => {
   });
 });
 
-// ── POST /api/system/update ───────────────────────────────────────────────────
-router.post('/system/update', requireAdmin, async (req, res) => {
+// ── GET /api/system/check-update ───────────────────────────────────────────────
+router.get('/system/check-update', requireAdmin, async (req, res) => {
   try {
-    // 1. Check if an update is actually available
     const rootDir = path.resolve(__dirname, '../../');
     execSync('git fetch origin main', { cwd: rootDir });
     const local = execSync('git rev-parse HEAD', { cwd: rootDir }).toString().trim();
     const remote = execSync('git rev-parse origin/main', { cwd: rootDir }).toString().trim();
-
+    
     if (local === remote) {
-      return res.json({ upToDate: true, msg: 'GamingBurst Panel is already completely up to date!' });
+      return res.json({ updateAvailable: false, msg: 'GamingBurst Panel is already completely up to date!' });
+    } else {
+      return res.json({ updateAvailable: true, msg: 'A new update is available!' });
     }
+  } catch (err) {
+    console.error('[Update Check] Error:', err);
+    res.status(500).json({ error: 'Failed to check for updates' });
+  }
+});
+
+// ── POST /api/system/update ───────────────────────────────────────────────────
+router.post('/system/update', requireAdmin, async (req, res) => {
+  try {
+    const rootDir = path.resolve(__dirname, '../../');
 
     // 2. Send ok to frontend so it can start polling
     res.json({ ok: true, msg: 'Update initiated. Stopping servers...' });
