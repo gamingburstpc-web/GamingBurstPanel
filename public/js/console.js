@@ -191,9 +191,9 @@ async function loadServer() {
           const deleteAt = serverData.expire_at + (serverData.delete_after * 24 * 60 * 60 * 1000);
           const diffDays = Math.ceil((deleteAt - Date.now()) / (1000 * 60 * 60 * 24));
           const timeStr = diffDays > 0 ? `within ${diffDays} day(s)` : 'immediately';
-          pText.innerHTML = `Please contact your Provider to extend it ${timeStr} or else server data will be deleted.<br><br>Thank you for playing!`;
+          pText.innerHTML = `Your subscription has expired. Please contact your provider to renew your server access ${timeStr}.<br><br><span style="color:var(--red);font-weight:600;">Failure to renew will result in the permanent deletion of all server data.</span>`;
         } else {
-          pText.innerHTML = `Please contact your Provider to extend your subscription.<br><br>Thank you for playing!`;
+          pText.innerHTML = `Your subscription has expired. Please contact your provider to renew your server access.`;
         }
       }
     }
