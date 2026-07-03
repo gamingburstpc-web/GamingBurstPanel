@@ -364,3 +364,37 @@ async function saveSettingsPort(type) {
     btn.innerText = originalText;
   }
 }
+
+
+async function changeWorldSeed() {
+  const seed = document.getElementById('settingsSeedInput').value.trim();
+  if (!seed) {
+    alert('Please enter a valid seed.');
+    return;
+  }
+
+  const conf = confirm('WARNING: Changing the seed will instantly and permanently DELETE your current world so a new one can be generated!\\n\\nAre you absolutely sure you want to wipe your world?');
+  if (!conf) return;
+
+  const btn = document.getElementById('btnChangeSeed');
+  btn.disabled = true;
+  btn.textContent = 'Wiping World...';
+
+  try {
+    const res = await fetch(/api/servers//settings/seed, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ seed })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to change seed');
+
+    alert('World Seed updated successfully! The previous world has been deleted and a new one will generate when you start the server.');
+    document.getElementById('settingsSeedInput').value = '';
+  } catch (err) {
+    alert(err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Change Seed & Reset World';
+  }
+}

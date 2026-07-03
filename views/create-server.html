@@ -108,6 +108,12 @@
             </div>
           </div>
 
+          <div class="form-group">
+            <label class="form-label" for="basicSeed">World Seed <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
+            <input id="basicSeed" type="text" class="form-input" placeholder="Leave blank for random seed">
+            <div class="form-hint">The seed to generate the world with (e.g., a number or text).</div>
+          </div>
+          
           <div class="form-row">
             <div class="form-group" id="basicVersionGroup">
               <label class="form-label" for="basicVersion">Version <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
@@ -354,9 +360,11 @@ async function showUpdatePanelModal() {
     }
   }).catch(()=>{});
 </script>
-<script src="/public/js/create-server.js"></script>
+<script src="/public/js/create-server.js?v=2"></script>
 <script src="/public/js/nav.js?v=12"></script></body>
 </html>
+
+
 
 
 

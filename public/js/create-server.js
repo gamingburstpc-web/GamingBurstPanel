@@ -57,7 +57,8 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
       platform: document.getElementById('basicPlatform').value,
       software: document.getElementById('basicSoftware').value,
       version:  document.getElementById('basicVersion').value.trim() || 'latest',
-      port:     document.getElementById('basicPort').value || undefined
+      port:     document.getElementById('basicPort').value || undefined,
+      seed:     document.getElementById('basicSeed').value.trim() || undefined
     };
   } else {
     const name = document.getElementById('advName').value.trim();
@@ -81,6 +82,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
       jvm_flags:  document.getElementById('advJvmFlags').value.trim(),
       env_tz:     document.getElementById('advTz').value.trim() || 'Asia/Kolkata',
       env_custom: envCustom,
+      seed:       document.getElementById('advSeed').value.trim() || undefined,
     };
   }
 
