@@ -8,19 +8,24 @@ async function loadPlayitStatus() {
     if (res.status === 404) return;
     const data = await res.json();
     
+    document.getElementById('playitStateLoading').classList.add('hidden');
     document.getElementById('playitStateDownload').classList.add('hidden');
     document.getElementById('playitStateSetup').classList.add('hidden');
     document.getElementById('playitStateActive').classList.add('hidden');
-    document.getElementById('playitSetupClaim').classList.add('hidden');
-    document.getElementById('playitSetupSecret').classList.add('hidden');
+    
+    // We only hide/show claim/secret panels if the setup view is not actively showing the secret panel
+    const isSecretPanelVisible = !document.getElementById('playitSetupSecret').classList.contains('hidden');
     
     if (data.status === 'not_installed') {
       document.getElementById('playitStateDownload').classList.remove('hidden');
     } else if (data.status === 'installed') {
       document.getElementById('playitStateSetup').classList.remove('hidden');
+      if (!isSecretPanelVisible) document.getElementById('playitSetupClaim').classList.add('hidden');
     } else if (['claiming', 'starting', 'crashed'].includes(data.status)) {
       document.getElementById('playitStateSetup').classList.remove('hidden');
-      document.getElementById('playitSetupClaim').classList.remove('hidden');
+      if (!isSecretPanelVisible) {
+        document.getElementById('playitSetupClaim').classList.remove('hidden');
+      }
       if (data.status === 'crashed') {
         const a = document.getElementById('playitClaimLink');
         a.removeAttribute('href');

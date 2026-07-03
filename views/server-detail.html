@@ -306,7 +306,10 @@
     <div id="tabPlayit" class="hidden server-tab">
       <div class="card p-4">
         <h3 class="mb-4">Playit.gg Tunnel Setup</h3>
-        <div id="playitStateDownload">
+        <div id="playitStateLoading">
+<p class="text-muted"><span class="spinner" style="display:inline-block;margin-right:8px;vertical-align:middle;"></span> Loading Playit status...</p>
+</div>
+<div id="playitStateDownload" class="hidden">
           <p class="text-muted mb-4">Playit allows you to easily create public IPs for your Minecraft server without port forwarding.</p>
           <button class="btn btn-primary" onclick="downloadPlayit()" id="btnDownloadPlayit">⬇ Download Playit Binary</button>
         </div>
