@@ -381,7 +381,7 @@ async function changeWorldSeed() {
   btn.textContent = 'Wiping World...';
 
   try {
-    const res = await fetch(/api/servers//settings/seed, {
+    const res = await fetch(`/api/servers/${serverId}/settings/seed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ seed })
