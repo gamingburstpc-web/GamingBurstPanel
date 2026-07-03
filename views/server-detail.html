@@ -478,6 +478,20 @@
           
           <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
 
+          <!-- World Seed -->
+          <div class="form-group">
+            <div style="margin-bottom: 8px;">
+              <label style="display:block; margin-bottom:2px; color:var(--text-secondary);">World Seed</label>
+              <span style="font-size:0.85em; color:var(--text-muted);">Changing the seed will instantly and permanently delete your current world to generate a new one. Server must be offline.</span>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center;">
+              <input type="text" id="settingsSeedInput" class="form-input" style="flex:1; max-width:200px;" placeholder="New Seed">
+              <button class="btn btn-danger" onclick="changeWorldSeed()" id="btnChangeSeed" style="flex:0 0 auto; background:var(--danger); border:none; color: white; border-radius: var(--radius); padding: 8px 16px; font-weight: 500; cursor: pointer;">Change Seed & Reset World</button>
+            </div>
+          </div>
+          
+          <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
+
           <!-- Logo -->
           <div class="form-group">
             <label>Server Logo (Auto-resizes to 64x64)</label>
@@ -664,9 +678,10 @@ async function showUpdatePanelModal() {
     }
   }).catch(()=>{});
 </script>
-<script src="/public/js/settings.js?v=112"></script>
+<script src="/public/js/settings.js?v=113"></script>
 <script src="/public/js/nav.js?v=12"></script></body>
 </html>
+
 
 
 
