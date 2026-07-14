@@ -32,14 +32,15 @@ while true; do
     echo -e "\033[1;32m11)\033[0m Update Panel"
     echo -e "\033[1;32m12)\033[0m Start/Stop Panel (Background Mode - No systemctl)"
     echo -e "\033[1;32m13)\033[0m Change Panel Timezone"
-    echo -e "\033[1;31m14)\033[0m Uninstall Panel & Delete All Data"
+    echo -e "\033[1;32m14)\033[0m Change Panel Port"
+    echo -e "\033[1;31m15)\033[0m Uninstall Panel & Delete All Data"
     echo -e "\033[1;31m0)\033[0m Exit"
     echo -e "\033[1;34m==========================================\033[0m"
     echo -e "\033[1;36mDeveloped & Maintained by GamingBurst007\033[0m"
     echo -e "\033[0;36mYouTube: https://youtube.com/@gamingburst007\033[0m"
     echo -e "\033[0;36mDiscord: https://discord.gg/JZ7nwxTaNs\033[0m"
     echo -e "\033[1;34m==========================================\033[0m"
-    read -p "Select an option [0-14]: " option
+    read -p "Select an option [0-15]: " option
 
     echo ""
     case $option in
@@ -118,6 +119,9 @@ while true; do
             $GB_CMD timezone config
             ;;
         14)
+            $GB_CMD port
+            ;;
+        15)
             echo -e "\033[1;31mWARNING: This will completely delete GamingBurst Panel, including all your Minecraft servers, user data, and files.\033[0m"
             read -p "Are you absolutely sure you want to completely uninstall the panel? (Type 'YES' to confirm): " confirm_uninstall
             if [ "$confirm_uninstall" = "YES" ]; then
