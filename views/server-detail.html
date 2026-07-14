@@ -234,15 +234,32 @@
 
     <!-- File Editor Modal -->
     <div id="editorModal" class="sidebar-overlay" style="display:none;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);">
-      <div class="card" style="width:90%;max-width:800px;height:80vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.1);">
-        <div class="card-header" style="display:flex;justify-content:space-between;">
-          <div class="card-title" id="editorTitle">Editing File</div>
+      <div class="card" style="width:90%;max-width:900px;height:85vh;display:flex;flex-direction:column;border:1px solid rgba(255,255,255,0.1);padding:0;overflow:hidden;">
+        <div class="card-header" style="display:flex;justify-content:space-between;padding:16px;">
+          <div class="card-title" id="editorTitle" style="margin:0;">Editing File</div>
           <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="openEditorSearch()" title="Search (Ctrl+F)">🔍 Search</button>
             <button class="btn btn-ghost btn-sm" onclick="closeEditor()">Cancel</button>
             <button class="btn btn-success btn-sm" onclick="saveFile()">💾 Save</button>
           </div>
         </div>
-        <textarea id="editorContent" style="flex:1;background:#0d1117;color:#c9d1d9;font-family:monospace;padding:16px;border:none;resize:none;" spellcheck="false"></textarea>
+        
+        <!-- Search Toolbar -->
+        <div id="editorSearchToolbar" style="display:none;padding:8px 16px;background:#161b22;border-bottom:1px solid rgba(255,255,255,0.1);align-items:center;gap:8px;">
+          <input type="text" id="editorSearchInput" placeholder="Find..." style="background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:4px 8px;border-radius:4px;flex:1;font-family:monospace;outline:none;" oninput="performEditorSearch()" onkeydown="if(event.key==='Enter'){ event.shiftKey ? editorSearchPrev() : editorSearchNext(); event.preventDefault(); }">
+          <span id="editorSearchCount" style="color:var(--text-muted);font-size:12px;min-width:60px;text-align:center;">0/0</span>
+          <button class="btn btn-secondary btn-sm" style="padding:4px 8px;" onclick="editorSearchPrev()">▲</button>
+          <button class="btn btn-secondary btn-sm" style="padding:4px 8px;" onclick="editorSearchNext()">▼</button>
+          <button class="btn btn-ghost btn-sm" style="padding:4px 8px;" onclick="closeEditorSearch()">✕</button>
+        </div>
+
+        <div style="flex:1;display:flex;position:relative;overflow:hidden;background:#0d1117;">
+          <!-- Line numbers gutter -->
+          <div id="editorLineNumbers" style="width:50px;padding:16px 8px;background:#0d1117;color:#6e7681;font-family:monospace;font-size:14px;line-height:21px;text-align:right;overflow:hidden;user-select:none;border-right:1px solid #30363d;box-sizing:border-box;"></div>
+          
+          <!-- Editor Content -->
+          <textarea id="editorContent" style="flex:1;background:transparent;color:#c9d1d9;font-family:monospace;font-size:14px;line-height:21px;padding:16px;border:none;resize:none;outline:none;white-space:pre;word-wrap:normal;overflow:auto;box-sizing:border-box;" spellcheck="false" oninput="updateEditorLineNumbers()" onscroll="syncEditorScroll()" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key==='f'){event.preventDefault();openEditorSearch();}"></textarea>
+        </div>
       </div>
     </div>
 

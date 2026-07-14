@@ -161,6 +161,11 @@ async function editFile(filename) {
     document.getElementById('editorTitle').textContent = `Editing: /${path}`;
     document.getElementById('editorContent').value = text;
     document.getElementById('editorModal').style.display = 'flex';
+    updateEditorLineNumbers();
+    setTimeout(() => {
+      document.getElementById('editorContent').scrollTop = 0;
+      syncEditorScroll();
+    }, 10);
   } catch (e) { alert(e.message); }
 }
 
@@ -172,11 +177,13 @@ function newFile() {
   document.getElementById('editorTitle').textContent = `New File: /${path}`;
   document.getElementById('editorContent').value = '';
   document.getElementById('editorModal').style.display = 'flex';
+  updateEditorLineNumbers();
 }
 
 function closeEditor() {
   document.getElementById('editorModal').style.display = 'none';
   currentEditFile = '';
+  closeEditorSearch();
 }
 
 async function saveFile() {
@@ -393,4 +400,119 @@ async function bulkArchive() {
     loadFiles();
     alert(`Archived successfully to ${d.archive}`);
   } catch (e) { alert('Archive failed: ' + e.message); }
+}
+
+// ── Enhanced Editor Logic ──
+
+function updateEditorLineNumbers() {
+  const content = document.getElementById('editorContent').value;
+  // +1 line if content is empty or doesn't end in newline, to always match textarea lines
+  const linesCount = content.split('\n').length;
+  const lineNumbers = document.getElementById('editorLineNumbers');
+  
+  if (lineNumbers.children.length !== linesCount) {
+    let html = '';
+    for (let i = 1; i <= linesCount; i++) {
+      html += `<div>${i}</div>`;
+    }
+    lineNumbers.innerHTML = html;
+  }
+}
+
+function syncEditorScroll() {
+  const textarea = document.getElementById('editorContent');
+  const lineNumbers = document.getElementById('editorLineNumbers');
+  if (lineNumbers && textarea) {
+    lineNumbers.scrollTop = textarea.scrollTop;
+  }
+}
+
+// Search Logic
+let editorSearchMatches = [];
+let editorSearchIndex = -1;
+
+function openEditorSearch() {
+  document.getElementById('editorSearchToolbar').style.display = 'flex';
+  const input = document.getElementById('editorSearchInput');
+  input.focus();
+  input.select();
+  performEditorSearch();
+}
+
+function closeEditorSearch() {
+  const toolbar = document.getElementById('editorSearchToolbar');
+  if (toolbar) toolbar.style.display = 'none';
+  const textarea = document.getElementById('editorContent');
+  if (textarea) textarea.focus();
+  editorSearchMatches = [];
+  editorSearchIndex = -1;
+  const countSpan = document.getElementById('editorSearchCount');
+  if (countSpan) countSpan.textContent = '0/0';
+}
+
+function performEditorSearch() {
+  const input = document.getElementById('editorSearchInput');
+  const textarea = document.getElementById('editorContent');
+  const countLabel = document.getElementById('editorSearchCount');
+  
+  if (!input || !textarea || !countLabel) return;
+  
+  const query = input.value.toLowerCase();
+  const content = textarea.value;
+  
+  editorSearchMatches = [];
+  editorSearchIndex = -1;
+  
+  if (!query) {
+    countLabel.textContent = '0/0';
+    return;
+  }
+  
+  const lowerContent = content.toLowerCase();
+  let pos = 0;
+  while (true) {
+    const idx = lowerContent.indexOf(query, pos);
+    if (idx === -1) break;
+    editorSearchMatches.push({ start: idx, end: idx + query.length });
+    pos = idx + query.length;
+  }
+  
+  if (editorSearchMatches.length > 0) {
+    editorSearchIndex = 0;
+    highlightCurrentMatch();
+  } else {
+    countLabel.textContent = '0/0';
+  }
+}
+
+function highlightCurrentMatch() {
+  if (editorSearchIndex < 0 || editorSearchIndex >= editorSearchMatches.length) return;
+  const match = editorSearchMatches[editorSearchIndex];
+  const textarea = document.getElementById('editorContent');
+  
+  textarea.focus();
+  textarea.setSelectionRange(match.start, match.end);
+  
+  // Calculate vertical scroll offset (assuming 21px line height)
+  const textBefore = textarea.value.substring(0, match.start);
+  const lineIndex = textBefore.split('\n').length - 1;
+  const lineHeight = 21;
+  const targetScrollTop = lineIndex * lineHeight - (textarea.clientHeight / 2) + lineHeight;
+  
+  textarea.scrollTop = Math.max(0, targetScrollTop);
+  syncEditorScroll();
+  
+  document.getElementById('editorSearchCount').textContent = `${editorSearchIndex + 1}/${editorSearchMatches.length}`;
+}
+
+function editorSearchNext() {
+  if (editorSearchMatches.length === 0) return;
+  editorSearchIndex = (editorSearchIndex + 1) % editorSearchMatches.length;
+  highlightCurrentMatch();
+}
+
+function editorSearchPrev() {
+  if (editorSearchMatches.length === 0) return;
+  editorSearchIndex = (editorSearchIndex - 1 + editorSearchMatches.length) % editorSearchMatches.length;
+  highlightCurrentMatch();
 }
