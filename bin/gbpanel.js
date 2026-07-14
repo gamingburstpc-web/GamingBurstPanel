@@ -441,6 +441,43 @@ async function cmdBackgroundMode() {
   }
 }
 
+async function cmdChangePort() {
+  banner();
+  print(`${C.bold}Change Panel Port${C.reset}\n`);
+  
+  const currentPort = process.env.PANEL_PORT || '7676';
+  print(`Current Panel Port: ${C.green}${currentPort}${C.reset}\n`);
+  
+  const ans = await ask('Do you want to change the port? (y/n): ');
+  if (ans.toLowerCase() !== 'y') return;
+  
+  const newPortStr = await ask('Enter new port (e.g., 8080): ');
+  const newPort = parseInt(newPortStr, 10);
+  
+  if (isNaN(newPort) || newPort < 1 || newPort > 65535) {
+    error('Invalid port number.');
+    return;
+  }
+  
+  const envPath = path.join(process.cwd(), '.env');
+  let envContent = '';
+  if (fs.existsSync(envPath)) {
+    envContent = fs.readFileSync(envPath, 'utf8');
+  }
+  
+  if (envContent.match(/^PANEL_PORT=/m)) {
+    envContent = envContent.replace(/^PANEL_PORT=.*$/m, `PANEL_PORT=${newPort}`);
+  } else {
+    envContent += `\nPANEL_PORT=${newPort}\n`;
+  }
+  
+  fs.writeFileSync(envPath, envContent.trim() + '\n');
+  success(`Port successfully changed to ${newPort}!`);
+  info('You must restart the panel for the changes to take effect.');
+  info('Command: sudo systemctl restart gbpanel');
+}
+
+
 async function cmdMenu() {
   banner();
   print(`${C.bold}Please select an option:${C.reset}\n`);
@@ -452,6 +489,7 @@ async function cmdMenu() {
   print(`  ${C.cyan}6.${C.reset} Show Panel Status`);
   print(`  ${C.cyan}7.${C.reset} Update Panel`);
   print(`  ${C.cyan}8.${C.reset} Start/Stop Panel (Background Mode)`);
+  print(`  ${C.cyan}9.${C.reset} Change Panel Port`);
   print(`  ${C.cyan}0.${C.reset} Exit\n`);
   
   const choice = await ask('Enter a number: ');
@@ -474,6 +512,7 @@ async function cmdMenu() {
     case '6': await cmdPanelStatus(); break;
     case '7': await cmdUpdatePanel(); break;
     case '8': await cmdBackgroundMode(); break;
+    case '9': await cmdChangePort(); break;
     case '0': print('Goodbye!'); process.exit(0);
     default: error('Invalid option'); break;
   }
@@ -504,6 +543,8 @@ async function main() {
       const { cmdTimezoneConfig } = require('./timezoneMenu');
       return await cmdTimezoneConfig(ask, print, C, success, error);
     }
+  } else if (cmd === 'port') {
+    return await cmdChangePort();
   }
 
   // Help
@@ -517,6 +558,7 @@ async function main() {
   print(`  ${C.green}user reset-password ${C.dim}<username>${C.reset} Reset a user's password`);
   print(`  ${C.green}server list${C.reset}                   List all servers, ports & paths`);
   print(`  ${C.green}server path ${C.dim}<server_name>${C.reset}    Print absolute path of a server`);
+  print(`  ${C.green}port${C.reset}                          Change the panel's port`);
   print('');
   print(`${C.bold}Examples:${C.reset}`);
   print(`  ${C.dim}sudo gbpanel user add${C.reset}`);
