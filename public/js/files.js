@@ -114,7 +114,7 @@ async function loadFiles() {
       actionButtons += `</div></div>`;
 
       html += `<tr>
-        <td style="text-align:center;">
+        <td class="bulk-select-col" style="text-align:center; display:${bulkSelectActive ? 'table-cell' : 'none'};">
           <input type="checkbox" class="file-checkbox" value="${esc(f.name)}" onchange="toggleFileSelection(this.value, this.checked)">
         </td>
         <td>
@@ -345,6 +345,28 @@ function updateBulkActionsBar() {
   }
 }
 
+let bulkSelectActive = false;
+function toggleBulkSelectMode() {
+  bulkSelectActive = !bulkSelectActive;
+  const cols = document.querySelectorAll('.bulk-select-col');
+  cols.forEach(c => {
+    c.style.display = bulkSelectActive ? 'table-cell' : 'none';
+  });
+  
+  const btn = document.getElementById('btnToggleBulkSelect');
+  if (btn) {
+    btn.classList.toggle('btn-primary', bulkSelectActive);
+    btn.classList.toggle('btn-secondary', !bulkSelectActive);
+  }
+  
+  // Clear selections when turning off
+  if (!bulkSelectActive) {
+    toggleSelectAllFiles(false);
+    const selectAllCb = document.getElementById('selectAllFiles');
+    if (selectAllCb) selectAllCb.checked = false;
+  }
+}
+
 async function bulkDelete() {
   if (selectedFiles.length === 0) return;
   if (!confirm(`Are you sure you want to delete ${selectedFiles.length} item(s)? This cannot be undone.`)) return;
@@ -506,7 +528,14 @@ function highlightCurrentMatch() {
   const lineHeight = 21;
   const targetScrollTop = lineIndex * lineHeight - (textarea.clientHeight / 2) + lineHeight;
   
+  // Calculate horizontal scroll offset
+  const lastNewline = textBefore.lastIndexOf('\n');
+  const colIndex = textBefore.length - (lastNewline === -1 ? 0 : lastNewline + 1);
+  const charWidth = 8.4; // Approx char width for 14px monospace
+  const targetScrollLeft = colIndex * charWidth - (textarea.clientWidth / 2);
+  
   textarea.scrollTop = Math.max(0, targetScrollTop);
+  textarea.scrollLeft = Math.max(0, targetScrollLeft);
   syncEditorScroll();
   
   document.getElementById('editorSearchCount').textContent = `${editorSearchIndex + 1}/${editorSearchMatches.length}`;

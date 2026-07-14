@@ -201,6 +201,7 @@
             <span id="currentPath" style="font-family:monospace;color:var(--text-primary);font-size:14px;background:var(--bg-lighter);padding:4px 8px;border-radius:4px;">/</span>
           </div>
           <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="btnToggleBulkSelect" onclick="toggleBulkSelectMode()">☑ Multi-Select</button>
             <button class="btn btn-primary btn-sm" onclick="document.getElementById('fileUpload').click()">📤 Upload</button>
             <input type="file" id="fileUpload" style="display:none;" onchange="uploadFile(this.files[0])">
             <button class="btn btn-primary btn-sm" onclick="newFile()">➕ New File</button>
@@ -217,7 +218,7 @@
           <table class="table" style="margin:0;">
             <thead>
               <tr>
-                <th style="width:40px; text-align:center;"><input type="checkbox" id="selectAllFiles" onchange="toggleSelectAllFiles(this.checked)"></th>
+                <th class="bulk-select-col" style="width:40px; text-align:center; display:none;"><input type="checkbox" id="selectAllFiles" onchange="toggleSelectAllFiles(this.checked)"></th>
                 <th style="width:50%">Name</th>
                 <th>Size</th>
                 <th>Modified</th>
@@ -593,7 +594,7 @@
   </main>
 </div>
 <script src="/public/js/console.js?v=122"></script>
-<script src="/public/js/files.js?v=111"></script>
+<script src="/public/js/files.js?v=112"></script>
 <script src="/public/js/plugins.js?v=108"></script>
 <script src="/public/js/playit.js?v=109"></script>
 <script src="/public/js/players.js?v=109"></script>
