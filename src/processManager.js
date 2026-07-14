@@ -67,6 +67,9 @@ function startServer(serverId) {
     // ── Validate and clamp memory values ─────────────────────────────────
     const os = require('os');
     const systemRamMb = Math.floor(os.totalmem() / 1024 / 1024);
+    // Reserve 512 MB for the OS kernel and other processes so Java cannot
+    // claim all physical RAM and immediately OOM on commit.
+    const maxAllowedRamMb = Math.max(512, systemRamMb - 512);
 
     let memMin = parseInt(server.memory_min, 10);
     let memMax = parseInt(server.memory_max, 10);
@@ -74,10 +77,10 @@ function startServer(serverId) {
     if (isNaN(memMin) || memMin < 128) memMin = 512;
     if (isNaN(memMax) || memMax < 128) memMax = 1024;
 
-    if (memMax > systemRamMb) {
+    if (memMax > maxAllowedRamMb) {
       throw new Error(
-        `Server RAM is configured to ${memMax} MB but this system only has ${systemRamMb} MB of RAM. ` +
-        `Please reduce the server RAM in Settings.`
+        `Server RAM is configured to ${memMax} MB but the maximum allowed on this system is ${maxAllowedRamMb} MB ` +
+        `(${systemRamMb} MB total − 512 MB reserved for OS). Please reduce the server RAM in Settings.`
       );
     }
 

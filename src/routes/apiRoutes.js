@@ -1443,10 +1443,11 @@ router.post('/servers/:id/settings/ram', requirePermission('settings'), express.
   const ramInt = parseInt(ram, 10);
   if (isNaN(ramInt) || ramInt < 512) return res.status(400).json({ error: 'RAM must be at least 512 MB.' });
 
-  // Prevent configuring more RAM than the system physically has
+  // Reserve 512 MB for the OS kernel — prevent the server from claiming all RAM
   const systemRamMb = Math.floor(require('os').totalmem() / 1024 / 1024);
-  if (ramInt > systemRamMb) {
-    return res.status(400).json({ error: `RAM cannot exceed system RAM (${systemRamMb} MB).` });
+  const maxAllowedRamMb = Math.max(512, systemRamMb - 512);
+  if (ramInt > maxAllowedRamMb) {
+    return res.status(400).json({ error: `RAM cannot exceed ${maxAllowedRamMb} MB on this system (${systemRamMb} MB total − 512 MB reserved for OS).` });
   }
   
   try {
