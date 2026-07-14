@@ -48,9 +48,11 @@ router.post('/login', (req, res) => {
   clearAttempts(ip);
   const sessionId = createSession(user);
 
+  const isSecure = req.secure || req.headers['x-forwarded-proto'] === 'https';
   const cookieOptions = {
     httpOnly: true,
-    sameSite: 'Strict'
+    sameSite: 'Strict',
+    ...(isSecure ? { secure: true } : {}),
   };
   
   if (rememberMe) {

@@ -82,7 +82,7 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
       jvm_flags:  document.getElementById('advJvmFlags').value.trim(),
       env_tz:     document.getElementById('advTz').value.trim() || 'Asia/Kolkata',
       env_custom: envCustom,
-      seed:       document.getElementById('advSeed').value.trim() || undefined,
+      seed:       document.getElementById('advSeed')?.value?.trim() || undefined,
     };
   }
 

@@ -63,9 +63,31 @@ function startServer(serverId) {
 
   if (server.jar_path.endsWith('.jar')) {
     // Java Server
+
+    // ── Validate and clamp memory values ─────────────────────────────────
+    const os = require('os');
+    const systemRamMb = Math.floor(os.totalmem() / 1024 / 1024);
+
+    let memMin = parseInt(server.memory_min, 10);
+    let memMax = parseInt(server.memory_max, 10);
+
+    if (isNaN(memMin) || memMin < 128) memMin = 512;
+    if (isNaN(memMax) || memMax < 128) memMax = 1024;
+
+    if (memMax > systemRamMb) {
+      throw new Error(
+        `Server RAM is configured to ${memMax} MB but this system only has ${systemRamMb} MB of RAM. ` +
+        `Please reduce the server RAM in Settings.`
+      );
+    }
+
+    // Ensure min does not exceed max (can happen if both were set to the same
+    // value and the user later reduced max without touching min)
+    if (memMin > memMax) memMin = Math.floor(memMax / 2);
+
     const jvmArgs = [
-      `-Xms${server.memory_min}M`,
-      `-Xmx${server.memory_max}M`,
+      `-Xms${memMin}M`,
+      `-Xmx${memMax}M`,
       '-XX:+UseG1GC',
       '-XX:+ParallelRefProcEnabled',
       '-XX:MaxGCPauseMillis=200',

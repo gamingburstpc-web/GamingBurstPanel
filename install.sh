@@ -2,7 +2,7 @@
 
 # GamingBurst Panel — VPS Installer Script
 # Works on Ubuntu 22.04 & Debian 12
-# Installs Node.js, Java 21, clones/downloads the panel, sets up systemd and global CLI link.
+# Installs Node.js, Java 25, clones/downloads the panel, sets up systemd and global CLI link.
 
 set -e
 
@@ -71,10 +71,33 @@ else
     print_success "Node.js already installed: $(node -v)"
 fi
 
-# ── Install Java 25 ───────────────────────────────────────────────────────────
+# ── Install Java 25 (Adoptium Temurin) ───────────────────────────────────────
 if ! command -v java &> /dev/null; then
-    print_status "Installing OpenJDK 25 JRE (Required for Minecraft 1.26+)..."
-    apt-get install -y openjdk-25-jre-headless
+    print_status "Installing Java 25 (Temurin JDK via Adoptium repository)..."
+
+    # Determine the OS codename for the Adoptium apt source
+    # /etc/os-release was already sourced above, so VERSION_CODENAME is available
+    # Fallback: if VERSION_CODENAME is empty, derive it from VERSION_ID
+    CODENAME="${VERSION_CODENAME:-}"
+    if [ -z "$CODENAME" ]; then
+        if   [ "$OS" = "debian" ] && [ "$VER" = "12" ]; then CODENAME="bookworm";
+        elif [ "$OS" = "ubuntu" ] && [ "$VER" = "24.04" ]; then CODENAME="noble";
+        elif [ "$OS" = "ubuntu" ] && [ "$VER" = "22.04" ]; then CODENAME="jammy";
+        elif [ "$OS" = "ubuntu" ] && [ "$VER" = "20.04" ]; then CODENAME="focal";
+        else
+            print_error "Could not determine OS codename for Adoptium repo. Please install Java 25 manually."
+            exit 1
+        fi
+    fi
+
+    apt-get install -y wget apt-transport-https gnupg
+    mkdir -p /etc/apt/keyrings
+    wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | \
+        gpg --dearmor | tee /etc/apt/keyrings/adoptium.gpg > /dev/null
+    echo "deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb ${CODENAME} main" | \
+        tee /etc/apt/sources.list.d/adoptium.list > /dev/null
+    apt-get update -y
+    apt-get install -y temurin-25-jdk
     print_success "Java 25 installed: $(java -version 2>&1 | head -n 1)"
 else
     print_success "Java already installed: $(java -version 2>&1 | head -n 1)"

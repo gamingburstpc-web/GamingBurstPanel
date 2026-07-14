@@ -268,6 +268,13 @@ router.get('/servers', (req, res) => {
   }));
 });
 
+// ── GET /api/servers/next-port ───────────────────────────────────────────────
+// IMPORTANT: This route MUST be registered before /servers/:id, otherwise Express
+// will match 'next-port' as the :id parameter and return a 404.
+router.get('/servers/next-port', requireAuth, (req, res) => {
+  res.json({ port: pm.getNextAvailablePort() });
+});
+
 // ── GET /api/servers/:id ──────────────────────────────────────────────────────
 function getDirSizeSync(dirPath) {
   let size = 0;
@@ -458,11 +465,6 @@ router.post('/rentals/:id/end', requirePermission('manage_rentals'), (req, res) 
     console.error('Error ending subscription:', err);
     res.status(500).json({ error: 'Database error' });
   }
-});
-
-// ── GET /api/servers/next-port ───────────────────────────────────────────────
-router.get('/servers/next-port', requireAuth, (req, res) => {
-  res.json({ port: pm.getNextAvailablePort() });
 });
 
 // ── POST /api/servers — ADMIN ONLY ───────────────────────────────────────────
@@ -1438,10 +1440,17 @@ router.post('/servers/:id/settings/logo', requirePermission('settings'), express
 router.post('/servers/:id/settings/ram', requirePermission('settings'), express.json(), (req, res) => {
   const serverId = parseInt(req.params.id, 10);
   const { ram } = req.body;
-  if (!ram || ram < 512) return res.status(400).json({ error: 'RAM must be at least 512 MB.' });
+  const ramInt = parseInt(ram, 10);
+  if (isNaN(ramInt) || ramInt < 512) return res.status(400).json({ error: 'RAM must be at least 512 MB.' });
+
+  // Prevent configuring more RAM than the system physically has
+  const systemRamMb = Math.floor(require('os').totalmem() / 1024 / 1024);
+  if (ramInt > systemRamMb) {
+    return res.status(400).json({ error: `RAM cannot exceed system RAM (${systemRamMb} MB).` });
+  }
   
   try {
-    getDb().prepare('UPDATE servers SET memory_max = ?, memory_min = ? WHERE id = ?').run(ram, ram, serverId);
+    getDb().prepare('UPDATE servers SET memory_max = ?, memory_min = ? WHERE id = ?').run(ramInt, ramInt, serverId);
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -32,6 +32,11 @@ async function main() {
   // 2. Express app
   const app = express();
 
+  // Trust the first proxy (e.g. Cloudflare, Nginx) so req.secure and req.ip
+  // reflect the real client connection rather than the proxy connection.
+  // Required for the session cookie 'secure' flag to work behind Cloudflare.
+  app.set('trust proxy', 1);
+
   // Parse JSON + URL-encoded bodies (built-in, no body-parser needed in Express 4.16+)
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
