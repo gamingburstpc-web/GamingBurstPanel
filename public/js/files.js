@@ -422,8 +422,14 @@ function updateEditorLineNumbers() {
 function syncEditorScroll() {
   const textarea = document.getElementById('editorContent');
   const lineNumbers = document.getElementById('editorLineNumbers');
-  if (lineNumbers && textarea) {
-    lineNumbers.scrollTop = textarea.scrollTop;
+  const highlights = document.getElementById('editorHighlights');
+  
+  if (textarea) {
+    if (lineNumbers) lineNumbers.scrollTop = textarea.scrollTop;
+    if (highlights) {
+      highlights.scrollTop = textarea.scrollTop;
+      highlights.scrollLeft = textarea.scrollLeft;
+    }
   }
 }
 
@@ -448,6 +454,9 @@ function closeEditorSearch() {
   editorSearchIndex = -1;
   const countSpan = document.getElementById('editorSearchCount');
   if (countSpan) countSpan.textContent = '0/0';
+  
+  const highlights = document.getElementById('editorHighlights');
+  if (highlights) highlights.innerHTML = '';
 }
 
 function performEditorSearch() {
@@ -490,10 +499,9 @@ function highlightCurrentMatch() {
   const match = editorSearchMatches[editorSearchIndex];
   const textarea = document.getElementById('editorContent');
   
-  textarea.setSelectionRange(match.start, match.end);
-  
   // Calculate vertical scroll offset (assuming 21px line height)
-  const textBefore = textarea.value.substring(0, match.start);
+  const content = textarea.value;
+  const textBefore = content.substring(0, match.start);
   const lineIndex = textBefore.split('\n').length - 1;
   const lineHeight = 21;
   const targetScrollTop = lineIndex * lineHeight - (textarea.clientHeight / 2) + lineHeight;
@@ -502,6 +510,17 @@ function highlightCurrentMatch() {
   syncEditorScroll();
   
   document.getElementById('editorSearchCount').textContent = `${editorSearchIndex + 1}/${editorSearchMatches.length}`;
+  
+  // Draw highlight on background layer
+  const highlightsDiv = document.getElementById('editorHighlights');
+  if (highlightsDiv) {
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const beforeText = content.substring(0, match.start);
+    const matchText = content.substring(match.start, match.end);
+    const afterText = content.substring(match.end);
+    
+    highlightsDiv.innerHTML = esc(beforeText) + `<span style="background:rgba(255, 200, 0, 0.4); border-radius:2px;">${esc(matchText)}</span>` + esc(afterText);
+  }
 }
 
 function editorSearchNext() {
