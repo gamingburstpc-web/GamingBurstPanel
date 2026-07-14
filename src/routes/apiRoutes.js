@@ -1440,19 +1440,19 @@ router.post('/servers/:id/settings/logo', requirePermission('settings'), express
 router.post('/servers/:id/settings/ram', requirePermission('settings'), express.json(), (req, res) => {
   const serverId = parseInt(req.params.id, 10);
   const { ram } = req.body;
-  const ramInt = parseInt(ram, 10);
+  let ramInt = parseInt(ram, 10);
   if (isNaN(ramInt) || ramInt < 512) return res.status(400).json({ error: 'RAM must be at least 512 MB.' });
 
-  // Reserve 512 MB for the OS kernel — prevent the server from claiming all RAM
+  // Clamp to (systemRam - 512 MB) so the OS always keeps 512 MB headroom.
+  // Never reject — just silently cap and inform the caller of the actual saved value.
   const systemRamMb = Math.floor(require('os').totalmem() / 1024 / 1024);
   const maxAllowedRamMb = Math.max(512, systemRamMb - 512);
-  if (ramInt > maxAllowedRamMb) {
-    return res.status(400).json({ error: `RAM cannot exceed ${maxAllowedRamMb} MB on this system (${systemRamMb} MB total − 512 MB reserved for OS).` });
-  }
+  const clamped = ramInt > maxAllowedRamMb;
+  if (clamped) ramInt = maxAllowedRamMb;
   
   try {
     getDb().prepare('UPDATE servers SET memory_max = ?, memory_min = ? WHERE id = ?').run(ramInt, ramInt, serverId);
-    res.json({ ok: true });
+    res.json({ ok: true, ram: ramInt, clamped, maxAllowedRamMb });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

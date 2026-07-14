@@ -279,7 +279,13 @@ async function updateServerRam() {
     });
     const data = await res.json();
     if (res.ok) {
-      window.showAlert('RAM updated successfully. Restart the server to apply changes.');
+      if (data.clamped) {
+        // Update the input to show the actual saved value
+        document.getElementById('settingsRamInput').value = data.ram;
+        window.showAlert('success', `RAM set to ${data.ram} MB (automatically reduced to the safe maximum for this system). Restart the server to apply.`);
+      } else {
+        window.showAlert('success', 'RAM updated successfully. Restart the server to apply changes.');
+      }
       if (typeof loadServer === 'function') loadServer(); // Refresh UI
     } else {
       window.showAlert(data.error || 'Failed to update RAM.');
