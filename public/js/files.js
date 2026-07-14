@@ -490,7 +490,6 @@ function highlightCurrentMatch() {
   const match = editorSearchMatches[editorSearchIndex];
   const textarea = document.getElementById('editorContent');
   
-  textarea.focus();
   textarea.setSelectionRange(match.start, match.end);
   
   // Calculate vertical scroll offset (assuming 21px line height)
