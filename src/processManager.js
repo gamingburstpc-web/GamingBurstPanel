@@ -20,6 +20,39 @@ try {
   console.warn(`[ProcessManager] Could not detect Java version, defaulting to 17: ${e.message}`);
 }
 
+// ── ZGC vm.max_map_count helper ───────────────────────────────────────────────
+// ZGC uses memory multi-mapping (3 virtual mappings per region). On Linux, the
+// default vm.max_map_count (65536) is often too low for large heaps, causing the
+// Linux OOM killer to terminate the process and crash the VM.
+// This function checks the limit and tries to raise it automatically.
+function ensureMaxMapCountForZgc(heapMb) {
+  if (process.platform !== 'linux') return true; // not Linux, skip
+  try {
+    const mapCountPath = '/proc/sys/vm/max_map_count';
+    const current = parseInt(fs.readFileSync(mapCountPath, 'utf8').trim(), 10);
+    // ZGC needs roughly: heapMb / 2 (2MB regions) * 3 (multi-mapping) + 10000 overhead
+    const required = Math.ceil((heapMb / 2) * 3) + 10000;
+    if (current >= required) {
+      console.log(`[ProcessManager] vm.max_map_count=${current} is sufficient for ZGC (need ${required}).`);
+      return true;
+    }
+    // Try to raise it automatically
+    const target = Math.max(required, 262144);
+    console.warn(`[ProcessManager] vm.max_map_count=${current} is too low for ${heapMb}MB ZGC heap (need ${required}). Attempting to raise to ${target}...`);
+    try {
+      execSync(`sysctl -w vm.max_map_count=${target}`, { stdio: 'pipe' });
+      console.log(`[ProcessManager] Successfully raised vm.max_map_count to ${target}.`);
+      return true;
+    } catch (sysctlErr) {
+      console.error(`[ProcessManager] Could not raise vm.max_map_count (permission denied). Falling back to Aikar G1GC to prevent VM crash.`);
+      return false;
+    }
+  } catch (e) {
+    // If we can't read the file (non-Linux?), assume safe
+    return true;
+  }
+}
+
 
 const SERVERS_DIR = path.resolve(__dirname, '..', 'servers');
 
@@ -110,10 +143,16 @@ function startServer(serverId) {
 
     const jvmArgs = [`-Xms${memMin}M`, `-Xmx${memMax}M`];
 
-    // ZGC Support Check
-    if (gcProfile === 'zgc' && javaVersion < 15) {
-      console.warn(`[ProcessManager] ZGC is not supported on Java version ${javaVersion}. Falling back to Aikar G1GC.`);
-      gcProfile = 'aikar';
+    // ── ZGC compatibility & safety checks ────────────────────────────────
+    if (gcProfile === 'zgc') {
+      if (javaVersion < 15) {
+        console.warn(`[ProcessManager] ZGC is not supported on Java ${javaVersion}. Falling back to Aikar G1GC.`);
+        gcProfile = 'aikar';
+      } else if (!ensureMaxMapCountForZgc(memMax)) {
+        // vm.max_map_count is too low and could not be raised — using ZGC would
+        // cause the Linux OOM killer to kill the process and potentially crash the VM.
+        gcProfile = 'aikar';
+      }
     }
 
     if (gcProfile === 'aikar') {
