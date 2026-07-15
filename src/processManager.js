@@ -114,8 +114,9 @@ function startServer(serverId) {
     // ── Validate and clamp memory values ─────────────────────────────────
     const os = require('os');
     const systemRamMb = Math.floor(os.totalmem() / 1024 / 1024);
-    // Reserve 512 MB for the OS kernel and other processes.
-    const maxAllowedRamMb = Math.max(512, systemRamMb - 512);
+    // Reserve 2048 MB for OS kernel, ZGC native threads, and other processes.
+    // ZGC requires extra native RAM outside the heap for its concurrent threads.
+    const maxAllowedRamMb = Math.max(1024, systemRamMb - 2048);
 
     let memMin = parseInt(server.memory_min, 10);
     let memMax = parseInt(server.memory_max, 10);
@@ -141,8 +142,6 @@ function startServer(serverId) {
       if (envObj.gc_profile) gcProfile = envObj.gc_profile;
     } catch {}
 
-    const jvmArgs = [`-Xms${memMin}M`, `-Xmx${memMax}M`];
-
     // ── ZGC compatibility & safety checks ────────────────────────────────
     if (gcProfile === 'zgc') {
       if (javaVersion < 15) {
@@ -152,8 +151,21 @@ function startServer(serverId) {
         // vm.max_map_count is too low and could not be raised — using ZGC would
         // cause the Linux OOM killer to kill the process and potentially crash the VM.
         gcProfile = 'aikar';
+      } else {
+        // ── KEY ZGC FIX: Force Xms to 512MB ──────────────────────────────
+        // ZGC is designed to start with a SMALL heap and grow/shrink dynamically.
+        // A large -Xms forces ZGC to commit that entire amount of physical RAM
+        // immediately at startup — this is exactly what was climbing VPS RAM from
+        // 10GB→11GB→12GB and eventually crashing the VM.
+        // With Xms=512MB, ZGC starts lean, grows as players join, and
+        // automatically releases unused RAM back to the OS when they leave.
+        memMin = 512;
+        console.log(`[ProcessManager] ZGC: overriding Xms to 512MB (ZGC manages heap dynamically, Xmx=${memMax}MB).`);
       }
     }
+
+    // Build Xms/Xmx AFTER ZGC override so the 512MB Xms is respected.
+    const jvmArgs = [`-Xms${memMin}M`, `-Xmx${memMax}M`];
 
     if (gcProfile === 'aikar') {
       // Classic Aikar G1GC flags — zero lag spikes, but high idle RAM usage
@@ -180,29 +192,28 @@ function startServer(serverId) {
       );
       console.log(`[ProcessManager] Server "${server.name}" using Aikar G1GC profile.`);
     } else if (gcProfile === 'zgc') {
-      // ZGC setup (supports both generational and non-generational depending on Java version)
+      // ZGC — generational or non-generational depending on Java version
       jvmArgs.push('-XX:+UseZGC');
-      
-      // -XX:+ZGenerational was removed/made default starting with Java 24
+      // -XX:+ZGenerational was removed and made default starting with Java 24
       if (javaVersion >= 21 && javaVersion < 24) {
         jvmArgs.push('-XX:+ZGenerational');
       }
-      
       jvmArgs.push(
         '-XX:+UnlockExperimentalVMOptions',
         '-XX:ConcGCThreads=2',
         '-XX:+DisableExplicitGC'
       );
-      
       if (javaVersion >= 21) {
-        console.log(`[ProcessManager] Server "${server.name}" using Generational ZGC profile (Java ${javaVersion}).`);
+        console.log(`[ProcessManager] Server "${server.name}" using Generational ZGC (Java ${javaVersion}), Xms=512MB Xmx=${memMax}MB.`);
       } else {
-        console.log(`[ProcessManager] Server "${server.name}" using Non-generational ZGC profile (Java ${javaVersion}).`);
+        console.log(`[ProcessManager] Server "${server.name}" using ZGC (Java ${javaVersion}), Xms=512MB Xmx=${memMax}MB.`);
       }
     } else {
       // 'standard' — no extra flags, plain JVM defaults
       console.log(`[ProcessManager] Server "${server.name}" using Standard JVM profile.`);
     }
+
+
 
     if (server.jvm_flags && server.jvm_flags.trim()) {
       jvmArgs.push(...server.jvm_flags.trim().split(/\s+/));
