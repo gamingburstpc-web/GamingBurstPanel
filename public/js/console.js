@@ -385,9 +385,9 @@ async function serverAction(action) {
 
       appendLine('> [Panel] Restarting server...');
 
-      // Poll every 1.5s until status flips to running (max 60s)
+      // Poll every 1.5s until status flips to running (max 15 mins for heavy modpacks)
       let attempts = 0;
-      const maxAttempts = 40; // 40 × 1.5s = 60s timeout
+      const maxAttempts = 600; // 600 × 1.5s = 900s (15 mins)
       const poll = setInterval(async () => {
         attempts++;
         try {
@@ -407,10 +407,9 @@ async function serverAction(action) {
         } catch {}
         if (attempts >= maxAttempts) {
           clearInterval(poll);
-          // Timed out — reload full state
+          // Timed out — just silently reload full state, no scary error
           loadServer();
           if (btn) { btn.disabled = false; btn.innerHTML = labs['restart']; }
-          showAlert('error', 'Restart timed out — please check the console.');
         }
       }, 1500);
     } else {
