@@ -73,6 +73,15 @@ async function loadSettings() {
         }
       }
 
+      // Load GC profile from env_custom
+      const gcSelect = document.getElementById('settingsGcProfile');
+      if (gcSelect && serverData.env_custom) {
+        try {
+          const envObj = JSON.parse(serverData.env_custom);
+          gcSelect.value = envObj.gc_profile || 'zgc';
+        } catch { gcSelect.value = 'zgc'; }
+      }
+
     }
   } catch (e) {
     console.error('Failed to load settings', e);
@@ -402,5 +411,40 @@ async function changeWorldSeed() {
   } finally {
     btn.disabled = false;
     btn.textContent = 'Change Seed & Reset World';
+  }
+}
+
+async function saveGcProfile() {
+  const gcProfile = document.getElementById('settingsGcProfile')?.value;
+  if (!gcProfile) return;
+
+  const btn = document.getElementById('btnSaveGcProfile');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving...';
+
+  try {
+    // Read current env_custom, merge gc_profile into it, and save
+    let envObj = {};
+    try { envObj = JSON.parse(serverData.env_custom || '{}'); } catch {}
+    envObj.gc_profile = gcProfile;
+    const envCustom = JSON.stringify(envObj);
+
+    const res = await fetch(`/api/servers/${serverId}/settings/gc-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ env_custom: envCustom })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to save GC profile');
+
+    // Update local cache
+    serverData.env_custom = envCustom;
+    showAlert('success', 'Performance profile saved! Restart the server to apply.');
+  } catch (err) {
+    showAlert('error', err.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }

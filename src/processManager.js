@@ -86,29 +86,55 @@ function startServer(serverId) {
     // value and the user later reduced max without touching min)
     if (memMin > memMax) memMin = Math.floor(memMax / 2);
 
-    const jvmArgs = [
-      `-Xms${memMin}M`,
-      `-Xmx${memMax}M`,
-      '-XX:+UseG1GC',
-      '-XX:+ParallelRefProcEnabled',
-      '-XX:MaxGCPauseMillis=200',
-      '-XX:+UnlockExperimentalVMOptions',
-      '-XX:+DisableExplicitGC',
-      '-XX:G1NewSizePercent=30',
-      '-XX:G1MaxNewSizePercent=40',
-      '-XX:G1HeapRegionSize=8M',
-      '-XX:G1ReservePercent=20',
-      '-XX:G1HeapWastePercent=5',
-      '-XX:G1MixedGCCountTarget=4',
-      '-XX:InitiatingHeapOccupancyPercent=15',
-      '-XX:G1MixedGCLiveThresholdPercent=90',
-      '-XX:G1RSetUpdatingPauseTimePercent=5',
-      '-XX:SurvivorRatio=32',
-      '-XX:+PerfDisableSharedMem',
-      '-XX:MaxTenuringThreshold=1',
-      '-Dusing.aikars.flags=https://mcflags.emc.gs',
-      '-Daikars.new.flags=true',
-    ];
+    // ── GC Profile selection ──────────────────────────────────────────────
+    // Read gc_profile from env_custom JSON. Defaults to 'zgc'.
+    let gcProfile = 'zgc';
+    try {
+      const envObj = JSON.parse(server.env_custom || '{}');
+      if (envObj.gc_profile) gcProfile = envObj.gc_profile;
+    } catch {}
+
+    const jvmArgs = [`-Xms${memMin}M`, `-Xmx${memMax}M`];
+
+    if (gcProfile === 'aikar') {
+      // Classic Aikar G1GC flags — zero lag spikes, but high idle RAM usage
+      jvmArgs.push(
+        '-XX:+UseG1GC',
+        '-XX:+ParallelRefProcEnabled',
+        '-XX:MaxGCPauseMillis=200',
+        '-XX:+UnlockExperimentalVMOptions',
+        '-XX:+DisableExplicitGC',
+        '-XX:G1NewSizePercent=30',
+        '-XX:G1MaxNewSizePercent=40',
+        '-XX:G1HeapRegionSize=8M',
+        '-XX:G1ReservePercent=20',
+        '-XX:G1HeapWastePercent=5',
+        '-XX:G1MixedGCCountTarget=4',
+        '-XX:InitiatingHeapOccupancyPercent=15',
+        '-XX:G1MixedGCLiveThresholdPercent=90',
+        '-XX:G1RSetUpdatingPauseTimePercent=5',
+        '-XX:SurvivorRatio=32',
+        '-XX:+PerfDisableSharedMem',
+        '-XX:MaxTenuringThreshold=1',
+        '-Dusing.aikars.flags=https://mcflags.emc.gs',
+        '-Daikars.new.flags=true',
+      );
+      console.log(`[ProcessManager] Server "${server.name}" using Aikar G1GC profile.`);
+    } else if (gcProfile === 'zgc') {
+      // Generational ZGC — sub-1ms pauses, automatically returns idle RAM to OS
+      // Requires Java 21+. Best for modern Minecraft (1.17+).
+      jvmArgs.push(
+        '-XX:+UseZGC',
+        '-XX:+ZGenerational',
+        '-XX:+UnlockExperimentalVMOptions',
+        '-XX:ConcGCThreads=2',
+        '-XX:+DisableExplicitGC',
+      );
+      console.log(`[ProcessManager] Server "${server.name}" using Generational ZGC profile (low idle RAM).`);
+    } else {
+      // 'standard' — no extra flags, plain JVM defaults
+      console.log(`[ProcessManager] Server "${server.name}" using Standard JVM profile.`);
+    }
 
     if (server.jvm_flags && server.jvm_flags.trim()) {
       jvmArgs.push(...server.jvm_flags.trim().split(/\s+/));

@@ -1083,6 +1083,19 @@ router.post('/servers/:id/files/archive', requireAnyPermission(['files', 'plugin
   } catch (e) { res.status(400).json({ error: e.message }); }
 });
 
+// ── POST /api/servers/:id/settings/gc-profile ─────────────────────────────────
+router.post('/servers/:id/settings/gc-profile', requireAdmin, (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { env_custom } = req.body;
+    if (!env_custom) return res.status(400).json({ error: 'env_custom required' });
+    // Validate it's valid JSON
+    try { JSON.parse(env_custom); } catch { return res.status(400).json({ error: 'env_custom must be valid JSON' }); }
+    getDb().prepare('UPDATE servers SET env_custom = ? WHERE id = ?').run(env_custom, id);
+    res.json({ ok: true });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ── Playit API Endpoints ───────────────────────────────────────────────────────
 const playitManager = require('../playitManager');
 

@@ -465,7 +465,23 @@
             </div>
           </div>
 
-          <!-- Disk Space -->
+          <hr style="border:none;border-top:1px solid var(--border);margin:24px 0;">
+
+          <!-- GC Profile -->
+          <div class="form-group admin-only-block" id="adminGcGroup" style="margin-top:0;">
+            <label style="font-weight:600;">Performance Profile (GC)</label>
+            <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Controls how Java manages memory. Changes take effect on the next server start.</p>
+            <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+              <select id="settingsGcProfile" class="form-select" style="flex:1; max-width:320px;">
+                <option value="zgc">⚡ ZGC — Low Idle RAM, Sub-1ms Pauses (Recommended, Java 21+)</option>
+                <option value="aikar">🏋️ Aikar G1GC — Classic Flags, High Performance (High Idle RAM)</option>
+                <option value="standard">📦 Standard — No Extra Flags (Plain JVM Defaults)</option>
+              </select>
+              <button class="btn btn-primary" onclick="saveGcProfile()" id="btnSaveGcProfile" style="flex:0 0 auto;">Save Profile</button>
+            </div>
+            <p style="font-size:11px;color:var(--yellow);margin-top:8px;">⚠️ ZGC requires Java 21+. Use "Aikar" or "Standard" for old Minecraft versions (1.16 or earlier).</p>
+          </div>
+
           <div class="form-group admin-only-block" id="adminDiskGroup" style="margin-top:24px;">
             <label>Disk Space Limit (MB)</label>
             <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Maximum disk space this server can use. Leave blank or 0 for unlimited.</p>

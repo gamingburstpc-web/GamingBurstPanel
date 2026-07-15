@@ -208,8 +208,18 @@
           <div class="form-group">
             <label class="form-label" for="advJvmFlags">Extra Launch Flags <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
             <input id="advJvmFlags" type="text" class="form-input" placeholder="-Dfile.encoding=UTF-8">
-            <div class="form-hint">Additional JVM arguments (Java only).</div>
+            <div class="form-hint">Additional JVM arguments appended after the GC profile flags (Java only).</div>
           </div>
+          <div class="form-group">
+            <label class="form-label" for="advGcProfile">Performance Profile (GC)</label>
+            <select id="advGcProfile" class="form-input">
+              <option value="zgc">⚡ ZGC — Low Idle RAM, Sub-1ms Pauses (Recommended, Java 21+)</option>
+              <option value="aikar">🏋️ Aikar G1GC — Classic Flags, High Performance (High Idle RAM)</option>
+              <option value="standard">📦 Standard — No Extra Flags (Plain JVM Defaults)</option>
+            </select>
+            <div class="form-hint" style="color:var(--yellow);">⚠️ ZGC requires Java 21+. Use "Aikar" or "Standard" for old Minecraft versions (1.16 or earlier).</div>
+          </div>
+
           <div class="form-group">
             <label class="form-label" for="advEnvCustom">Custom Env Vars (JSON) <span class="text-muted" style="font-weight:normal">(Optional)</span></label>
             <textarea id="advEnvCustom" class="form-textarea" rows="2">{}</textarea>

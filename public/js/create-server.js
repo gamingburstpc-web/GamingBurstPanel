@@ -68,6 +68,14 @@ document.getElementById('createForm').addEventListener('submit', async (e) => {
     let envCustom = document.getElementById('advEnvCustom').value.trim();
     try { JSON.parse(envCustom); } catch { showError('Custom env vars must be valid JSON.'); return; }
 
+    // Merge gc_profile into env_custom
+    const gcProfile = document.getElementById('advGcProfile')?.value || 'zgc';
+    try {
+      const envObj = JSON.parse(envCustom);
+      envObj.gc_profile = gcProfile;
+      envCustom = JSON.stringify(envObj);
+    } catch {}
+
     payload = {
       name,
       mode:       'advanced',
