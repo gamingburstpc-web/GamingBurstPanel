@@ -357,6 +357,12 @@ function updateStatusUI(status) {
 
 // ── Actions ───────────────────────────────────────────────────────────────────
 async function serverAction(action) {
+  // If the user clicks any action (like Stop) while a Restart is polling, cancel the polling.
+  if (window.restartPoll) {
+    clearInterval(window.restartPoll);
+    window.restartPoll = null;
+  }
+
   const ids  = { start: 'btnStart', stop: 'btnStop', restart: 'btnRestart' };
   const labs = { start: '▶ Start', stop: '⏹ Stop', restart: '↺ Restart' };
   const btn  = document.getElementById(ids[action]);
@@ -379,23 +385,21 @@ async function serverAction(action) {
         btn.innerHTML = '<span class="spinner"></span> Restarting...';
         btn.classList.remove('hidden');
       }
-      // Hide Start/Stop while restarting
-      document.getElementById('btnStart')?.classList.add('hidden');
-      document.getElementById('btnStop')?.classList.add('hidden');
 
       appendLine('> [Panel] Restarting server...');
 
       // Poll every 1.5s until status flips to running (max 15 mins for heavy modpacks)
       let attempts = 0;
       const maxAttempts = 600; // 600 × 1.5s = 900s (15 mins)
-      const poll = setInterval(async () => {
+      window.restartPoll = setInterval(async () => {
         attempts++;
         try {
           const r = await fetch(`/api/servers/${serverId}`);
           if (!r.ok) return;
           const d = await r.json();
           if (d.status === 'running') {
-            clearInterval(poll);
+            clearInterval(window.restartPoll);
+            window.restartPoll = null;
             serverData = d;
             updateStatusUI('running');
             if (btn) { btn.disabled = false; btn.innerHTML = labs['restart']; }
@@ -406,7 +410,8 @@ async function serverAction(action) {
           }
         } catch {}
         if (attempts >= maxAttempts) {
-          clearInterval(poll);
+          clearInterval(window.restartPoll);
+          window.restartPoll = null;
           // Timed out — just silently reload full state, no scary error
           loadServer();
           if (btn) { btn.disabled = false; btn.innerHTML = labs['restart']; }
