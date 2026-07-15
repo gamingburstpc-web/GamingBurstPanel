@@ -370,12 +370,59 @@ async function serverAction(action) {
       } else {
         showAlert('error', data.error);
       }
+      if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; }
+    } else if (action === 'restart') {
+      // ── Live restart: show restarting state and poll until running ──────
+      updateStatusUI('stopping');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner"></span> Restarting...';
+        btn.classList.remove('hidden');
+      }
+      // Hide Start/Stop while restarting
+      document.getElementById('btnStart')?.classList.add('hidden');
+      document.getElementById('btnStop')?.classList.add('hidden');
+
+      appendLine('> [Panel] Restarting server...');
+
+      // Poll every 1.5s until status flips to running (max 60s)
+      let attempts = 0;
+      const maxAttempts = 40; // 40 × 1.5s = 60s timeout
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const r = await fetch(`/api/servers/${serverId}`);
+          if (!r.ok) return;
+          const d = await r.json();
+          if (d.status === 'running') {
+            clearInterval(poll);
+            serverData = d;
+            updateStatusUI('running');
+            if (btn) { btn.disabled = false; btn.innerHTML = labs['restart']; }
+            appendLine('> [Panel] Server is back online ✓');
+          } else if (d.status === 'stopped' && attempts > 3) {
+            // Server stopped but hasn't started yet — show starting
+            updateStatusUI('starting');
+          }
+        } catch {}
+        if (attempts >= maxAttempts) {
+          clearInterval(poll);
+          // Timed out — reload full state
+          loadServer();
+          if (btn) { btn.disabled = false; btn.innerHTML = labs['restart']; }
+          showAlert('error', 'Restart timed out — please check the console.');
+        }
+      }, 1500);
     } else {
       loadServer();
+      if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; }
     }
-  } catch (e) { showAlert('error', e.message); }
-  finally { if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; } }
+  } catch (e) {
+    showAlert('error', e.message);
+    if (btn) { btn.disabled = false; btn.innerHTML = labs[action]; }
+  }
 }
+
 
 async function deleteServer() {
   if (!confirm(`Are you sure you want to delete this server? This will permanently erase all server data, including worlds, plugins, configurations, and files. This action cannot be undone.`)) return;
