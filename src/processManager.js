@@ -1,11 +1,25 @@
 'use strict';
 
-const { spawn }     = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path          = require('path');
 const fs            = require('fs');
 const playitManager = require('./playitManager');
 const EventEmitter  = require('events');
 const { getDb, trimLogs } = require('./db');
+
+// Detect Java version on startup
+let javaVersion = 17;
+try {
+  const output = execSync('java -version 2>&1').toString();
+  const match = output.match(/(?:version|build) "([0-9]+)/i) || output.match(/openjdk (\d+)/i);
+  if (match) {
+    javaVersion = parseInt(match[1], 10);
+    console.log(`[ProcessManager] Detected Java version: ${javaVersion}`);
+  }
+} catch (e) {
+  console.warn(`[ProcessManager] Could not detect Java version, defaulting to 17: ${e.message}`);
+}
+
 
 const SERVERS_DIR = path.resolve(__dirname, '..', 'servers');
 
@@ -96,6 +110,12 @@ function startServer(serverId) {
 
     const jvmArgs = [`-Xms${memMin}M`, `-Xmx${memMax}M`];
 
+    // ZGC Support Check
+    if (gcProfile === 'zgc' && javaVersion < 15) {
+      console.warn(`[ProcessManager] ZGC is not supported on Java version ${javaVersion}. Falling back to Aikar G1GC.`);
+      gcProfile = 'aikar';
+    }
+
     if (gcProfile === 'aikar') {
       // Classic Aikar G1GC flags — zero lag spikes, but high idle RAM usage
       jvmArgs.push(
@@ -121,16 +141,25 @@ function startServer(serverId) {
       );
       console.log(`[ProcessManager] Server "${server.name}" using Aikar G1GC profile.`);
     } else if (gcProfile === 'zgc') {
-      // Generational ZGC — sub-1ms pauses, automatically returns idle RAM to OS
-      // Requires Java 21+. Best for modern Minecraft (1.17+).
+      // ZGC setup (supports both generational and non-generational depending on Java version)
+      jvmArgs.push('-XX:+UseZGC');
+      
+      // -XX:+ZGenerational was removed/made default starting with Java 24
+      if (javaVersion >= 21 && javaVersion < 24) {
+        jvmArgs.push('-XX:+ZGenerational');
+      }
+      
       jvmArgs.push(
-        '-XX:+UseZGC',
-        '-XX:+ZGenerational',
         '-XX:+UnlockExperimentalVMOptions',
         '-XX:ConcGCThreads=2',
-        '-XX:+DisableExplicitGC',
+        '-XX:+DisableExplicitGC'
       );
-      console.log(`[ProcessManager] Server "${server.name}" using Generational ZGC profile (low idle RAM).`);
+      
+      if (javaVersion >= 21) {
+        console.log(`[ProcessManager] Server "${server.name}" using Generational ZGC profile (Java ${javaVersion}).`);
+      } else {
+        console.log(`[ProcessManager] Server "${server.name}" using Non-generational ZGC profile (Java ${javaVersion}).`);
+      }
     } else {
       // 'standard' — no extra flags, plain JVM defaults
       console.log(`[ProcessManager] Server "${server.name}" using Standard JVM profile.`);
